@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, ChangeEvent } from "react";
 import { Menu, X, BookOpen, GraduationCap, Calendar, Search, FileText, Lock, Clock, Calendar as CalendarIcon, ChevronDown, ChevronUp, Users, Info, Building, Image, MessageSquare, Phone } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { db, StreamBuilder } from "../lib/firebase";
@@ -10,9 +10,21 @@ interface NavbarProps {
   user: any;
   onLogout: () => void;
   logoUrl?: string | null;
+  isLogoUploaded?: boolean;
+  logoUploading?: boolean;
+  onLogoUpload?: (e: ChangeEvent<HTMLInputElement>) => void;
 }
 
-export default function Navbar({ activeTab, setActiveTab, user, onLogout, logoUrl }: NavbarProps) {
+export default function Navbar({
+  activeTab,
+  setActiveTab,
+  user,
+  onLogout,
+  logoUrl,
+  isLogoUploaded,
+  logoUploading,
+  onLogoUpload,
+}: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
 
@@ -278,6 +290,29 @@ export default function Navbar({ activeTab, setActiveTab, user, onLogout, logoUr
                     </div>
                   );
                 })}
+
+                {/* One-Time Logo Upload Lifecycle option, visible only when isLogoUploaded is false */}
+                {!isLogoUploaded && (
+                  <div className="mx-4 p-4 mt-4 bg-emerald-900/50 border border-amber-500/30 rounded-xl font-alinur text-center space-y-2">
+                    <p className="text-xs font-bold text-amber-400">মাদ্রাসার অফিসিয়াল লোগো আপলোড করুন</p>
+                    <p className="text-[10px] text-emerald-200 leading-tight">লোগোটি একবার আপলোড করলে এই অপশনটি চিরতরে লক হয়ে যাবে।</p>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id="menu-logo-upload"
+                      className="hidden"
+                      onChange={onLogoUpload}
+                      disabled={logoUploading}
+                    />
+                    <label
+                      htmlFor="menu-logo-upload"
+                      className={`inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-emerald-950 text-xs font-bold py-1.5 px-3 rounded-lg cursor-pointer transition-all active:scale-95 shadow ${logoUploading ? "opacity-50" : ""}`}
+                    >
+                      <Image className="w-4 h-4" />
+                      <span>{logoUploading ? "আপলোড হচ্ছে..." : "লোগো নির্বাচন করুন"}</span>
+                    </label>
+                  </div>
+                )}
 
                 {/* Login or Dashboard details */}
                 <div className="pt-6 mt-6 border-t border-emerald-800/60 space-y-2 font-alinur">

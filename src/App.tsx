@@ -31,6 +31,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<string>("home");
   const [user, setUser] = useState<any | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [isLogoUploaded, setIsLogoUploaded] = useState<boolean>(false);
+  const [logoUploading, setLogoUploading] = useState<boolean>(false);
   const [selectedCommitteeMember, setSelectedCommitteeMember] = useState<any | null>(null);
   const [prevCommitteeTab, setPrevCommitteeTab] = useState<string>("home");
 
@@ -71,6 +73,24 @@ export default function App() {
     }
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoUploading(true);
+    try {
+      const url = await uploadFileToImgBB(file);
+      await setDoc(doc(db, "settings", "branding"), {
+        logoUrl: url,
+        isLogoUploaded: true
+      }, { merge: true });
+    } catch (error) {
+      console.error("Error uploading official logo:", error);
+      alert("লোগো আপলোড ব্যর্থ হয়েছে। পুনরায় চেষ্টা করুন।");
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
   // Initialize and seed database if empty, and load user from localStorage
   useEffect(() => {
     // Seed in background
@@ -86,15 +106,38 @@ export default function App() {
       }
     }
 
-    // Subscribe to dynamic website settings (like logo)
-    const unsubSettings = onSnapshot(doc(db, "settings", "website"), (docSnap) => {
+    // Subscribe to dynamic website settings (branding & logo)
+    const unsubBranding = onSnapshot(doc(db, "settings", "branding"), (docSnap) => {
       if (docSnap.exists()) {
-        setLogoUrl(docSnap.data().logoUrl || null);
+        const data = docSnap.data();
+        const url = data.logoUrl || null;
+        setLogoUrl(url);
+        setIsLogoUploaded(!!data.isLogoUploaded);
+
+        // Dynamically update the favicon
+        if (url) {
+          let link = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'icon';
+            document.head.appendChild(link);
+          }
+          link.href = url;
+        }
+      } else {
+        // Fallback to legacy website settings if branding document doesn't exist yet
+        const unsubLegacy = onSnapshot(doc(db, "settings", "website"), (webSnap) => {
+          if (webSnap.exists()) {
+            const data = webSnap.data();
+            setLogoUrl(data.logoUrl || null);
+          }
+        });
+        return () => unsubLegacy();
       }
     });
 
     return () => {
-      unsubSettings();
+      unsubBranding();
     };
   }, []);
 
@@ -151,6 +194,9 @@ export default function App() {
         user={user}
         onLogout={handleLogout}
         logoUrl={logoUrl}
+        isLogoUploaded={isLogoUploaded}
+        logoUploading={logoUploading}
+        onLogoUpload={handleLogoUpload}
       />
 
       {/* Main Content Area */}
