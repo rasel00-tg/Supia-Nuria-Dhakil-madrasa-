@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, setDoc, getDocs, getDoc, serverTimestamp } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, setDoc, getDocs, getDoc, serverTimestamp, where } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType, uploadFileToImgBB, StreamBuilder } from "../lib/firebase";
 import { Teacher, SuccessStory, CommitteeMember, HonoredPerson, AdmissionForm, Routine, ContactMessage } from "../types";
 import { Trash2, Edit3, Plus, Check, X, CreditCard, Mail, UserPlus, Users, GraduationCap, Calendar, Award, MessageSquare, Heart, CheckCircle2, XCircle, Settings, Megaphone, ChevronDown, LayoutDashboard, Globe } from "lucide-react";
@@ -125,13 +125,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
   // Exam Routine Form states
   const [examNameInput, setExamNameInput] = useState("");
   const [examClassInput, setExamClassInput] = useState("");
-  const [examGuidelinesInput, setExamGuidelinesInput] = useState<string[]>([
-    "পরীক্ষা শুরুর ৩০ মিনিট পূর্বে অবশ্যই হলে প্রবেশ করতে হবে।",
-    "প্রবেশপত্র ও কলম সাথে আনতে হবে।",
-    "হলে কোনো ধরণের মোবাইল বা ডিভাইস আনা সম্পূর্ণ নিষেধ।",
-    "পরীক্ষার খাতায় রোল নম্বর ও অন্যান্য তথ্য সঠিকভাবে পূরণ করতে হবে।",
-    "হলে অসদুপায় অবলম্বন করলে পরীক্ষা বাতিল করা হবে।"
-  ]);
+  const [examGuidelinesInput, setExamGuidelinesInput] = useState<string[]>([""]);
   const [examSubjects, setExamSubjects] = useState<Array<{
     date: string;
     subject: string;
@@ -201,14 +195,28 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
     if (!isValid || hasRowErrors) return;
 
     try {
+      if (!editingExamId) {
+        // Overwrite Logic: Delete all previous exam routines for this class
+        const q = query(
+          collection(db, "routines"),
+          where("type", "==", "exam"),
+          where("className", "==", examClassInput)
+        );
+        const snapshot = await getDocs(q);
+        const deletePromises = snapshot.docs.map(d => deleteDoc(doc(db, "routines", d.id)));
+        await Promise.all(deletePromises);
+      }
+
+      const activeGuidelines = examGuidelinesInput.filter(gl => gl.trim() !== "");
+
       const payload = {
         type: "exam",
         className: examClassInput,
         examName: examNameInput,
         subjects: examSubjects,
-        guidelines: examGuidelinesInput,
-        isEdited: true,
-        editedAt: new Date().toISOString()
+        guidelines: activeGuidelines.length > 0 ? activeGuidelines : [""],
+        isEdited: editingExamId ? true : false,
+        editedAt: editingExamId ? new Date().toISOString() : ""
       };
 
       if (editingExamId) {
@@ -221,13 +229,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
       setExamClassInput("");
       setExamNameInput("");
       setExamSubjects([{ date: "", subject: "", time: "", totalMarks: "", subjectCode: "" }]);
-      setExamGuidelinesInput([
-        "পরীক্ষা শুরুর ৩০ মিনিট পূর্বে অবশ্যই হলে প্রবেশ করতে হবে।",
-        "প্রবেশপত্র ও কলম সাথে আনতে হবে।",
-        "হলে কোনো ধরণের মোবাইল বা ডিভাইস আনা সম্পূর্ণ নিষেধ।",
-        "পরীক্ষার খাতায় রোল নম্বর ও অন্যান্য তথ্য সঠিকভাবে পূরণ করতে হবে।",
-        "হলে অসদুপায় অবলম্বন করলে পরীক্ষা বাতিল করা হবে।"
-      ]);
+      setExamGuidelinesInput([""]);
       setRowExamValidationErrors([]);
       setEditingExamId(null);
       setIsExamFormOpen(false);
@@ -244,13 +246,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
     setExamClassInput(item.className);
     setExamNameInput(item.examName || "");
     setExamSubjects(item.subjects || [{ date: "", subject: "", time: "", totalMarks: "", subjectCode: "" }]);
-    setExamGuidelinesInput(item.guidelines || [
-      "পরীক্ষা শুরুর ৩০ মিনিট পূর্বে অবশ্যই হলে প্রবেশ করতে হবে।",
-      "প্রবেশপত্র ও কলম সাথে আনতে হবে।",
-      "হলে কোনো ধরণের মোবাইল বা ডিভাইস আনা সম্পূর্ণ নিষেধ।",
-      "পরীক্ষার খাতায় রোল নম্বর ও অন্যান্য তথ্য সঠিকভাবে পূরণ করতে হবে।",
-      "হলে অসদুপায় অবলম্বন করলে পরীক্ষা বাতিল করা হবে।"
-    ]);
+    setExamGuidelinesInput(item.guidelines || [""]);
     setRowExamValidationErrors([]);
     setIsExamFormOpen(true);
     setExamClassError("");
@@ -269,13 +265,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
     setExamClassInput("");
     setExamNameInput("");
     setExamSubjects([{ date: "", subject: "", time: "", totalMarks: "", subjectCode: "" }]);
-    setExamGuidelinesInput([
-      "পরীক্ষা শুরুর ৩০ মিনিট পূর্বে অবশ্যই হলে প্রবেশ করতে হবে।",
-      "প্রবেশপত্র ও কলম সাথে আনতে হবে।",
-      "হলে কোনো ধরণের মোবাইল বা ডিভাইস আনা সম্পূর্ণ নিষেধ।",
-      "পরীক্ষার খাতায় রোল নম্বর ও অন্যান্য তথ্য সঠিকভাবে পূরণ করতে হবে।",
-      "হলে অসদুপায় অবলম্বন করলে পরীক্ষা বাতিল করা হবে।"
-    ]);
+    setExamGuidelinesInput([""]);
     setRowExamValidationErrors([]);
     setExamClassError("");
     setExamNameError("");
@@ -362,6 +352,16 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
         };
         await updateDoc(doc(db, "routines", editingRoutineId), payload);
       } else {
+        // Overwrite Logic: Delete all previous class routines for this class
+        const q = query(
+          collection(db, "routines"),
+          where("type", "==", "class"),
+          where("className", "==", routineClassInput)
+        );
+        const snapshot = await getDocs(q);
+        const deletePromises = snapshot.docs.map(d => deleteDoc(doc(db, "routines", d.id)));
+        await Promise.all(deletePromises);
+
         // Add mode (creates multiple documents in routines)
         for (const row of routineSubjects) {
           const payload = {
@@ -2111,6 +2111,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                         onClick={() => {
                           setIsExamFormOpen(true);
                           setExamSubjects([{ date: "", subject: "", time: "", totalMarks: "", subjectCode: "" }]);
+                          setExamGuidelinesInput([""]);
                           setRowExamValidationErrors([]);
                         }}
                         className="bg-indigo-700 hover:bg-indigo-850 text-white font-bold py-2.5 px-6 rounded-xl text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer"
@@ -2323,19 +2324,51 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
 
                         {/* Guidelines (5 lines) */}
                         <div className="space-y-3 pt-4 border-t border-indigo-50">
-                          <h5 className="text-xs font-black text-indigo-950">পরীক্ষার্থীদের সাধারণ নির্দেশনা (সর্বমোট ৫টি বাক্য)</h5>
+                          <div className="flex justify-between items-center">
+                            <h5 
+                              className="text-xs font-black text-indigo-950"
+                              style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                            >
+                              পরীক্ষার্থীদের সাধারণ নির্দেশনা (সর্বোচ্চ ৫টি)
+                            </h5>
+                            {examGuidelinesInput.length < 5 && (
+                              <button
+                                type="button"
+                                onClick={() => setExamGuidelinesInput([...examGuidelinesInput, ""])}
+                                className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-1 px-2.5 rounded-lg text-[10px] flex items-center gap-1 cursor-pointer transition-colors"
+                                style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                              >
+                                <span>+ নির্দেশনা যোগ করুন</span>
+                              </button>
+                            )}
+                          </div>
                           <div className="grid grid-cols-1 gap-2">
                             {examGuidelinesInput.map((gl, i) => (
-                              <div key={i} className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-indigo-900 w-6">{i + 1}.</span>
+                              <div key={i} className="flex items-center gap-2 animate-fade-in">
+                                <span className="text-xs font-bold text-indigo-900 w-6 font-mono">
+                                  {(() => {
+                                    const bnDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+                                    return (i + 1).toString().replace(/[0-9]/g, (d) => bnDigits[parseInt(d)]);
+                                  })()}.
+                                </span>
                                 <input
                                   type="text"
                                   value={gl}
                                   onChange={(e) => handleUpdateExamGuideline(i, e.target.value)}
-                                  placeholder={`নির্দেশনা ${i + 1}`}
+                                  placeholder="এখানে শিক্ষার্থীদের জন্য নির্দেশনা যোগ করুন"
                                   className="flex-1 bg-slate-50 border border-indigo-100 rounded-lg px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                   style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                                 />
+                                {examGuidelinesInput.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setExamGuidelinesInput(examGuidelinesInput.filter((_, idx) => idx !== i))}
+                                    className="p-2 bg-red-50 hover:bg-red-100 border border-red-150 text-red-600 rounded-lg cursor-pointer transition-colors"
+                                    title="বাদ দিন"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                )}
                               </div>
                             ))}
                           </div>
