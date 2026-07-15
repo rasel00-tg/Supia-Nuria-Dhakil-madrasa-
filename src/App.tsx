@@ -16,6 +16,7 @@ import StudentsSection from "./components/StudentsSection";
 import CommitteeMemberDetail from "./components/CommitteeMemberDetail";
 import GlobalLoadingPopup from "./components/GlobalLoadingPopup";
 import NoticeSection from "./components/NoticeSection";
+import InstallPrompt from "./components/InstallPrompt";
 import { seedDatabaseIfEmpty } from "./lib/dbSeeder";
 import { GraduationCap, BookOpen, Clock, Heart, Award } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -139,6 +140,9 @@ export default function App() {
     <div className="min-h-screen flex flex-col bg-[#fdfdfb] text-slate-800 font-sans selection:bg-amber-100 selection:text-emerald-950">
       {/* Global Loading Popup Overlay */}
       <GlobalLoadingPopup />
+
+      {/* PWA App Install Prompt Loop */}
+      <InstallPrompt />
 
       {/* Sticky Top Navbar */}
       <Navbar
