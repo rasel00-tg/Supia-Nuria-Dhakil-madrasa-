@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, Query, onSnapshot, DocumentData } from "firebase/firestore";
+import { initializeFirestore, Query, onSnapshot, DocumentData } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import React, { useEffect, useState, ReactNode } from "react";
 import { loadingService } from "./loadingService";
@@ -16,8 +16,10 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Use the databaseId provided in the configuration
-export const db = getFirestore(app, "ai-studio-cd3763db-984b-4a51-9a2b-e448ca0250a9");
+// Initialize Firestore with long polling enabled to bypass websocket/proxy blockages in sandboxed iframe environment
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+}, "ai-studio-cd3763db-984b-4a51-9a2b-e448ca0250a9");
 
 // Export Firebase Storage instance initialized with proper storage bucket config
 export const storage = getStorage(app);
