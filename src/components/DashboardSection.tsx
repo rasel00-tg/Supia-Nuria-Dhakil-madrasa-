@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, setDoc, getDocs, getDoc } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, setDoc, getDocs, getDoc, serverTimestamp } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType, uploadFileToImgBB, StreamBuilder } from "../lib/firebase";
 import { Teacher, SuccessStory, CommitteeMember, HonoredPerson, AdmissionForm, Routine, ContactMessage } from "../types";
 import { Trash2, Edit3, Plus, Check, X, CreditCard, Mail, UserPlus, Users, GraduationCap, Calendar, Award, MessageSquare, Heart, CheckCircle2, XCircle, Settings, Megaphone, ChevronDown, LayoutDashboard, Globe } from "lucide-react";
@@ -36,6 +36,15 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
   const [isHomepageDropdownOpen, setIsHomepageDropdownOpen] = useState(false);
   const [newNoticeText, setNewNoticeText] = useState("");
   const [isNoticeUploading, setIsNoticeUploading] = useState(false);
+
+  // Public Notice state
+  const [publicNoticeTitle, setPublicNoticeTitle] = useState("");
+  const [publicNoticeDescription, setPublicNoticeDescription] = useState("");
+  const [editingPublicNoticeId, setEditingPublicNoticeId] = useState<string | null>(null);
+  const [isPublicNoticeUploading, setIsPublicNoticeUploading] = useState(false);
+  const [publicNoticeTitleError, setPublicNoticeTitleError] = useState("");
+  const [publicNoticeDescriptionError, setPublicNoticeDescriptionError] = useState("");
+  const [isPublicNoticeFormOpen, setIsPublicNoticeFormOpen] = useState(false);
 
   // Contact update inputs state (should start empty as per instructions)
   const [contactAddressInput, setContactAddressInput] = useState("");
@@ -89,6 +98,352 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+
+  // Dedicated class routines form states
+  const [routineClassInput, setRoutineClassInput] = useState("");
+  const [routineDayInput, setRoutineDayInput] = useState("");
+  const [routineSubjects, setRoutineSubjects] = useState<Array<{
+    subject: string;
+    time: string;
+    teacherName: string;
+    room: string;
+  }>>([{ subject: "", time: "", teacherName: "", room: "" }]);
+
+  const [routineClassError, setRoutineClassError] = useState("");
+  const [routineDayError, setRoutineDayError] = useState("");
+  const [rowValidationErrors, setRowValidationErrors] = useState<Array<{
+    subject?: string;
+    time?: string;
+    teacherName?: string;
+  }>>([]);
+
+  const [editingRoutineId, setEditingRoutineId] = useState<string | null>(null);
+  const [isRoutineFormOpen, setIsRoutineFormOpen] = useState(false);
+  const [activeRoutineSubMenu, setActiveRoutineSubMenu] = useState("class_routine");
+  const [routineSaveSuccess, setRoutineSaveSuccess] = useState(false);
+
+  // Exam Routine Form states
+  const [examNameInput, setExamNameInput] = useState("");
+  const [examClassInput, setExamClassInput] = useState("");
+  const [examGuidelinesInput, setExamGuidelinesInput] = useState<string[]>([
+    "পরীক্ষা শুরুর ৩০ মিনিট পূর্বে অবশ্যই হলে প্রবেশ করতে হবে।",
+    "প্রবেশপত্র ও কলম সাথে আনতে হবে।",
+    "হলে কোনো ধরণের মোবাইল বা ডিভাইস আনা সম্পূর্ণ নিষেধ।",
+    "পরীক্ষার খাতায় রোল নম্বর ও অন্যান্য তথ্য সঠিকভাবে পূরণ করতে হবে।",
+    "হলে অসদুপায় অবলম্বন করলে পরীক্ষা বাতিল করা হবে।"
+  ]);
+  const [examSubjects, setExamSubjects] = useState<Array<{
+    date: string;
+    subject: string;
+    time: string;
+    totalMarks: string;
+    subjectCode: string;
+  }>>([{ date: "", subject: "", time: "", totalMarks: "", subjectCode: "" }]);
+
+  const [isExamFormOpen, setIsExamFormOpen] = useState(false);
+  const [editingExamId, setEditingExamId] = useState<string | null>(null);
+  const [examSaveSuccess, setExamSaveSuccess] = useState(false);
+  const [examClassError, setExamClassError] = useState("");
+  const [examNameError, setExamNameError] = useState("");
+  const [rowExamValidationErrors, setRowExamValidationErrors] = useState<Array<{
+    date?: string;
+    subject?: string;
+    time?: string;
+    totalMarks?: string;
+    subjectCode?: string;
+  }>>([]);
+
+  const handleSaveExamRoutine = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    let isValid = true;
+    if (!examClassInput.trim()) {
+      setExamClassError("অনুগ্রহ করে একটি ক্লাস সিলেক্ট বা ইনপুট করুন");
+      isValid = false;
+    } else {
+      setExamClassError("");
+    }
+    if (!examNameInput.trim()) {
+      setExamNameError("অনুগ্রহ করে পরীক্ষার নাম লিখুন (যেমন: অর্ধ-বার্ষিক পরীক্ষা)");
+      isValid = false;
+    } else {
+      setExamNameError("");
+    }
+
+    const errors: Array<{ date?: string; subject?: string; time?: string; totalMarks?: string; subjectCode?: string }> = [];
+    let hasRowErrors = false;
+    examSubjects.forEach((row, idx) => {
+      const rowErr: { date?: string; subject?: string; time?: string; totalMarks?: string; subjectCode?: string } = {};
+      if (!row.date.trim()) {
+        rowErr.date = "তারিখ আবশ্যক";
+        hasRowErrors = true;
+      }
+      if (!row.subject.trim()) {
+        rowErr.subject = "বিষয় আবশ্যক";
+        hasRowErrors = true;
+      }
+      if (!row.time.trim()) {
+        rowErr.time = "সময় আবশ্যক";
+        hasRowErrors = true;
+      }
+      if (!row.totalMarks.trim()) {
+        rowErr.totalMarks = "নাম্বার আবশ্যক";
+        hasRowErrors = true;
+      }
+      if (!row.subjectCode.trim()) {
+        rowErr.subjectCode = "কোড আবশ্যক";
+        hasRowErrors = true;
+      }
+      errors[idx] = rowErr;
+    });
+
+    setRowExamValidationErrors(errors);
+    if (!isValid || hasRowErrors) return;
+
+    try {
+      const payload = {
+        type: "exam",
+        className: examClassInput,
+        examName: examNameInput,
+        subjects: examSubjects,
+        guidelines: examGuidelinesInput,
+        isEdited: true,
+        editedAt: new Date().toISOString()
+      };
+
+      if (editingExamId) {
+        await updateDoc(doc(db, "routines", editingExamId), payload);
+      } else {
+        await addDoc(collection(db, "routines"), payload);
+      }
+
+      // Reset
+      setExamClassInput("");
+      setExamNameInput("");
+      setExamSubjects([{ date: "", subject: "", time: "", totalMarks: "", subjectCode: "" }]);
+      setExamGuidelinesInput([
+        "পরীক্ষা শুরুর ৩০ মিনিট পূর্বে অবশ্যই হলে প্রবেশ করতে হবে।",
+        "প্রবেশপত্র ও কলম সাথে আনতে হবে।",
+        "হলে কোনো ধরণের মোবাইল বা ডিভাইস আনা সম্পূর্ণ নিষেধ।",
+        "পরীক্ষার খাতায় রোল নম্বর ও অন্যান্য তথ্য সঠিকভাবে পূরণ করতে হবে।",
+        "হলে অসদুপায় অবলম্বন করলে পরীক্ষা বাতিল করা হবে।"
+      ]);
+      setRowExamValidationErrors([]);
+      setEditingExamId(null);
+      setIsExamFormOpen(false);
+      setExamSaveSuccess(true);
+      setTimeout(() => setExamSaveSuccess(false), 3000);
+    } catch (err) {
+      console.error("Error saving exam routine:", err);
+      alert("পরীক্ষা রুটিন সংরক্ষণ করতে সমস্যা হয়েছে।");
+    }
+  };
+
+  const handleEditExamLocal = (item: Routine) => {
+    setEditingExamId(item.id);
+    setExamClassInput(item.className);
+    setExamNameInput(item.examName || "");
+    setExamSubjects(item.subjects || [{ date: "", subject: "", time: "", totalMarks: "", subjectCode: "" }]);
+    setExamGuidelinesInput(item.guidelines || [
+      "পরীক্ষা শুরুর ৩০ মিনিট পূর্বে অবশ্যই হলে প্রবেশ করতে হবে।",
+      "প্রবেশপত্র ও কলম সাথে আনতে হবে।",
+      "হলে কোনো ধরণের মোবাইল বা ডিভাইস আনা সম্পূর্ণ নিষেধ।",
+      "পরীক্ষার খাতায় রোল নম্বর ও অন্যান্য তথ্য সঠিকভাবে পূরণ করতে হবে।",
+      "হলে অসদুপায় অবলম্বন করলে পরীক্ষা বাতিল করা হবে।"
+    ]);
+    setRowExamValidationErrors([]);
+    setIsExamFormOpen(true);
+    setExamClassError("");
+    setExamNameError("");
+
+    setTimeout(() => {
+      const formElement = document.getElementById("exam-routine-form-section");
+      if (formElement) {
+        formElement.scrollIntoView({ behavior: "smooth" });
+      }
+    }, 100);
+  };
+
+  const handleCancelEditExam = () => {
+    setEditingExamId(null);
+    setExamClassInput("");
+    setExamNameInput("");
+    setExamSubjects([{ date: "", subject: "", time: "", totalMarks: "", subjectCode: "" }]);
+    setExamGuidelinesInput([
+      "পরীক্ষা শুরুর ৩০ মিনিট পূর্বে অবশ্যই হলে প্রবেশ করতে হবে।",
+      "প্রবেশপত্র ও কলম সাথে আনতে হবে।",
+      "হলে কোনো ধরণের মোবাইল বা ডিভাইস আনা সম্পূর্ণ নিষেধ।",
+      "পরীক্ষার খাতায় রোল নম্বর ও অন্যান্য তথ্য সঠিকভাবে পূরণ করতে হবে।",
+      "হলে অসদুপায় অবলম্বন করলে পরীক্ষা বাতিল করা হবে।"
+    ]);
+    setRowExamValidationErrors([]);
+    setExamClassError("");
+    setExamNameError("");
+    setIsExamFormOpen(false);
+  };
+
+  const handleAddExamSubjectRow = () => {
+    setExamSubjects([...examSubjects, { date: "", subject: "", time: "", totalMarks: "", subjectCode: "" }]);
+  };
+
+  const handleRemoveExamSubjectRow = (idx: number) => {
+    if (examSubjects.length > 1) {
+      setExamSubjects(examSubjects.filter((_, i) => i !== idx));
+    }
+  };
+
+  const handleUpdateExamSubjectRowField = (idx: number, field: string, value: string) => {
+    const updated = [...examSubjects];
+    updated[idx] = { ...updated[idx], [field]: value };
+    setExamSubjects(updated);
+  };
+
+  const handleUpdateExamGuideline = (idx: number, value: string) => {
+    const updated = [...examGuidelinesInput];
+    updated[idx] = value;
+    setExamGuidelinesInput(updated);
+  };
+
+  const handleSaveRoutine = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Strict validation
+    let isValid = true;
+    if (!routineClassInput.trim()) {
+      setRoutineClassError("অনুগ্রহ করে একটি ক্লাস সিলেক্ট বা ইনপুট করুন");
+      isValid = false;
+    } else {
+      setRoutineClassError("");
+    }
+    if (!routineDayInput.trim()) {
+      setRoutineDayError("অনুগ্রহ করে একটি দিন সিলেক্ট বা ইনপুট করুন");
+      isValid = false;
+    } else {
+      setRoutineDayError("");
+    }
+
+    // Dynamic rows validation
+    const errors: Array<{ subject?: string; time?: string; teacherName?: string }> = [];
+    let hasRowErrors = false;
+    routineSubjects.forEach((row, idx) => {
+      const rowErr: { subject?: string; time?: string; teacherName?: string } = {};
+      if (!row.subject.trim()) {
+        rowErr.subject = "বিষয় আবশ্যক";
+        hasRowErrors = true;
+      }
+      if (!row.time.trim()) {
+        rowErr.time = "সময় আবশ্যক";
+        hasRowErrors = true;
+      }
+      if (!row.teacherName.trim()) {
+        rowErr.teacherName = "শিক্ষক আবশ্যক";
+        hasRowErrors = true;
+      }
+      errors[idx] = rowErr;
+    });
+
+    setRowValidationErrors(errors);
+    if (!isValid || hasRowErrors) return;
+
+    try {
+      if (editingRoutineId) {
+        // Edit mode (only updates 1 item)
+        const row = routineSubjects[0];
+        const payload = {
+          type: "class",
+          className: routineClassInput,
+          subject: row.subject,
+          time: row.time,
+          dayOrDate: routineDayInput,
+          room: row.room || "১০১",
+          teacherName: row.teacherName,
+          isEdited: true,
+          editedAt: new Date().toISOString()
+        };
+        await updateDoc(doc(db, "routines", editingRoutineId), payload);
+      } else {
+        // Add mode (creates multiple documents in routines)
+        for (const row of routineSubjects) {
+          const payload = {
+            type: "class",
+            className: routineClassInput,
+            subject: row.subject,
+            time: row.time,
+            dayOrDate: routineDayInput,
+            room: row.room || "১০১",
+            teacherName: row.teacherName,
+            isEdited: false,
+            editedAt: ""
+          };
+          await addDoc(collection(db, "routines"), payload);
+        }
+      }
+
+      // Reset form
+      setRoutineClassInput("");
+      setRoutineDayInput("");
+      setRoutineSubjects([{ subject: "", time: "", teacherName: "", room: "" }]);
+      setRowValidationErrors([]);
+      setEditingRoutineId(null);
+      setIsRoutineFormOpen(false); // Close form after successful save
+      setRoutineSaveSuccess(true);
+      setTimeout(() => setRoutineSaveSuccess(false), 3000);
+    } catch (err) {
+      console.error("Error saving routine:", err);
+      alert("রুটিন সংরক্ষণ করতে সমস্যা হয়েছে।");
+    }
+  };
+
+  const handleEditRoutineLocal = (item: Routine) => {
+    setEditingRoutineId(item.id);
+    setRoutineClassInput(item.className);
+    setRoutineDayInput(item.dayOrDate);
+    setRoutineSubjects([{
+      subject: item.subject,
+      time: item.time,
+      teacherName: item.teacherName || "",
+      room: item.room || ""
+    }]);
+    setRowValidationErrors([]);
+    setIsRoutineFormOpen(true); // Open form on edit
+    
+    // Clear validation errors
+    setRoutineClassError("");
+    setRoutineDayError("");
+    
+    // Scroll smoothly to form
+    const formElement = document.getElementById("local-routine-form-section");
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleCancelEditRoutine = () => {
+    setEditingRoutineId(null);
+    setRoutineClassInput("");
+    setRoutineDayInput("");
+    setRoutineSubjects([{ subject: "", time: "", teacherName: "", room: "" }]);
+    setRowValidationErrors([]);
+    setRoutineClassError("");
+    setRoutineDayError("");
+    setIsRoutineFormOpen(false); // Close form
+  };
+
+  const handleAddSubjectRow = () => {
+    setRoutineSubjects([...routineSubjects, { subject: "", time: "", teacherName: "", room: "" }]);
+  };
+
+  const handleRemoveSubjectRow = (index: number) => {
+    if (routineSubjects.length > 1) {
+      setRoutineSubjects(routineSubjects.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleUpdateSubjectRowField = (index: number, field: string, value: string) => {
+    const updated = [...routineSubjects];
+    updated[index] = { ...updated[index], [field]: value };
+    setRoutineSubjects(updated);
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldSetter: (val: string) => void, folderName: string) => {
     const file = e.target.files?.[0];
@@ -707,6 +1062,22 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                     <div className="h-1.5 w-1.5 rounded-full bg-amber-500"></div>
                     <span>চলমান নোটিশ</span>
                   </button>
+
+                  <button
+                    id="admin-subtab-public-notice"
+                    onClick={() => {
+                      setActiveAdminSubTab("public_notices");
+                      setIsNoticeDropdownOpen(false);
+                    }}
+                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold ${
+                      activeAdminSubTab === "public_notices"
+                        ? "bg-emerald-50 text-emerald-850"
+                        : "text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-800"></div>
+                    <span>নোটিশ পাবলিক</span>
+                  </button>
                 </div>
               )}
             </div>
@@ -948,12 +1319,13 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                 {activeAdminSubTab === "settings" && "মাদ্রাসা লোগো ও ওয়েবসাইট কাস্টমাইজেশন"}
                 {activeAdminSubTab === "hero_background" && "হিরো সেকশন ব্যাকগ্রাউন্ড ইমেজ কাস্টমাইজেশন"}
                 {activeAdminSubTab === "running_notices" && "চলমান নোটিশবোর্ড ও লাইভ নোটিশ ফিড"}
+                {activeAdminSubTab === "public_notices" && "পাবলিক নোটিশবোর্ড ও লাইভ নোটিশ কন্টেন্ট"}
                 {activeAdminSubTab === "pathdan_update" && "এক নজরে পাঠদান তথ্য এডিট ও কাস্টমাইজেশন"}
                 {activeAdminSubTab === "sodosso_form_settings" && "সদস্য ফরম কন্টেন্ট এডিট ও কাস্টমাইজেশন"}
                 {activeAdminSubTab === "contact_update" && "প্রাতিষ্ঠানিক যোগাযোগ ও ঠিকানা আপডেট"}
               </h3>
             </div>
-            {activeAdminSubTab !== "dashboard" && activeAdminSubTab !== "admissions" && activeAdminSubTab !== "messages" && activeAdminSubTab !== "settings" && activeAdminSubTab !== "hero_background" && activeAdminSubTab !== "running_notices" && activeAdminSubTab !== "pathdan_update" && activeAdminSubTab !== "sodosso_form_settings" && activeAdminSubTab !== "contact_update" && (
+            {activeAdminSubTab !== "dashboard" && activeAdminSubTab !== "admissions" && activeAdminSubTab !== "messages" && activeAdminSubTab !== "settings" && activeAdminSubTab !== "hero_background" && activeAdminSubTab !== "running_notices" && activeAdminSubTab !== "public_notices" && activeAdminSubTab !== "pathdan_update" && activeAdminSubTab !== "sodosso_form_settings" && activeAdminSubTab !== "contact_update" && activeAdminSubTab !== "routines" && (
               <button
                 id="admin-add-new-btn"
                 onClick={handleOpenAddForm}
@@ -1400,50 +1772,657 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
             </div>
           )}
 
-          {/* 6. Routines List Management */}
+          {/* 6. Routines List Management with dedicated class routine sub-menu & form validation */}
           {activeAdminSubTab === "routines" && (
-            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-              <table className="w-full text-left border-collapse text-sm">
-                <thead>
-                  <tr className="bg-emerald-50 text-emerald-950 font-bold border-b border-gray-100">
-                    <th className="p-4">টাইপ</th>
-                    <th className="p-4">শ্রেণী</th>
-                    <th className="p-4">বিষয়</th>
-                    <th className="p-4">সময় ও ঘণ্টা</th>
-                    <th className="p-4">দিন / তারিখ</th>
-                    <th className="p-4">কক্ষ</th>
-                    <th className="p-4 text-center">অ্যাকশন</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {routines.map((item) => (
-                    <tr key={item.id} className="hover:bg-emerald-50/10">
-                      <td className="p-4">
-                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                          item.type === "class" ? "bg-blue-50 text-blue-700" : "bg-purple-50 text-purple-700"
-                        }`}>
-                          {item.type === "class" ? "ক্লাস" : "পরীক্ষা"}
-                        </span>
-                      </td>
-                      <td className="p-4 font-bold">{item.className}</td>
-                      <td className="p-4">{item.subject}</td>
-                      <td className="p-4 font-mono">{item.time}</td>
-                      <td className="p-4">{item.dayOrDate}</td>
-                      <td className="p-4 font-bold">{item.room}</td>
-                      <td className="p-4 text-center">
-                        <div className="flex justify-center space-x-2">
-                          <button onClick={() => handleEdit(item, "routines")} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded">
-                            <Edit3 className="h-4 w-4" />
+            <div className="space-y-6 font-alinur" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>
+              {/* Local Sub-Menu bar */}
+              <div className="flex border-b border-gray-200 pb-1 gap-2">
+                <button
+                  onClick={() => setActiveRoutineSubMenu("class_routine")}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all ${
+                    activeRoutineSubMenu === "class_routine"
+                      ? "border-indigo-600 text-indigo-700 font-black"
+                      : "border-transparent text-gray-500 hover:text-indigo-600"
+                  }`}
+                  style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                >
+                  <Calendar className="h-4 w-4 text-indigo-600" />
+                  <span>ক্লাস রুটিন</span>
+                </button>
+                <button
+                  onClick={() => setActiveRoutineSubMenu("exam_routine")}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all ${
+                    activeRoutineSubMenu === "exam_routine"
+                      ? "border-indigo-600 text-indigo-700 font-black"
+                      : "border-transparent text-gray-500 hover:text-indigo-600"
+                  }`}
+                  style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                >
+                  <Calendar className="h-4 w-4 text-indigo-600" />
+                  <span>পরীক্ষা রুটিন</span>
+                </button>
+              </div>
+
+              {activeRoutineSubMenu === "class_routine" && (
+                <div className="space-y-6">
+                  {/* Initially Closed Form Button */}
+                  {!isRoutineFormOpen && !editingRoutineId && (
+                    <div className="flex justify-start">
+                      <button
+                        onClick={() => {
+                          setIsRoutineFormOpen(true);
+                          setRoutineSubjects([{ subject: "", time: "", teacherName: "", room: "" }]);
+                          setRowValidationErrors([]);
+                        }}
+                        className="bg-indigo-700 hover:bg-indigo-850 text-white font-bold py-2.5 px-6 rounded-xl text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                        style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                      >
+                        <Calendar className="h-4.5 w-4.5" />
+                        <span>ক্লাস রুটিন যোগ করুন</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Embedded Form Section */}
+                  {(isRoutineFormOpen || editingRoutineId) && (
+                    <div 
+                      id="local-routine-form-section" 
+                      className="bg-white border border-indigo-100 rounded-2xl shadow-xs overflow-hidden p-6 space-y-4"
+                    >
+                      <div className="flex items-center justify-between border-b border-indigo-50 pb-3">
+                        <h4 
+                          className="text-base font-black text-indigo-950 flex items-center gap-2"
+                          style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                        >
+                          <Calendar className="h-5 w-5 text-indigo-600" />
+                          <span>{editingRoutineId ? "ক্লাস রুটিন আপডেট ও সংশোধন করুন" : "নতুন ক্লাস রুটিন তৈরি করুন"}</span>
+                        </h4>
+                        <button
+                          onClick={handleCancelEditRoutine}
+                          className="text-xs font-bold text-red-600 hover:text-red-800 flex items-center gap-1 cursor-pointer"
+                          style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                        >
+                          <X className="h-4 w-4" />
+                          <span>ফর্ম বন্ধ করুন</span>
+                        </button>
+                      </div>
+
+                      {routineSaveSuccess && (
+                        <div className="bg-emerald-50 border border-emerald-150 text-emerald-800 text-xs font-bold px-4 py-3 rounded-xl">
+                          ✓ ক্লাস রুটিন সফলভাবে সংরক্ষিত হয়েছে!
+                        </div>
+                      )}
+
+                      <form onSubmit={handleSaveRoutine} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Class Dropdown Selection */}
+                          <div className="space-y-1">
+                            <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                              <span>ক্লাস</span>
+                              <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={routineClassInput}
+                              onChange={(e) => {
+                                setRoutineClassInput(e.target.value);
+                                if (e.target.value) setRoutineClassError("");
+                              }}
+                              className={`w-full bg-slate-50 border ${routineClassError ? "border-red-400 focus:ring-red-500" : "border-indigo-100 focus:ring-indigo-500"} rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
+                              style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                            >
+                              <option value="">-- ক্লাস সিলেক্ট করুন --</option>
+                              <option value="শিশু শ্রেণি">শিশু শ্রেণি</option>
+                              <option value="১ম শ্রেণি">১ম শ্রেণি</option>
+                              <option value="২য় শ্রেণি">২য় শ্রেণি</option>
+                              <option value="৩য় শ্রেণি">৩য় শ্রেণি</option>
+                              <option value="৪র্থ শ্রেণি">৪র্থ শ্রেণি</option>
+                              <option value="৫ম শ্রেণি">৫ম শ্রেণি</option>
+                              <option value="৬ষ্ঠ শ্রেণি">৬ষ্ঠ শ্রেণি</option>
+                              <option value="৭ম শ্রেণি">৭ম শ্রেণি</option>
+                              <option value="৮ম শ্রেণি">৮ম শ্রেণি</option>
+                              <option value="৯ম শ্রেণি">৯ম শ্রেণি</option>
+                              <option value="১০ম শ্রেণি">১০ম শ্রেণি</option>
+                            </select>
+                            {routineClassError && (
+                              <p className="text-red-500 text-[10px] font-bold mt-1">{routineClassError}</p>
+                            )}
+                          </div>
+
+                          {/* Day Dropdown Selection */}
+                          <div className="space-y-1">
+                            <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                              <span>দিন</span>
+                              <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={routineDayInput}
+                              onChange={(e) => {
+                                setRoutineDayInput(e.target.value);
+                                if (e.target.value) setRoutineDayError("");
+                              }}
+                              className={`w-full bg-slate-50 border ${routineDayError ? "border-red-400 focus:ring-red-500" : "border-indigo-100 focus:ring-indigo-500"} rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
+                              style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                            >
+                              <option value="">-- দিন সিলেক্ট করুন --</option>
+                              <option value="শনিবার">শনিবার</option>
+                              <option value="রবিবার">রবিবার</option>
+                              <option value="সোমবার">সোমবার</option>
+                              <option value="মঙ্গলবার">মঙ্গলবার</option>
+                              <option value="বুধবার">বুধবার</option>
+                              <option value="বৃহস্পতিবার">বৃহস্পতিবার</option>
+                            </select>
+                            {routineDayError && (
+                              <p className="text-red-500 text-[10px] font-bold mt-1">{routineDayError}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Dynamic Subject Rows */}
+                        <div className="space-y-4 pt-4 border-t border-indigo-50">
+                          <div className="flex justify-between items-center">
+                            <h5 className="text-xs font-black text-indigo-950">রুটিন বিষয়সমূহের তালিকা</h5>
+                            {!editingRoutineId && (
+                              <button
+                                type="button"
+                                onClick={handleAddSubjectRow}
+                                className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-1.5 px-3 rounded-lg text-xs flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <span>+ সাবজেক্ট যোগ করুন</span>
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="space-y-3">
+                            {routineSubjects.map((row, index) => (
+                              <div 
+                                key={index} 
+                                className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 space-y-3 relative md:space-y-0 md:grid md:grid-cols-4 md:gap-3 md:items-end"
+                              >
+                                {/* Subject Name */}
+                                <div className="space-y-1">
+                                  <label className="text-[11px] font-bold text-slate-600 block">বিষয় (Subject) *</label>
+                                  <input
+                                    type="text"
+                                    value={row.subject}
+                                    onChange={(e) => handleUpdateSubjectRowField(index, "subject", e.target.value)}
+                                    placeholder="এখানে সাবজেক্ট এর নাম লিখুন"
+                                    className={`w-full bg-white border ${
+                                      rowValidationErrors[index]?.subject ? "border-red-400 focus:ring-red-500" : "border-slate-200 focus:ring-indigo-500"
+                                    } rounded-lg px-2.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
+                                    style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                  />
+                                </div>
+
+                                {/* Time */}
+                                <div className="space-y-1">
+                                  <label className="text-[11px] font-bold text-slate-600 block">সময় ও ঘণ্টা *</label>
+                                  <input
+                                    type="text"
+                                    value={row.time}
+                                    onChange={(e) => handleUpdateSubjectRowField(index, "time", e.target.value)}
+                                    placeholder="যেমন: ০৯:০০ AM"
+                                    className={`w-full bg-white border ${
+                                      rowValidationErrors[index]?.time ? "border-red-400 focus:ring-red-500" : "border-slate-200 focus:ring-indigo-500"
+                                    } rounded-lg px-2.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
+                                    style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                  />
+                                </div>
+
+                                {/* Teacher */}
+                                <div className="space-y-1">
+                                  <label className="text-[11px] font-bold text-slate-600 block">দ্বায়িত্বপ্রাপ্ত শিক্ষক *</label>
+                                  <input
+                                    type="text"
+                                    value={row.teacherName}
+                                    onChange={(e) => handleUpdateSubjectRowField(index, "teacherName", e.target.value)}
+                                    placeholder="शिक्षকের নাম"
+                                    className={`w-full bg-white border ${
+                                      rowValidationErrors[index]?.teacherName ? "border-red-400 focus:ring-red-500" : "border-slate-200 focus:ring-indigo-500"
+                                    } rounded-lg px-2.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
+                                    style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                  />
+                                </div>
+
+                                {/* Room Number + Delete row */}
+                                <div className="flex gap-2 items-center">
+                                  <div className="space-y-1 flex-1">
+                                    <label className="text-[11px] font-bold text-slate-600 block">কক্ষ নম্বর (ঐচ্ছিক)</label>
+                                    <input
+                                      type="text"
+                                      value={row.room}
+                                      onChange={(e) => handleUpdateSubjectRowField(index, "room", e.target.value)}
+                                      placeholder="যেমন: ১০১"
+                                      className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                      style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                    />
+                                  </div>
+
+                                  {routineSubjects.length > 1 && !editingRoutineId && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveSubjectRow(index)}
+                                      className="p-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-lg mt-5 cursor-pointer transition-colors"
+                                      title="বাদ দিন"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Form action buttons */}
+                        <div className="flex justify-end gap-2 pt-2 border-t border-indigo-50">
+                          <button
+                            type="button"
+                            onClick={handleCancelEditRoutine}
+                            className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 px-5 rounded-xl text-xs transition-all cursor-pointer"
+                            style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                          >
+                            বাতিল করুন
                           </button>
-                          <button onClick={() => handleDelete(item.id, "routines")} className="p-1.5 text-red-600 hover:bg-red-50 rounded">
-                            <Trash2 className="h-4 w-4" />
+                          <button
+                            type="submit"
+                            className="bg-indigo-700 hover:bg-indigo-850 text-white font-bold py-2.5 px-6 rounded-xl text-xs shadow-sm transition-all cursor-pointer"
+                            style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                          >
+                            {editingRoutineId ? "আপডেট করুন" : "রুটিন প্রকাশ করুন"}
                           </button>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </form>
+                    </div>
+                  )}
+
+                  {/* Class Routines Table List */}
+                  <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                    <div className="bg-slate-50 px-5 py-4 border-b border-gray-100 flex justify-between items-center">
+                      <h4 
+                        className="text-xs font-bold text-slate-700"
+                        style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                      >
+                        মোট ক্লাস রুটিন শিডিউল তালিকা ({routines.filter(r => r.type === "class").length} টি)
+                      </h4>
+                    </div>
+
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-slate-50/50 text-slate-700 font-bold border-b border-gray-100">
+                          <th className="p-4" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>শ্রেণী</th>
+                          <th className="p-4" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>বিষয়</th>
+                          <th className="p-4" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>সময় ও ঘণ্টা</th>
+                          <th className="p-4" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>দিন</th>
+                          <th className="p-4" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>শিক্ষক</th>
+                          <th className="p-4" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>কক্ষ</th>
+                          <th className="p-4 text-center" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>অ্যাকশন</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {routines
+                          .filter((item) => item.type === "class")
+                          .map((item) => (
+                            <tr key={item.id} className="hover:bg-slate-50/50">
+                              <td className="p-4 font-bold text-slate-800" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.className}</td>
+                              <td className="p-4 text-slate-800" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.subject}</td>
+                              <td className="p-4 font-mono font-bold text-slate-600">{item.time}</td>
+                              <td className="p-4 font-bold text-slate-700" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.dayOrDate}</td>
+                              <td className="p-4 font-bold text-slate-700" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.teacherName || "অনির্দিষ্ট"}</td>
+                              <td className="p-4 font-bold text-slate-500" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.room}</td>
+                              <td className="p-4 text-center">
+                                <div className="flex justify-center space-x-2">
+                                  <button
+                                    onClick={() => handleEditRoutineLocal(item)}
+                                    className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded cursor-pointer"
+                                    title="সম্পাদনা করুন"
+                                  >
+                                    <Edit3 className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(item.id, "routines")}
+                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded cursor-pointer"
+                                    title="মুছে ফেলুন"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        {routines.filter((item) => item.type === "class").length === 0 && (
+                          <tr>
+                            <td colSpan={7} className="p-8 text-center text-gray-400 font-bold" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>
+                              কোনো ক্লাস রুটিন তথ্য পাওয়া যায়নি।
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {activeRoutineSubMenu === "exam_routine" && (
+                <div className="space-y-6">
+                  {/* Initially Closed Form Button */}
+                  {!isExamFormOpen && !editingExamId && (
+                    <div className="flex justify-start">
+                      <button
+                        onClick={() => {
+                          setIsExamFormOpen(true);
+                          setExamSubjects([{ date: "", subject: "", time: "", totalMarks: "", subjectCode: "" }]);
+                          setRowExamValidationErrors([]);
+                        }}
+                        className="bg-indigo-700 hover:bg-indigo-850 text-white font-bold py-2.5 px-6 rounded-xl text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                        style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                      >
+                        <Calendar className="h-4.5 w-4.5" />
+                        <span>পরীক্ষা রুটিন যোগ করুন</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Embedded Exam Form Section */}
+                  {(isExamFormOpen || editingExamId) && (
+                    <div 
+                      id="exam-routine-form-section" 
+                      className="bg-white border border-indigo-100 rounded-2xl shadow-xs overflow-hidden p-6 space-y-4"
+                    >
+                      <div className="flex items-center justify-between border-b border-indigo-50 pb-3">
+                        <h4 
+                          className="text-base font-black text-indigo-950 flex items-center gap-2"
+                          style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                        >
+                          <Calendar className="h-5 w-5 text-indigo-600" />
+                          <span>{editingExamId ? "পরীক্ষা রুটিন আপডেট ও সংশোধন করুন" : "নতুন পরীক্ষা রুটিন তৈরি করুন"}</span>
+                        </h4>
+                        <button
+                          onClick={handleCancelEditExam}
+                          className="text-xs font-bold text-red-600 hover:text-red-800 flex items-center gap-1 cursor-pointer"
+                          style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                        >
+                          <X className="h-4 w-4" />
+                          <span>ফর্ম বন্ধ করুন</span>
+                        </button>
+                      </div>
+
+                      {examSaveSuccess && (
+                        <div className="bg-emerald-50 border border-emerald-150 text-emerald-800 text-xs font-bold px-4 py-3 rounded-xl">
+                          ✓ পরীক্ষা রুটিন সফলভাবে সংরক্ষিত হয়েছে!
+                        </div>
+                      )}
+
+                      <form onSubmit={handleSaveExamRoutine} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Class Dropdown Selection */}
+                          <div className="space-y-1">
+                            <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                              <span>ক্লাস</span>
+                              <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={examClassInput}
+                              onChange={(e) => {
+                                setExamClassInput(e.target.value);
+                                if (e.target.value) setExamClassError("");
+                              }}
+                              className={`w-full bg-slate-50 border ${examClassError ? "border-red-400 focus:ring-red-500" : "border-indigo-100 focus:ring-indigo-500"} rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
+                              style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                            >
+                              <option value="">-- ক্লাস সিলেক্ট করুন --</option>
+                              <option value="শিশু শ্রেণি">শিশু শ্রেণি</option>
+                              <option value="১ম শ্রেণি">১ম শ্রেণি</option>
+                              <option value="২য় শ্রেণি">২য় শ্রেণি</option>
+                              <option value="৩য় শ্রেণি">৩য় শ্রেণি</option>
+                              <option value="৪র্থ শ্রেণি">৪র্থ শ্রেণি</option>
+                              <option value="৫ম শ্রেণি">৫ম শ্রেণি</option>
+                              <option value="৬ষ্ঠ শ্রেণি">৬ষ্ঠ শ্রেণি</option>
+                              <option value="৭ম শ্রেণি">৭ম শ্রেণি</option>
+                              <option value="৮ম শ্রেণি">৮ম শ্রেণি</option>
+                              <option value="৯ম শ্রেণি">৯ম শ্রেণি</option>
+                              <option value="১০ম শ্রেণি">১০ম শ্রেণি</option>
+                            </select>
+                            {examClassError && (
+                              <p className="text-red-500 text-[10px] font-bold mt-1">{examClassError}</p>
+                            )}
+                          </div>
+
+                          {/* Exam Name */}
+                          <div className="space-y-1">
+                            <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                              <span>পরীক্ষার নাম</span>
+                              <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={examNameInput}
+                              onChange={(e) => {
+                                setExamNameInput(e.target.value);
+                                if (e.target.value) setExamNameError("");
+                              }}
+                              placeholder="যেমন: বার্ষিক পরীক্ষা ২০২৬, অর্ধবার্ষিক পরীক্ষা"
+                              className={`w-full bg-slate-50 border ${examNameError ? "border-red-400 focus:ring-red-500" : "border-indigo-100 focus:ring-indigo-500"} rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
+                              style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                            />
+                            {examNameError && (
+                              <p className="text-red-500 text-[10px] font-bold mt-1">{examNameError}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Dynamic Subject Rows */}
+                        <div className="space-y-4 pt-4 border-t border-indigo-50">
+                          <div className="flex justify-between items-center">
+                            <h5 className="text-xs font-black text-indigo-950">পরীক্ষার বিষয় ও সময়সূচী</h5>
+                            <button
+                              type="button"
+                              onClick={handleAddExamSubjectRow}
+                              className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-1.5 px-3 rounded-lg text-xs flex items-center gap-1 cursor-pointer transition-colors"
+                            >
+                              <span>+ বিষয় যোগ করুন</span>
+                            </button>
+                          </div>
+
+                          <div className="space-y-3">
+                            {examSubjects.map((row, index) => (
+                              <div 
+                                key={index} 
+                                className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 space-y-3 relative md:space-y-0 md:grid md:grid-cols-5 md:gap-3 md:items-end"
+                              >
+                                {/* Date */}
+                                <div className="space-y-1">
+                                  <label className="text-[11px] font-bold text-slate-600 block">তারিখ *</label>
+                                  <input
+                                    type="text"
+                                    value={row.date}
+                                    onChange={(e) => handleUpdateExamSubjectRowField(index, "date", e.target.value)}
+                                    placeholder="যেমন: ১৫/০৭/২০২৬"
+                                    className={`w-full bg-white border ${
+                                      rowExamValidationErrors[index]?.date ? "border-red-400 focus:ring-red-500" : "border-slate-200 focus:ring-indigo-500"
+                                    } rounded-lg px-2.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
+                                    style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                  />
+                                </div>
+
+                                {/* Subject Name */}
+                                <div className="space-y-1">
+                                  <label className="text-[11px] font-bold text-slate-600 block">বিষয় *</label>
+                                  <input
+                                    type="text"
+                                    value={row.subject}
+                                    onChange={(e) => handleUpdateExamSubjectRowField(index, "subject", e.target.value)}
+                                    placeholder="যেমন: কুরআন মাজীদ"
+                                    className={`w-full bg-white border ${
+                                      rowExamValidationErrors[index]?.subject ? "border-red-400 focus:ring-red-500" : "border-slate-200 focus:ring-indigo-500"
+                                    } rounded-lg px-2.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
+                                    style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                  />
+                                </div>
+
+                                {/* Time */}
+                                <div className="space-y-1">
+                                  <label className="text-[11px] font-bold text-slate-600 block">সময় *</label>
+                                  <input
+                                    type="text"
+                                    value={row.time}
+                                    onChange={(e) => handleUpdateExamSubjectRowField(index, "time", e.target.value)}
+                                    placeholder="যেমন: ১০:০০ - ০১:০০"
+                                    className={`w-full bg-white border ${
+                                      rowExamValidationErrors[index]?.time ? "border-red-400 focus:ring-red-500" : "border-slate-200 focus:ring-indigo-500"
+                                    } rounded-lg px-2.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
+                                    style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                  />
+                                </div>
+
+                                {/* Total Marks */}
+                                <div className="space-y-1">
+                                  <label className="text-[11px] font-bold text-slate-600 block">নাম্বার *</label>
+                                  <input
+                                    type="text"
+                                    value={row.totalMarks}
+                                    onChange={(e) => handleUpdateExamSubjectRowField(index, "totalMarks", e.target.value)}
+                                    placeholder="যেমন: ১০০"
+                                    className={`w-full bg-white border ${
+                                      rowExamValidationErrors[index]?.totalMarks ? "border-red-400 focus:ring-red-500" : "border-slate-200 focus:ring-indigo-500"
+                                    } rounded-lg px-2.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
+                                    style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                  />
+                                </div>
+
+                                {/* Subject Code */}
+                                <div className="flex gap-2 items-center">
+                                  <div className="space-y-1 flex-1">
+                                    <label className="text-[11px] font-bold text-slate-600 block">বিষয় কোড *</label>
+                                    <input
+                                      type="text"
+                                      value={row.subjectCode}
+                                      onChange={(e) => handleUpdateExamSubjectRowField(index, "subjectCode", e.target.value)}
+                                      placeholder="যেমন: ১০১"
+                                      className={`w-full bg-white border ${
+                                        rowExamValidationErrors[index]?.subjectCode ? "border-red-400 focus:ring-red-500" : "border-slate-200 focus:ring-indigo-500"
+                                      } rounded-lg px-2.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
+                                      style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                    />
+                                  </div>
+
+                                  {examSubjects.length > 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveExamSubjectRow(index)}
+                                      className="p-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-lg mt-5 cursor-pointer transition-colors"
+                                      title="বাদ দিন"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Guidelines (5 lines) */}
+                        <div className="space-y-3 pt-4 border-t border-indigo-50">
+                          <h5 className="text-xs font-black text-indigo-950">পরীক্ষার্থীদের সাধারণ নির্দেশনা (সর্বমোট ৫টি বাক্য)</h5>
+                          <div className="grid grid-cols-1 gap-2">
+                            {examGuidelinesInput.map((gl, i) => (
+                              <div key={i} className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-indigo-900 w-6">{i + 1}.</span>
+                                <input
+                                  type="text"
+                                  value={gl}
+                                  onChange={(e) => handleUpdateExamGuideline(i, e.target.value)}
+                                  placeholder={`নির্দেশনা ${i + 1}`}
+                                  className="flex-1 bg-slate-50 border border-indigo-100 rounded-lg px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Form action buttons */}
+                        <div className="flex justify-end gap-2 pt-4 border-t border-indigo-50">
+                          <button
+                            type="button"
+                            onClick={handleCancelEditExam}
+                            className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 px-5 rounded-xl text-xs transition-all cursor-pointer"
+                            style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                          >
+                            বাতিল করুন
+                          </button>
+                          <button
+                            type="submit"
+                            className="bg-indigo-700 hover:bg-indigo-850 text-white font-bold py-2.5 px-6 rounded-xl text-xs shadow-sm transition-all cursor-pointer"
+                            style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                          >
+                            {editingExamId ? "আপডেট করুন" : "পরীক্ষা রুটিন প্রকাশ করুন"}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                  {/* Exam Routines Table List */}
+                  <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                    <div className="bg-slate-50 px-5 py-4 border-b border-gray-100 flex justify-between items-center">
+                      <h4 
+                        className="text-xs font-bold text-slate-700"
+                        style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                      >
+                        মোট পরীক্ষা রুটিন শিডিউল তালিকা ({routines.filter(r => r.type === "exam").length} টি)
+                      </h4>
+                    </div>
+
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-slate-50/50 text-slate-700 font-bold border-b border-gray-100">
+                          <th className="p-4" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>শ্রেণী</th>
+                          <th className="p-4" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>পরীক্ষার নাম</th>
+                          <th className="p-4 text-center" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>মোট বিষয়</th>
+                          <th className="p-4 text-center" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>অ্যাকশন</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {routines
+                          .filter((item) => item.type === "exam")
+                          .map((item) => (
+                            <tr key={item.id} className="hover:bg-slate-50/50">
+                              <td className="p-4 font-bold text-slate-800" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.className}</td>
+                              <td className="p-4 text-indigo-900 font-black" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.examName}</td>
+                              <td className="p-4 text-center font-bold text-slate-600">{(item.subjects || []).length} টি বিষয়</td>
+                              <td className="p-4 text-center">
+                                <div className="flex justify-center space-x-2">
+                                  <button
+                                    onClick={() => handleEditExamLocal(item)}
+                                    className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded cursor-pointer"
+                                    title="সম্পাদনা করুন"
+                                  >
+                                    <Edit3 className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(item.id, "routines")}
+                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded cursor-pointer"
+                                    title="মুছে ফেলুন"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        {routines.filter((item) => item.type === "exam").length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="p-8 text-center text-gray-400 font-bold" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>
+                              কোনো পরীক্ষা রুটিন তথ্য পাওয়া যায়নি।
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1933,6 +2912,307 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                               </button>
                             </div>
                           ))}
+                        </div>
+                      );
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 9b. Public Notices (Notice Public) */}
+          {activeAdminSubTab === "public_notices" && (
+            <div className="space-y-6">
+              {/* Header with Add Notice toggle button */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-emerald-50/40 border border-emerald-100 rounded-xl p-5 gap-4">
+                <div>
+                  <h3 className="text-base font-bold text-emerald-950 font-serif">মাদ্রাসার পাবলিক নোটিশসমূহ</h3>
+                  <p className="text-xs text-gray-500">মাদ্রাসার মূল ওয়েবসাইটের নোটিশ কর্ণার পেজের নোটিশ ও জরুরি আপডেটগুলো পরিচালনা করুন।</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsPublicNoticeFormOpen(!isPublicNoticeFormOpen);
+                    if (isPublicNoticeFormOpen) {
+                      setPublicNoticeTitle("");
+                      setPublicNoticeDescription("");
+                      setPublicNoticeTitleError("");
+                      setPublicNoticeDescriptionError("");
+                      setEditingPublicNoticeId(null);
+                    }
+                  }}
+                  className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-sm select-none ${
+                    isPublicNoticeFormOpen
+                      ? "bg-red-50 text-red-700 hover:bg-red-100 border border-red-200"
+                      : "bg-emerald-800 text-white hover:bg-emerald-950 animate-button-pulse-glow"
+                  }`}
+                >
+                  {isPublicNoticeFormOpen ? (
+                    <>
+                      <X className="h-4 w-4" />
+                      <span>ফর্ম বন্ধ করুন</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4" />
+                      <span>নোটিশ যোগ করুন</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Form to Add or Edit Public Notice with dynamic visibility and animation */}
+              <AnimatePresence initial={false}>
+                {isPublicNoticeFormOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                  >
+                    <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm space-y-4 font-alinur mt-2">
+                      <h4 className="text-base font-bold text-emerald-950 font-serif">
+                        {editingPublicNoticeId ? "নোটিশ তথ্য আংশিক বা সম্পূর্ণ সংশোধন করুন" : "নতুন পাবলিক নোটিশ প্রকাশ করুন"}
+                      </h4>
+                      <p className="text-xs text-gray-500">
+                        এখান থেকে প্রকাশিত নোটিশ সরাসরি মাদ্রাসার মূল ওয়েবসাইটের "নোটিশ কর্ণার" পেজে রিয়েল-টাইমে প্রদর্শিত হবে।
+                      </p>
+
+                      <form
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          
+                          let hasError = false;
+                          if (!publicNoticeTitle.trim()) {
+                            setPublicNoticeTitleError("আপনি এই ঘরটি পূরণ করেননি");
+                            hasError = true;
+                          } else {
+                            setPublicNoticeTitleError("");
+                          }
+
+                          if (!publicNoticeDescription.trim()) {
+                            setPublicNoticeDescriptionError("আপনি এই ঘরটি পূরণ করেননি");
+                            hasError = true;
+                          } else {
+                            setPublicNoticeDescriptionError("");
+                          }
+
+                          if (hasError) return;
+
+                          setIsPublicNoticeUploading(true);
+                          try {
+                            if (editingPublicNoticeId) {
+                              await updateDoc(doc(db, "notices", editingPublicNoticeId), {
+                                title: publicNoticeTitle,
+                                description: publicNoticeDescription,
+                                isEdited: true
+                              });
+                              alert("নোটিশটি সফলভাবে আপডেট করা হয়েছে!");
+                            } else {
+                              await addDoc(collection(db, "notices"), {
+                                title: publicNoticeTitle,
+                                description: publicNoticeDescription,
+                                timestamp: serverTimestamp()
+                              });
+                              alert("নতুন নোটিশটি সফলভাবে প্রকাশ করা হয়েছে!");
+                            }
+                            setPublicNoticeTitle("");
+                            setPublicNoticeDescription("");
+                            setPublicNoticeTitleError("");
+                            setPublicNoticeDescriptionError("");
+                            setEditingPublicNoticeId(null);
+                            setIsPublicNoticeFormOpen(false);
+                          } catch (err) {
+                            console.error("Error saving public notice:", err);
+                            alert("দুঃখিত, নোটিশ সংরক্ষণ করা যায়নি।");
+                          } finally {
+                            setIsPublicNoticeUploading(false);
+                          }
+                        }}
+                        className="space-y-4"
+                      >
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-gray-700 block">নোটিশ টাইটেল (Title)</label>
+                          <input
+                            type="text"
+                            value={publicNoticeTitle}
+                            onChange={(e) => {
+                              setPublicNoticeTitle(e.target.value);
+                              if (e.target.value.trim()) {
+                                setPublicNoticeTitleError("");
+                              }
+                            }}
+                            placeholder="যেমন: দাখিল পরীক্ষা ২০২৬ এর প্রবেশপত্র বিতরণ সংক্রান্ত নোটিশ"
+                            className={`w-full px-4 py-2.5 rounded-lg border text-xs focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-emerald-950 ${
+                              publicNoticeTitleError ? "border-red-500 ring-1 ring-red-500" : "border-gray-300"
+                            }`}
+                          />
+                          {publicNoticeTitleError && (
+                            <p className="text-[11px] text-red-500 font-bold mt-1">
+                              {publicNoticeTitleError}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-gray-700 block">নোটিশ বিস্তারিত বিবরণ (Body Description)</label>
+                          <textarea
+                            rows={5}
+                            value={publicNoticeDescription}
+                            onChange={(e) => {
+                              setPublicNoticeDescription(e.target.value);
+                              if (e.target.value.trim()) {
+                                setPublicNoticeDescriptionError("");
+                              }
+                            }}
+                            placeholder="এখানে নোটিশের বিস্তারিত বিবরণ অনুচ্ছেদ আকারে লিখুন..."
+                            className={`w-full px-4 py-2.5 rounded-lg border text-xs focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-emerald-950 ${
+                              publicNoticeDescriptionError ? "border-red-500 ring-1 ring-red-500" : "border-gray-300"
+                            }`}
+                          />
+                          {publicNoticeDescriptionError && (
+                            <p className="text-[11px] text-red-500 font-bold mt-1">
+                              {publicNoticeDescriptionError}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex gap-3">
+                          <button
+                            type="submit"
+                            disabled={isPublicNoticeUploading}
+                            className="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-5 py-2.5 rounded-lg text-xs shadow-sm select-none transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                          >
+                            <Plus className="h-4 w-4" />
+                            <span>{editingPublicNoticeId ? "নোটিশ আপডেট সম্পন্ন করুন" : "নোটিশ প্রকাশ করুন"}</span>
+                          </button>
+
+                          {editingPublicNoticeId && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPublicNoticeTitle("");
+                                setPublicNoticeDescription("");
+                                setPublicNoticeTitleError("");
+                                setPublicNoticeDescriptionError("");
+                                setEditingPublicNoticeId(null);
+                                setIsPublicNoticeFormOpen(false);
+                              }}
+                              className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-5 py-2.5 rounded-lg text-xs transition-all cursor-pointer"
+                            >
+                              সংশোধন বাতিল করুন
+                            </button>
+                          )}
+                        </div>
+                      </form>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Published Public Notices List */}
+              <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm space-y-4 font-alinur">
+                <h4 className="text-base font-bold text-emerald-950 font-serif">ইতিপূর্বে প্রকাশিত পাবলিক নোটিশ সমূহ</h4>
+                <div className="space-y-3">
+                  <StreamBuilder<any>
+                    stream={query(collection(db, "notices"), orderBy("timestamp", "desc"))}
+                    builder={(notices, loading, error) => {
+                      if (loading) return <p className="text-xs text-emerald-800 animate-pulse font-bold">নোটিশ তালিকা লোড হচ্ছে...</p>;
+                      if (error) return <p className="text-xs text-red-500 font-bold">নোটিশ লোড করতে সমস্যা হয়েছে</p>;
+                      if (!notices || notices.length === 0) {
+                        return (
+                          <div className="text-center py-8 text-gray-400 border border-dashed rounded-lg text-xs font-bold">
+                            কোনো পাবলিক নোটিশ পাওয়া যায়নি।
+                          </div>
+                        );
+                      }
+                      
+                      const toBanglaNum = (str: string | number): string => {
+                        const digits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+                        return str.toString().replace(/\d/g, (d) => digits[parseInt(d)]);
+                      };
+
+                      const formatBanglaDate = (timestamp: any) => {
+                        if (!timestamp) return "";
+                        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+                        const day = date.getDate();
+                        const month = date.getMonth() + 1;
+                        const year = date.getFullYear();
+                        return `${toBanglaNum(day)}/${toBanglaNum(month)}/${toBanglaNum(year)}`;
+                      };
+
+                      return (
+                        <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                          <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                            <thead>
+                              <tr className="bg-emerald-50 text-emerald-950 font-bold border-b border-gray-100">
+                                <th className="p-3">প্রকাশের তারিখ</th>
+                                <th className="p-3">নোটিশ টাইটেল</th>
+                                <th className="p-3">অবস্থা (Status)</th>
+                                <th className="p-3 text-center">অ্যাকশন</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                              {notices.map((item) => (
+                                <tr key={item.id} className="hover:bg-emerald-50/10">
+                                  <td className="p-3 text-gray-500 font-mono">
+                                    {formatBanglaDate(item.timestamp)}
+                                  </td>
+                                  <td className="p-3 font-bold text-gray-800 max-w-[200px] truncate">
+                                    {item.title}
+                                  </td>
+                                  <td className="p-3">
+                                    {item.isEdited ? (
+                                      <span className="text-red-600 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full font-bold text-[10px]">
+                                        সংশোধিত
+                                      </span>
+                                    ) : (
+                                      <span className="text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full font-bold text-[10px]">
+                                        মূল সংস্করণ
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <div className="flex justify-center space-x-2">
+                                      <button
+                                        onClick={() => {
+                                          setPublicNoticeTitle(item.title || "");
+                                          setPublicNoticeDescription(item.description || "");
+                                          setPublicNoticeTitleError("");
+                                          setPublicNoticeDescriptionError("");
+                                          setEditingPublicNoticeId(item.id);
+                                          setIsPublicNoticeFormOpen(true);
+                                          window.scrollTo({ top: 300, behavior: "smooth" });
+                                        }}
+                                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded cursor-pointer"
+                                        title="সম্পাদনা করুন"
+                                      >
+                                        <Edit3 className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        onClick={async () => {
+                                          if (window.confirm("আপনি কি নিশ্চিতভাবে এই পাবলিক নোটিশটি মুছতে চান?")) {
+                                            try {
+                                              await deleteDoc(doc(db, "notices", item.id));
+                                              alert("নোটিশটি সম্পূর্ণ মুছে ফেলা হয়েছে।");
+                                            } catch (err) {
+                                              console.error("Error deleting public notice:", err);
+                                            }
+                                          }
+                                        }}
+                                        className="p-1.5 text-red-600 hover:bg-red-50 rounded cursor-pointer"
+                                        title="মুছে ফেলুন"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       );
                     }}

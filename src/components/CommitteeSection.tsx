@@ -21,11 +21,11 @@ export default function CommitteeSection({ onSelectMember }: CommitteeSectionPro
     <div id="committee-section" className="space-y-12 py-8 w-full px-4 max-w-6xl mx-auto animate-fade-in font-alinur">
       {/* Title Header */}
       <div className="text-center w-full space-y-2 font-alinur">
-        <h2 className="text-2xl sm:text-4xl font-black text-emerald-900 font-alinur tracking-tight">
-          পরিচালনা কমিটির সম্মানিত সদস্যবৃন্দ
+        <h2 className="text-2xl sm:text-4xl font-black text-emerald-900 tracking-tight" style={{ fontFamily: "Alinur Tatsama, sans-serif" }}>
+          মাদ্রাসা পরিচালনা কমিটির সদস্যবৃন্দ
         </h2>
-        <p className="text-sm sm:text-base text-gray-500 font-alinur font-medium">
-          সুফিয়া নূরিয়া দাখিল মাদ্রাসার সার্বিক উন্নয়ন ও সুষ্ঠু পরিচালনার দায়িত্বপ্রাপ্ত শুভাকাঙ্ক্ষী পর্ষদ
+        <p className="text-sm sm:text-base text-gray-500 font-medium" style={{ fontFamily: "Alinur Tatsama, sans-serif" }}>
+          মাদ্রাসার সুষ্ঠু ও সুশৃঙ্খল পরিচালনায় নিয়োজিত পরিচালনা কমিটির সম্মানিত সদস্যবৃন্দ
         </p>
         <div className="h-1.5 w-24 bg-amber-500 mx-auto rounded-full mt-3"></div>
       </div>
@@ -70,7 +70,10 @@ export default function CommitteeSection({ onSelectMember }: CommitteeSectionPro
                 {president && (
                   <div className="bg-white rounded-2xl border border-emerald-100/60 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col items-center overflow-hidden group">
                     {/* Ribbon Header banner */}
-                    <div className="w-full bg-gradient-to-r from-amber-500 to-orange-600 p-3.5 text-center text-white font-extrabold text-sm sm:text-base border-b-4 border-amber-600">
+                    <div 
+                      className="w-full bg-gradient-to-r from-amber-500 to-orange-600 p-3.5 text-center text-white font-extrabold text-sm sm:text-base border-b-4 border-amber-600 font-alinur"
+                      style={{ fontFamily: "Alinur Tatsama, sans-serif" }}
+                    >
                       {president.role}
                     </div>
 
@@ -112,7 +115,10 @@ export default function CommitteeSection({ onSelectMember }: CommitteeSectionPro
                 {superMember && (
                   <div className="bg-white rounded-2xl border border-emerald-100/60 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col items-center overflow-hidden group">
                     {/* Ribbon Header banner */}
-                    <div className="w-full bg-gradient-to-r from-emerald-800 to-emerald-950 p-3.5 text-center text-white font-extrabold text-sm sm:text-base border-b-4 border-amber-500">
+                    <div 
+                      className="w-full bg-gradient-to-r from-emerald-800 to-emerald-950 p-3.5 text-center text-white font-extrabold text-sm sm:text-base border-b-4 border-amber-500 font-alinur"
+                      style={{ fontFamily: "Alinur Tatsama, sans-serif" }}
+                    >
                       {superMember.role}
                     </div>
 
@@ -165,11 +171,14 @@ export default function CommitteeSection({ onSelectMember }: CommitteeSectionPro
                         className="bg-white rounded-2xl border border-gray-100 shadow-md hover:shadow-lg hover:border-emerald-100/80 transition-all duration-300 flex flex-col items-center overflow-hidden group"
                       >
                         {/* Colorful Top Ribbon Header banner */}
-                        <div className={`w-full p-2.5 text-center text-white font-extrabold text-xs sm:text-sm border-b-2 ${
-                          idx % 2 === 0 
-                            ? "bg-gradient-to-r from-emerald-700 to-emerald-900 border-amber-500" 
-                            : "bg-gradient-to-r from-amber-600 to-orange-700 border-emerald-600"
-                        }`}>
+                        <div 
+                          className={`w-full p-2.5 text-center text-white font-extrabold text-xs sm:text-sm border-b-2 font-alinur ${
+                            idx % 2 === 0 
+                              ? "bg-gradient-to-r from-emerald-700 to-emerald-900 border-amber-500" 
+                              : "bg-gradient-to-r from-amber-600 to-orange-700 border-emerald-600"
+                          }`}
+                          style={{ fontFamily: "Alinur Tatsama, sans-serif" }}
+                        >
                           {member.role || "সদস্য"}
                         </div>
 

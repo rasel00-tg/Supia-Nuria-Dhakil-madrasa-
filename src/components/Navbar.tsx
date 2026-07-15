@@ -52,7 +52,7 @@ export default function Navbar({ activeTab, setActiveTab, user, onLogout, logoUr
       label: "কর্নার", 
       icon: Info, 
       submenus: [
-        { label: "নোটিশ কর্নার", action: () => {} },
+        { label: "নোটিশ কর্নার", action: () => { setActiveTab("notice_corner"); setIsOpen(false); } },
         { label: "ডাউনলোড কর্নার", action: () => {} }
       ] 
     },

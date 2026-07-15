@@ -64,6 +64,19 @@ export interface Routine {
   dayOrDate: string; // "Sunday", "2026-07-15", etc.
   room: string;
   teacherName: string;
+  isEdited?: boolean;
+  editedAt?: string;
+  totalMarks?: string;
+  subjectCode?: string;
+  examName?: string;
+  guidelines?: string[];
+  subjects?: {
+    date: string;
+    subject: string;
+    time: string;
+    totalMarks: string;
+    subjectCode: string;
+  }[];
 }
 
 export interface Result {
@@ -94,3 +107,12 @@ export interface ContactMessage {
   message: string;
   date: string;
 }
+
+export interface Notice {
+  id: string;
+  title: string;
+  description: string;
+  timestamp: any; // Firestore Timestamp
+  isEdited?: boolean;
+}
+

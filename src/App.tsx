@@ -15,6 +15,7 @@ import StaffSection from "./components/StaffSection";
 import StudentsSection from "./components/StudentsSection";
 import CommitteeMemberDetail from "./components/CommitteeMemberDetail";
 import GlobalLoadingPopup from "./components/GlobalLoadingPopup";
+import NoticeSection from "./components/NoticeSection";
 import { seedDatabaseIfEmpty } from "./lib/dbSeeder";
 import { GraduationCap, BookOpen, Clock, Heart, Award } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -108,12 +109,12 @@ export default function App() {
     setActiveTab("home");
   };
 
-  // Back button navigation control for "sodosso_form", "staff", "committee" and "committee_member_detail" tabs
+  // Back button navigation control for "teachers", "sodosso_form", "staff", "committee", "notice_corner" and "committee_member_detail" tabs
   // Emulates PopScope/WillPopScope in a React SPA.
   // When activeTab changes, we push a state into history.
   // When the user presses the hardware/software back button, we intercept it.
   useEffect(() => {
-    if (activeTab === "sodosso_form" || activeTab === "staff" || activeTab === "committee" || activeTab === "committee_member_detail") {
+    if (activeTab === "teachers" || activeTab === "sodosso_form" || activeTab === "staff" || activeTab === "committee" || activeTab === "committee_member_detail" || activeTab === "notice_corner" || activeTab === "routine") {
       // Push history state to enable a backward pop action
       window.history.pushState({ prevTab: activeTab }, "");
 
@@ -199,6 +200,7 @@ export default function App() {
             {activeTab === "sodosso_form" && <SodossoFormSection logoUrl={logoUrl} />}
             {activeTab === "staff" && <StaffSection logoUrl={logoUrl} />}
             {activeTab === "students" && <StudentsSection logoUrl={logoUrl} />}
+            {activeTab === "notice_corner" && <NoticeSection />}
             {activeTab === "login" && (
               <LoginSection onLoginSuccess={handleLoginSuccess} />
             )}
@@ -210,7 +212,7 @@ export default function App() {
       </main>
 
       {/* Sticky Bottom/Footer Section */}
-      {activeTab !== "committee" && activeTab !== "committee_member_detail" && activeTab !== "dashboard" && activeTab !== "sodosso_form" && activeTab !== "staff" && activeTab !== "students" && activeTab !== "honored" && user?.role !== "admin" && (
+      {activeTab !== "teachers" && activeTab !== "committee" && activeTab !== "committee_member_detail" && activeTab !== "dashboard" && activeTab !== "sodosso_form" && activeTab !== "staff" && activeTab !== "students" && activeTab !== "honored" && activeTab !== "routine" && user?.role !== "admin" && (
         <FooterStreamBuilder
           stream={settingsCollectionQuery}
           builder={(settingsList) => {
@@ -221,20 +223,21 @@ export default function App() {
             const isImranUploaded = footerSettings.isImranUploaded || false;
 
             return (
-              <footer id="main-footer" className="bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 text-white border-t-8 border-amber-500 py-16 px-4 sm:px-6 lg:px-8 mt-12 print:hidden font-alinur relative overflow-hidden">
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#047857_1px,transparent_1px),linear-gradient(to_bottom,#047857_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-10 pointer-events-none"></div>
+              <footer id="main-footer" className="bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 text-white border-t-4 border-amber-500 py-3 px-4 sm:px-6 lg:px-8 mt-4 print:hidden font-alinur relative overflow-hidden leading-[1.1]">
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#047857_1px,transparent_1px),linear-gradient(to_bottom,#047857_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-5 pointer-events-none"></div>
 
                 <div className="max-w-7xl mx-auto relative z-10">
-                  {/* Branding & Quote Zone */}
-                  <div className="flex flex-col items-center text-center space-y-4 mb-12">
-                    <div className="relative p-1 bg-gradient-to-tr from-amber-400 to-emerald-600 rounded-full shadow-lg">
+                  {/* Branding Hub (Propeller Center) */}
+                  <div className="flex flex-col items-center text-center space-y-1 mb-3">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-amber-500/20 blur-xl rounded-full animate-pulse"></div>
                       {logoUrl ? (
-                        <img src={logoUrl} alt="Logo" className="h-16 w-16 object-contain rounded-full bg-white p-0.5" />
+                        <img src={logoUrl} alt="Logo" className="h-10 w-10 object-contain rounded-full relative z-10" />
                       ) : (
                         <img 
                           src="/photo/logo.png" 
                           alt="Logo" 
-                          className="h-16 w-16 object-contain rounded-full bg-white p-0.5"
+                          className="h-10 w-10 object-contain rounded-full relative z-10"
                           onError={(e) => {
                             e.currentTarget.onerror = null;
                             e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";
@@ -242,33 +245,29 @@ export default function App() {
                         />
                       )}
                     </div>
-                    <h3 className="font-extrabold text-2xl sm:text-3xl text-amber-400 tracking-wide">
+                    <h3 className="font-extrabold text-lg sm:text-xl text-amber-400 tracking-wide leading-none">
                       সুফিয়া নূরীয়া দাখিল মাদ্রাসা
                     </h3>
-                    <p className="text-sm sm:text-base text-emerald-100 max-w-4xl mx-auto leading-relaxed text-justify sm:text-center px-4 font-medium">
-                      ১৯৭৫ সালে প্রতিষ্ঠিত আমাদের নতুন পল্লান পাড়ার অন্যতম প্রাচীন, ঐতিহ্যবাহী ও সুনামধন্য দ্বীনি শিক্ষাপ্রতিষ্ঠান। প্রতিষ্ঠালগ্ন থেকেই কুরআন-সুন্নাহর আলোকে নৈতিক, আদর্শবান, সুশিক্ষিত ও দক্ষ প্রজন্ম গড়ে তোলার লক্ষ্যে আমরা নিরলসভাবে কাজ করে যাচ্ছি। দ্বীনি শিক্ষার পাশাপাশি উন্নত চরিত্র, মানবিক মূল্যবোধ এবং দেশপ্রেমে উদ্বুদ্ধ আদর্শ সুনাগরিক তৈরি করাই আমাদের প্রধান লক্ষ্য ও অঙ্গীকার।
+                    <p className="text-[10px] sm:text-[11px] text-emerald-100 max-w-2xl mx-auto leading-tight opacity-90 font-bornomala">
+                      <span className="font-bengali">১৯৭৫</span> সালে প্রতিষ্ঠিত পল্লান পাড়ার ঐতিহ্যবাহী দ্বীনি বিদ্যাপীঠ। কুরআন-সুন্নাহর আলোকে আদর্শ সুনাগরিক গড়ে তোলাই আমাদের অঙ্গীকার।
                     </p>
                   </div>
 
-                  {/* Elegant divider */}
-                  <div className="h-[1px] bg-gradient-to-r from-transparent via-amber-500/30 to-transparent my-10" />
-
-                  {/* Columns Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-12 sm:gap-16">
-                    {/* Col 1: Important Links */}
-                    <div className="space-y-4">
-                      <h4 className="text-lg font-bold text-amber-400 border-b border-emerald-800 pb-2">
+                  {/* Balanced Propeller Blades Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+                    {/* Left Blade: Important Links */}
+                    <div className="space-y-1 md:text-left text-center">
+                      <h4 className="text-[12px] font-bold text-amber-400 border-b border-emerald-800/50 pb-0.5 inline-block md:block leading-none">
                         গুরুত্বপূর্ণ লিংকসমূহ
                       </h4>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm">
+                      <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px]">
                         {[
                           { label: "স্মরনীয় ব্যাক্তিত্ব", tab: "honored" },
                           { label: "শিক্ষকবৃন্দ", tab: "teachers" },
                           { label: "হোমপেজ", tab: "home" },
                           { label: "অনলাইন ভর্তি", tab: "admission" },
                           { label: "ক্লাস রুটিন", tab: "routine" },
-                          { label: "ফলাফল খুজুন", tab: "result" },
-                          { label: "লগইন সিস্টেম", tab: "login" }
+                          { label: "ফলাফল খুজুন", tab: "result" }
                         ].map((link) => (
                           <button
                             key={link.label}
@@ -276,110 +275,69 @@ export default function App() {
                               setActiveTab(link.tab);
                               window.scrollTo({ top: 0, behavior: "smooth" });
                             }}
-                            className="text-left text-emerald-100 hover:text-amber-300 transition-colors duration-200 flex items-center gap-1.5 cursor-pointer font-medium hover:translate-x-1 transform transition-all"
+                            className="text-left text-emerald-100 hover:text-amber-300 transition-colors duration-200 flex items-center gap-1 cursor-pointer font-medium leading-none"
                           >
-                            <span className="text-amber-500/80">✦</span>
+                            <span className="text-amber-500/60 text-[8px]">✦</span>
                             <span>{link.label}</span>
                           </button>
                         ))}
                       </div>
                     </div>
 
-                    {/* Col 2: Credits & Batch Logo */}
-                    <div className="space-y-4">
-                      <h4 className="text-lg font-bold text-amber-400 border-b border-emerald-800 pb-2">
+                    {/* Middle Blade: Credits & JDC Logo */}
+                    <div className="text-center border-x-0 md:border-x border-emerald-800/30 px-1">
+                      <h4 className="text-[12px] font-bold text-amber-400 border-b border-emerald-800/50 pb-0.5 inline-block md:block leading-none mb-1">
                         সহযোগিতা ও শুভেচ্ছান্তে
                       </h4>
-                      <div className="space-y-3 text-sm text-emerald-100">
-                        <p className="leading-relaxed">
-                          <span className="font-bold text-amber-300">ডেভেলপমেন্ট ও কারিগরি আপডেট সহায়তায়:</span>
-                          <br />
-                          রাশেদুল করিম (সাবেক শিক্ষার্থী JDC-18 ব্যাচ)।
+                      <div className="text-[10px] text-emerald-100 flex flex-col items-center leading-none">
+                        <p className="mb-0">
+                          ডেভেলপমেন্ট ও কারিগরি আপডেট সহায়তায় -রাশেদুল করিম (সাবেক শিক্ষার্থী JDC-18)
                         </p>
-                        <div className="flex flex-wrap items-center gap-4">
-                          <p className="leading-relaxed">
-                            <span className="font-bold text-amber-300">শুভেচ্ছান্তে:</span>
-                            <br />
-                            JDC-18 ব্যাচ এর সকল শিক্ষার্থীবৃন্দ।
+                        <div className="flex items-center justify-center gap-1">
+                          <p className="mb-0">
+                            শুভেচ্ছান্তে - JDC-18 ব্যাচের সকল শিক্ষার্থীবৃন্দ
                           </p>
-
-                          {/* Display Batch Logo if uploaded */}
                           {isJdcLogoUploaded && jdcLogoUrl && (
-                            <div className="w-14 h-14 rounded-full border-2 border-amber-400 overflow-hidden bg-white p-0.5 shadow-md flex-shrink-0">
-                              <img src={jdcLogoUrl} alt="JDC-18 Logo" className="w-full h-full object-contain rounded-full" />
-                            </div>
+                            <img 
+                              src={jdcLogoUrl} 
+                              alt="JDC-18 Logo" 
+                              className="w-16 h-16 object-contain" 
+                              style={{ imageRendering: '-webkit-optimize-contrast' }}
+                            />
                           )}
                         </div>
 
-                        {/* One-Time Secure Upload Gateway for JDC-18 Logo */}
                         {!isJdcLogoUploaded && (
-                          <div className="pt-2">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              id="footer-jdc-logo"
-                              onChange={handleJdcLogoUpload}
-                              disabled={jdcUploading}
-                            />
-                            <label
-                              htmlFor="footer-jdc-logo"
-                              className={`inline-flex items-center gap-2 bg-emerald-900 hover:bg-emerald-850 text-amber-300 text-xs font-bold py-2 px-4 rounded-xl border border-amber-500/30 cursor-pointer shadow-md transition-all active:scale-95 ${
-                                jdcUploading ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
-                            >
-                              <Upload className="w-4 h-4" />
-                              <span>{jdcUploading ? "লোগো আপলোড হচ্ছে..." : "লোগো আপলোড করুন (One-Time)"}</span>
+                          <div className="pt-0.5">
+                            <input type="file" accept="image/*" className="hidden" id="footer-jdc-logo" onChange={handleJdcLogoUpload} disabled={jdcUploading} />
+                            <label htmlFor="footer-jdc-logo" className={`inline-flex items-center gap-1 bg-emerald-900/50 hover:bg-emerald-800 text-amber-300 text-[8px] font-bold py-0.5 px-1.5 rounded-md border border-amber-500/20 cursor-pointer transition-all ${jdcUploading ? "opacity-50" : ""}`}>
+                              <Upload className="w-2.5 h-2.5" />
+                              <span>{jdcUploading ? "..." : "লোগো"}</span>
                             </label>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Col 3: Remembrance */}
-                    <div className="space-y-4">
-                      <h4 className="text-lg font-bold text-amber-400 border-b border-emerald-800 pb-2">
-                        স্মরণ সভা ও স্মৃতিচারণ
-                      </h4>
-                      <div className="space-y-4 text-sm text-emerald-100">
-                        <div className="flex items-center gap-4">
-                          <div className="space-y-1">
-                            <p className="font-bold text-amber-300 text-base">স্মরনে - হাফেজ মোহাম্মদ ইমরান</p>
-                            <p className="text-xs text-emerald-200 leading-relaxed italic">
-                              "হে আল্লাহ, উনাকে জান্নাতুল ফেরদাউসের উচ্চ মাকাম দান করুন।"
-                            </p>
+                    {/* Right Blade: Remembrance */}
+                    <div className="space-y-1 md:text-right text-center">
+                      <div className="space-y-1 text-[10px] text-emerald-100">
+                        <div className="flex flex-col md:flex-row items-center md:justify-end gap-1.5">
+                          <div className="space-y-0">
+                            <p className="font-bold text-amber-300 text-[10px] leading-tight">স্বরনে -হাফেজ মোহাম্মদ ইমরান</p>
+                            <p className="text-[9px] text-emerald-200 leading-tight italic">আমাদের প্রিয় বন্ধুকে আল্লাহ জান্নাতুল ফেরদৌস দান করুক।</p>
                           </div>
-
-                          {/* Imran Picture Frame if uploaded */}
                           {isImranUploaded && imranImageUrl && (
-                            <div className="relative group flex-shrink-0">
-                              <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-amber-400 to-emerald-600 blur-xs opacity-40"></div>
-                              <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-2 border-amber-400 p-1 bg-white overflow-hidden shadow-xl">
-                                <img src={imranImageUrl} alt="হাফেজ মোহাম্মদ ইমরান" className="w-full h-full object-cover rounded-xl" />
-                              </div>
-                            </div>
+                            <img src={imranImageUrl} alt="হাফেজ ইমরান" className="w-8 h-8 object-contain" />
                           )}
                         </div>
 
-                        {/* One-Time Secure Upload Gateway for Imran Memory Image */}
                         {!isImranUploaded && (
-                          <div className="pt-2">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              id="footer-imran-image"
-                              onChange={handleImranImageUpload}
-                              disabled={imranUploading}
-                            />
-                            <label
-                              htmlFor="footer-imran-image"
-                              className={`inline-flex items-center gap-2 bg-emerald-900 hover:bg-emerald-850 text-amber-300 text-xs font-bold py-2 px-4 rounded-xl border border-amber-500/30 cursor-pointer shadow-md transition-all active:scale-95 ${
-                                imranUploading ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
-                            >
-                              <Upload className="w-4 h-4" />
-                              <span>{imranUploading ? "ছবি আপলোড হচ্ছে..." : "ছবি আপলোড করুন (One-Time)"}</span>
+                          <div className="pt-0.5">
+                            <input type="file" accept="image/*" className="hidden" id="footer-imran-image" onChange={handleImranImageUpload} disabled={imranUploading} />
+                            <label htmlFor="footer-imran-image" className={`inline-flex items-center gap-1 bg-emerald-900/50 hover:bg-emerald-800 text-amber-300 text-[8px] font-bold py-0.5 px-1.5 rounded-md border border-amber-500/20 cursor-pointer transition-all ${imranUploading ? "opacity-50" : ""}`}>
+                              <Upload className="w-2.5 h-2.5" />
+                              <span>{imranUploading ? "..." : "ছবি"}</span>
                             </label>
                           </div>
                         )}
@@ -387,10 +345,10 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Copyright and version control */}
-                  <div className="w-full border-t border-emerald-900/60 mt-12 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-emerald-300">
-                    <p>© ২০২৬ সুফিয়া নূরিয়া দাখিল মাদ্রাসা। সর্বস্বত্ব সংরক্ষিত।</p>
-                    <p className="font-semibold text-amber-400">ভার্সন- 1.3</p>
+                  {/* Copyright Footer (Centered Propeller Base) */}
+                  <div className="w-full border-t border-emerald-900/40 mt-3 pt-2 flex flex-col items-center text-center space-y-0.5 text-[10px] text-emerald-400/80 leading-tight">
+                    <p>©️সুফিয়া নূরীয়া দাখিল মাদ্রাসা সর্বস্ব সুরক্ষিত</p>
+                    <p className="font-semibold text-amber-500/60 uppercase tracking-tight">ভার্সন 2.1</p>
                   </div>
                 </div>
               </footer>
