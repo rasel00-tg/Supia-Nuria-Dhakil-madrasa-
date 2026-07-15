@@ -791,13 +791,7 @@ export default function HomeSection({
                           transition={{ duration: 0.5 }}
                           className="flex justify-center"
                         >
-                          {logoUrl ? (
-                            <img 
-                              src={logoUrl} 
-                              alt="সুফিয়া নূরীয়া দাখিল মাদ্রাসা লোগো" 
-                              className="h-14 w-14 sm:h-18 sm:w-18 md:h-20 md:w-20 object-contain filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)] rounded-full bg-white p-0.5 border border-amber-400" 
-                            />
-                          ) : !logoError ? (
+                          {!logoError ? (
                             <img 
                               src="/photo/logo.png" 
                               alt="সুফিয়া নূরীয়া দাখিল মাদ্রাসা লোগো" 
@@ -1124,24 +1118,15 @@ export default function HomeSection({
                                         {/* Central Glow Badge */}
                                         <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-emerald-950 border-4 border-amber-400 flex flex-col items-center justify-center text-center shadow-2xl z-10 hover:scale-105 transition-all duration-300 select-none overflow-hidden">
                                           <div className="absolute inset-0 rounded-full bg-amber-400/10 animate-ping duration-[3000ms]"></div>
-                                          {logoUrl ? (
-                                            <img
-                                              src={logoUrl}
-                                              alt="Sufia Nooria Madrasah Logo"
-                                              className="w-full h-full object-cover rounded-full bg-white"
-                                              onError={() => setLogoError(true)}
-                                            />
-                                          ) : (
-                                            <img
-                                              src="/photo/logo.png"
-                                              alt="Madrasah Logo"
-                                              className="w-full h-full object-cover rounded-full bg-white"
-                                              onError={(e) => {
-                                                e.currentTarget.onerror = null;
-                                                e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";
-                                              }}
-                                            />
-                                          )}
+                                          <img
+                                            src="/photo/logo.png"
+                                            alt="Madrasah Logo"
+                                            className="w-full h-full object-cover rounded-full bg-white"
+                                            onError={(e) => {
+                                              e.currentTarget.onerror = null;
+                                              e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";
+                                            }}
+                                          />
                                         </div>
 
                                         {/* Rotating Orbit Path */}

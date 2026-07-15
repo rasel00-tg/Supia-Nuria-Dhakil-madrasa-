@@ -114,15 +114,68 @@ export default function App() {
         setLogoUrl(url);
         setIsLogoUploaded(!!data.isLogoUploaded);
 
-        // Dynamically update the favicon
+        // Dynamically update the favicon and PWA manifest
         if (url) {
-          let link = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
-          if (!link) {
-            link = document.createElement('link');
-            link.rel = 'icon';
-            document.head.appendChild(link);
+          try {
+            // Update manifest dynamically
+            const manifestObj = {
+              "short_name": "Sufia Nuria",
+              "name": "সুফিয়া নূরীয়া দাখিল মাদ্রাসা",
+              "icons": [
+                {
+                  "src": url,
+                  "sizes": "192x192",
+                  "type": "image/png",
+                  "purpose": "any"
+                },
+                {
+                  "src": url,
+                  "sizes": "512x512",
+                  "type": "image/png",
+                  "purpose": "any"
+                }
+              ],
+              "start_url": "/",
+              "background_color": "#064e3b",
+              "theme_color": "#f59e0b",
+              "display": "standalone",
+              "orientation": "portrait"
+            };
+            const blob = new Blob([JSON.stringify(manifestObj, null, 2)], { type: 'application/manifest+json' });
+            const manifestUrl = URL.createObjectURL(blob);
+            const manifestLink = document.querySelector("link[rel='manifest']") as HTMLLinkElement;
+            if (manifestLink) {
+              manifestLink.href = manifestUrl;
+            }
+
+            // Dynamically update standard favicons of optimized sizes
+            const sizes = ["192x192", "512x512"];
+            sizes.forEach(size => {
+              let link = document.querySelector(`link[rel*='icon'][sizes='${size}']`) as HTMLLinkElement;
+              if (!link) {
+                link = document.createElement('link');
+                link.rel = 'icon';
+                link.sizes = size;
+                link.type = 'image/png';
+                document.head.appendChild(link);
+              }
+              link.href = url;
+            });
+
+            // Update default favicon
+            let defaultLink = document.querySelector("link[rel='icon']:not([sizes])") as HTMLLinkElement;
+            if (defaultLink) {
+              defaultLink.href = url;
+            }
+
+            // Update apple-touch-icon
+            let appleLink = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement;
+            if (appleLink) {
+              appleLink.href = url;
+            }
+          } catch (e) {
+            console.error("Error updating manifest or favicons dynamically:", e);
           }
-          link.href = url;
         }
       } else {
         // Fallback to legacy website settings if branding document doesn't exist yet
@@ -281,19 +334,15 @@ export default function App() {
                   <div className="flex flex-col items-center text-center space-y-1 mb-3">
                     <div className="relative">
                       <div className="absolute inset-0 bg-amber-500/20 blur-xl rounded-full animate-pulse"></div>
-                      {logoUrl ? (
-                        <img src={logoUrl} alt="Logo" className="h-10 w-10 object-contain rounded-full relative z-10" />
-                      ) : (
-                        <img 
-                          src="/photo/logo.png" 
-                          alt="Logo" 
-                          className="h-10 w-10 object-contain rounded-full relative z-10"
-                          onError={(e) => {
-                            e.currentTarget.onerror = null;
-                            e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";
-                          }}
-                        />
-                      )}
+                      <img 
+                        src="/photo/logo.png" 
+                        alt="Logo" 
+                        className="h-10 w-10 object-contain rounded-full relative z-10"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";
+                        }}
+                      />
                     </div>
                     <h3 className="font-extrabold text-lg sm:text-xl text-amber-400 tracking-wide leading-none">
                       সুফিয়া নূরীয়া দাখিল মাদ্রাসা

@@ -70,13 +70,6 @@ export default function StaffSection({ logoUrl }: StaffSectionProps) {
           
           <div className="flex justify-center">
             <div className="relative p-2.5 bg-white border-2 border-emerald-800/20 rounded-full shadow-lg">
-              {logoUrl ? (
-                <img 
-                  src={logoUrl} 
-                  alt="সুফিয়া নূরীয়া দাখিল মাদ্রাসা লোগো" 
-                  className="h-24 w-24 object-contain rounded-full bg-white p-0.5" 
-                />
-              ) : (
                 <img 
                   src="/photo/logo.png" 
                   alt="সুফিয়া নূরীয়া দাখিল মাদ্রাসা লোগো" 
@@ -86,7 +79,6 @@ export default function StaffSection({ logoUrl }: StaffSectionProps) {
                     e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";
                   }}
                 />
-              )}
             </div>
           </div>
 

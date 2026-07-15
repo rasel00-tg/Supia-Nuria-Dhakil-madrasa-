@@ -231,19 +231,15 @@ export default function StudentsSection({ logoUrl }: StudentsSectionProps) {
 
                   {/* Logo Container */}
                   <div className="bg-white/95 p-3 rounded-full shadow-lg border-2 border-amber-400 flex items-center justify-center transform hover:scale-105 transition-transform duration-300">
-                    {logoUrl ? (
-                      <img src={logoUrl} alt="মাদ্রাসা লোগো" className="h-16 w-16 sm:h-20 sm:w-20 object-contain rounded-full" />
-                    ) : (
-                      <img 
-                        src="/photo/logo.png" 
-                        alt="মাদ্রাসা লোগো" 
-                        className="h-16 w-16 sm:h-20 sm:w-20 object-contain rounded-full"
-                        onError={(e) => {
-                          e.currentTarget.onerror = null;
-                          e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";
-                        }}
-                      />
-                    )}
+                    <img 
+                      src="/photo/logo.png" 
+                      alt="মাদ্রাসা লোগো" 
+                      className="h-16 w-16 sm:h-20 sm:w-20 object-contain rounded-full"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";
+                      }}
+                    />
                   </div>
 
                   {/* Madrasa Title and Subtitle */}

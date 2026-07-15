@@ -119,19 +119,15 @@ export default function Navbar({
         {/* Madrasa Logo & Title for Admin, or Scrolling Ticker for Guests/Students */}
         {user?.role === "admin" ? (
           <div className="flex-1 flex items-center gap-3">
-            {logoUrl ? (
-              <img src={logoUrl} alt="Logo" className="h-9 w-9 object-contain rounded-full bg-white p-0.5" />
-            ) : (
-              <img 
-                src="/photo/logo.png" 
-                alt="Logo" 
-                className="h-9 w-9 object-contain rounded-full bg-white p-0.5"
-                onError={(e) => {
-                  e.currentTarget.onerror = null;
-                  e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";
-                }}
-              />
-            )}
+            <img 
+              src="/photo/logo.png" 
+              alt="Logo" 
+              className="h-9 w-9 object-contain rounded-full bg-white p-0.5"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";
+              }}
+            />
             <div>
               <h1 className="text-sm sm:text-base font-bold text-amber-400 font-serif leading-none">সুফিয়া নূরিয়া দাখিল মাদ্রাসা</h1>
               <p className="text-[10px] text-emerald-100 font-sans tracking-wide mt-1">এডমিন ম্যানেজমেন্ট ড্যাশবোর্ড কন্ট্রোল প্যানেল</p>

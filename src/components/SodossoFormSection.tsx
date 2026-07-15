@@ -89,7 +89,7 @@ export default function SodossoFormSection({ logoUrl }: SodossoFormSectionProps)
                   {/* Logo Container */}
                   <div className="flex justify-center">
                     <div className="relative p-2.5 bg-white border-2 border-emerald-800/20 rounded-full shadow-lg">
-                      {logoUrl ? (
+                      {false && logoUrl ? (
                         <img 
                           src={logoUrl} 
                           alt="সুফিয়া নূরীয়া দাখিল মাদ্রাসা লোগো" 

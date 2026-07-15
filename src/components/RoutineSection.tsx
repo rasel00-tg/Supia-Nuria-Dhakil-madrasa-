@@ -829,29 +829,18 @@ export default function RoutineSection() {
                   {/* Top Header section */}
                   <div className="flex items-center justify-between pb-6 mb-8" style={{ borderBottom: "2px solid #312e81" }}>
                     <div className="flex items-center gap-4">
-                      {logoUrl ? (
-                        <img 
-                          src={logoUrl} 
-                          alt="Madrasa Logo" 
-                          className="h-20 w-20 object-contain rounded-full p-1"
-                          style={{ backgroundColor: "#ffffff", border: "1px solid #f1f5f9" }}
-                          crossOrigin="anonymous"
-                          referrerPolicy="no-referrer"
-                        />
-                      ) : (
-                        <img 
-                          src="/photo/logo.png" 
-                          alt="Madrasa Logo" 
-                          className="h-20 w-20 object-contain rounded-full p-1"
-                          style={{ backgroundColor: "#ffffff", border: "1px solid #f1f5f9" }}
-                          onError={(e) => {
-                            e.currentTarget.onerror = null;
-                            e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";
-                          }}
-                          crossOrigin="anonymous"
-                          referrerPolicy="no-referrer"
-                        />
-                      )}
+                      <img 
+                        src="/photo/logo.png" 
+                        alt="Madrasa Logo" 
+                        className="h-20 w-20 object-contain rounded-full p-1"
+                        style={{ backgroundColor: "#ffffff", border: "1px solid #f1f5f9" }}
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";
+                        }}
+                        crossOrigin="anonymous"
+                        referrerPolicy="no-referrer"
+                      />
                       <div>
                         <h1 className="text-2xl font-black" style={{ color: "#1e1b4b" }}>সুফিয়া নূরীয়া দাখিল মাদ্রাসা</h1>
                         <p className="text-xs mt-1" style={{ color: "#4b5563" }}>{madrasaAddress}</p>
@@ -927,29 +916,18 @@ export default function RoutineSection() {
                     {/* Top Header section */}
                     <div className="flex items-center justify-between pb-6 mb-8" style={{ borderBottom: "2px solid #312e81" }}>
                       <div className="flex items-center gap-4">
-                        {logoUrl ? (
-                          <img 
-                            src={logoUrl} 
-                            alt="Madrasa Logo" 
-                            className="h-20 w-20 object-contain rounded-full p-1"
-                            style={{ backgroundColor: "#ffffff", border: "1px solid #f1f5f9" }}
-                            crossOrigin="anonymous"
-                            referrerPolicy="no-referrer"
-                          />
-                        ) : (
-                          <img 
-                            src="/photo/logo.png" 
-                            alt="Madrasa Logo" 
-                            className="h-20 w-20 object-contain rounded-full p-1"
-                            style={{ backgroundColor: "#ffffff", border: "1px solid #f1f5f9" }}
-                            onError={(e) => {
-                              e.currentTarget.onerror = null;
-                              e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";
-                            }}
-                            crossOrigin="anonymous"
-                            referrerPolicy="no-referrer"
-                          />
-                        )}
+                        <img 
+                          src="/photo/logo.png" 
+                          alt="Madrasa Logo" 
+                          className="h-20 w-20 object-contain rounded-full p-1"
+                          style={{ backgroundColor: "#ffffff", border: "1px solid #f1f5f9" }}
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";
+                          }}
+                          crossOrigin="anonymous"
+                          referrerPolicy="no-referrer"
+                        />
                         <div>
                           <h1 className="text-2xl font-black" style={{ color: "#1e1b4b" }}>সুফিয়া নূরীয়া দাখিল মাদ্রাসা</h1>
                           <p className="text-xs mt-1" style={{ color: "#4b5563" }}>{madrasaAddress}</p>

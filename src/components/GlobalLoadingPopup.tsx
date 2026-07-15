@@ -65,25 +65,16 @@ export default function GlobalLoadingPopup() {
                 transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
                 className="relative w-20 h-20 rounded-full bg-emerald-50 border-2 border-emerald-500 flex items-center justify-center p-1.5 shadow-[0_4px_12px_rgba(6,78,59,0.1)] overflow-hidden bg-white z-10"
               >
-                {logoUrl ? (
-                  <img
-                    src={logoUrl}
-                    alt="SNDM Logo"
-                    className="w-full h-full object-cover rounded-full"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <img
-                    src="/photo/logo.png"
-                    alt="SNDM Logo Fallback"
-                    className="w-full h-full object-cover rounded-full"
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";
-                    }}
-                  />
-                )}
+                <img
+                  src="/photo/logo.png"
+                  alt="SNDM Logo Fallback"
+                  className="w-full h-full object-cover rounded-full"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";
+                  }}
+                />
               </motion.div>
             </div>
 
