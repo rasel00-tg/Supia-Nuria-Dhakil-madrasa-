@@ -283,30 +283,32 @@ export default function HomeSection({
   setActiveTab?: (tab: string) => void; 
   onSelectMember?: (member: CommitteeMember) => void;
 }) {
-  const [logoUrlWithCache, setLogoUrlWithCache] = useState<string>("/photo/logo.png");
+  const [logoUrlWithCache, setLogoUrlWithCache] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    if (logoUrl) {
-      const freshUrl = `${logoUrl}${logoUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
-      setLogoUrlWithCache(freshUrl);
-      
-      // Dynamic preload to <head>
-      const link = document.createElement('link');
-      link.rel = 'preload';
-      link.as = 'image';
-      link.href = freshUrl;
-      link.setAttribute('fetchpriority', 'high');
-      document.head.appendChild(link);
-      
-      return () => {
-        try {
-          document.head.removeChild(link);
-        } catch (e) {
-          // ignore
-        }
-      };
-    } else {
-      setLogoUrlWithCache("/photo/logo.png");
+    if (logoUrl !== undefined) {
+      if (logoUrl) {
+        const freshUrl = `${logoUrl}${logoUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
+        setLogoUrlWithCache(freshUrl);
+        
+        // Dynamic preload to <head>
+        const link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'image';
+        link.href = freshUrl;
+        link.setAttribute('fetchpriority', 'high');
+        document.head.appendChild(link);
+        
+        return () => {
+          try {
+            document.head.removeChild(link);
+          } catch (e) {
+            // ignore
+          }
+        };
+      } else {
+        setLogoUrlWithCache("/photo/logo.png");
+      }
     }
   }, [logoUrl]);
 
@@ -822,12 +824,18 @@ export default function HomeSection({
                         >
                           {!logoError ? (
                             <div className="h-24 w-24 sm:h-32 sm:w-32 md:h-36 md:w-36 rounded-full overflow-hidden border-4 border-amber-400 bg-white p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.3)] filter drop-shadow-[0_8px_12px_rgba(0,0,0,0.4)] transition-all hover:scale-105 duration-300 flex items-center justify-center">
-                              <img 
-                                src={logoUrlWithCache} 
-                                alt="সুফিয়া নূরীয়া দাখিল মাদ্রাসা লোগো" 
-                                className="w-full h-full object-cover rounded-full" 
-                                onError={() => setLogoError(true)}
-                              />
+                              {logoUrlWithCache !== undefined ? (
+                                <img 
+                                  key={logoUrlWithCache}
+                                  src={logoUrlWithCache} 
+                                  alt="সুফিয়া নূরীয়া দাখিল মাদ্রাসা লোগো" 
+                                  loading="eager"
+                                  className="w-full h-full object-cover rounded-full" 
+                                  onError={() => setLogoError(true)}
+                                />
+                              ) : (
+                                <div className="w-full h-full rounded-full bg-slate-200 animate-pulse"></div>
+                              )}
                             </div>
                           ) : (
                             <div className="h-24 w-24 sm:h-32 sm:w-32 md:h-36 md:w-36 rounded-full bg-amber-500/10 border-2 border-amber-400 flex items-center justify-center text-amber-400 font-bold text-3xl sm:text-4xl shadow-lg">
@@ -1150,8 +1158,10 @@ export default function HomeSection({
                                         <div className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-emerald-950 border-4 border-amber-400 flex flex-col items-center justify-center text-center shadow-2xl z-10 hover:scale-105 transition-all duration-300 select-none overflow-hidden">
                                           <div className="absolute inset-0 rounded-full bg-amber-400/10 animate-ping duration-[3000ms]"></div>
                                           <img
+                                            key={contactLogoUrl}
                                             src={contactLogoUrl}
                                             alt="Madrasah Logo"
+                                            loading="eager"
                                             className="absolute inset-0 w-full h-full object-cover rounded-full"
                                             onError={(e) => {
                                               e.currentTarget.onerror = null;

@@ -6,7 +6,7 @@ import { useGlobalLoading } from "../lib/loadingService";
 
 export default function GlobalLoadingPopup() {
   const isLoading = useGlobalLoading();
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null | undefined>(undefined);
 
   // Dynamically fetch the latest Logo URL so the popup logo stays in sync with settings
   useEffect(() => {
@@ -23,17 +23,23 @@ export default function GlobalLoadingPopup() {
               (webSnap) => {
                 if (webSnap.exists()) {
                   setLogoUrl(webSnap.data().logoUrl || null);
+                } else {
+                  setLogoUrl(null);
                 }
               },
               (err) => {
                 console.warn("Unable to reach legacy website config: ", err);
+                setLogoUrl(null);
               }
             );
+          } else {
+            setLogoUrl(null);
           }
         }
       },
       (err) => {
         console.warn("Unable to reach branding config (operating in offline/fallback mode): ", err);
+        setLogoUrl(null);
       }
     );
     return () => {
@@ -83,16 +89,22 @@ export default function GlobalLoadingPopup() {
                 transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
                 className="relative w-32 h-32 rounded-full bg-emerald-50 border-2 border-emerald-500 flex items-center justify-center p-0 shadow-[0_4px_12px_rgba(6,78,59,0.1)] overflow-hidden bg-white z-10"
               >
-                <img
-                  src={logoUrl || "/photo/logo.png"}
-                  alt="SNDM Logo Fallback"
-                  className="w-full h-full object-cover rounded-full"
-                  referrerPolicy="no-referrer"
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";
-                  }}
-                />
+                {logoUrl !== undefined ? (
+                  <img
+                    key={logoUrl || "default-logo"}
+                    src={logoUrl || "/photo/logo.png"}
+                    alt="SNDM Logo Fallback"
+                    loading="eager"
+                    className="w-full h-full object-cover rounded-full"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full rounded-full bg-emerald-100/50 animate-pulse"></div>
+                )}
               </motion.div>
             </div>
 

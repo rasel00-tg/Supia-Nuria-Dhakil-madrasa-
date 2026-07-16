@@ -16,6 +16,7 @@ import StudentsSection from "./components/StudentsSection";
 import CommitteeMemberDetail from "./components/CommitteeMemberDetail";
 import GlobalLoadingPopup from "./components/GlobalLoadingPopup";
 import NoticeSection from "./components/NoticeSection";
+import GamingCornerSection from "./components/GamingCornerSection";
 import InstallPrompt from "./components/InstallPrompt";
 import { seedDatabaseIfEmpty } from "./lib/dbSeeder";
 import { GraduationCap, BookOpen, Clock, Heart, Award } from "lucide-react";
@@ -30,7 +31,7 @@ const FooterStreamBuilder = StreamBuilder as any;
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>("home");
   const [user, setUser] = useState<any | null>(null);
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null | undefined>(undefined);
   const [isLogoUploaded, setIsLogoUploaded] = useState<boolean>(false);
   const [logoUploading, setLogoUploading] = useState<boolean>(false);
   const [selectedCommitteeMember, setSelectedCommitteeMember] = useState<any | null>(null);
@@ -187,14 +188,20 @@ export default function App() {
             if (webSnap.exists()) {
               const data = webSnap.data();
               setLogoUrl(data.logoUrl || null);
+            } else {
+              setLogoUrl(null);
             }
           }, (err) => {
             console.warn("Unable to reach legacy website config: ", err);
+            setLogoUrl(null);
           });
+        } else {
+          setLogoUrl(null);
         }
       }
     }, (err) => {
       console.warn("Unable to reach branding config (operating in offline/fallback mode): ", err);
+      setLogoUrl(null);
     });
 
     return () => {
@@ -315,6 +322,7 @@ export default function App() {
             {activeTab === "staff" && <StaffSection logoUrl={logoUrl} />}
             {activeTab === "students" && <StudentsSection logoUrl={logoUrl} />}
             {activeTab === "notice_corner" && <NoticeSection />}
+            {activeTab === "gaming_corner" && <GamingCornerSection logoUrl={logoUrl} />}
             {activeTab === "login" && (
               <LoginSection onLoginSuccess={handleLoginSuccess} />
             )}
@@ -326,7 +334,7 @@ export default function App() {
       </main>
 
       {/* Sticky Bottom/Footer Section */}
-      {activeTab !== "teachers" && activeTab !== "committee" && activeTab !== "committee_member_detail" && activeTab !== "dashboard" && activeTab !== "sodosso_form" && activeTab !== "staff" && activeTab !== "students" && activeTab !== "honored" && activeTab !== "routine" && user?.role !== "admin" && (
+      {activeTab !== "teachers" && activeTab !== "gaming_corner" && activeTab !== "committee" && activeTab !== "committee_member_detail" && activeTab !== "dashboard" && activeTab !== "sodosso_form" && activeTab !== "staff" && activeTab !== "students" && activeTab !== "honored" && activeTab !== "routine" && user?.role !== "admin" && (
         <FooterStreamBuilder
           stream={settingsCollectionQuery}
           builder={(settingsList) => {

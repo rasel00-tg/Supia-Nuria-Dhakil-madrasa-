@@ -99,6 +99,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [isMainLogoUploaded, setIsMainLogoUploaded] = useState(false);
+  const [isContactLogoUploaded, setIsContactLogoUploaded] = useState(false);
   const [showLogoSuccessPopup, setShowLogoSuccessPopup] = useState(false);
 
   // Dedicated class routines form states
@@ -570,6 +571,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
       if (snap.exists()) {
         const data = snap.data();
         setIsMainLogoUploaded(!!data.isMainLogoUploaded || !!data.isLogoUploaded);
+        setIsContactLogoUploaded(!!data.isContactLogoUploaded);
       }
     }, (error) => {
       handleFirestoreError(error, OperationType.GET, "settings/branding");
@@ -2772,6 +2774,63 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                   )}
                 </div>
               </div>
+
+              {!isContactLogoUploaded && (
+                <div className="mt-8 pt-6 border-t border-slate-200">
+                  <div className="bg-amber-50/50 border border-amber-200 rounded-xl p-5 space-y-4">
+                    <div>
+                      <h4 className="text-md font-bold text-amber-900 flex items-center gap-2">
+                        <span>কন্টাক্ট সেকশনের ঘূর্ণন লোগো (One-Time Upload)</span>
+                      </h4>
+                      <p className="text-xs text-amber-700 mt-1">
+                        এই লোগোটি হোমপেজের কন্টাক্ট সেকশনে ঘুরতে থাকবে। এটি শুধুমাত্র <strong className="font-bold">একবার</strong> আপলোড করা যাবে। আপলোডের পর এই অপশনটি চিরতরে বন্ধ হয়ে যাবে।
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <label className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-2.5 rounded-lg text-xs cursor-pointer flex items-center justify-center gap-1.5 shadow-sm select-none">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              setCropZoom(1);
+                              setCropX(0);
+                              setCropY(0);
+                              setCropFile(file);
+                              setCropSrc(reader.result as string);
+                              setCropFieldSetter(() => async (downloadUrl: string) => {
+                                try {
+                                  setIsUploading(true);
+                                  await setDoc(doc(db, "settings", "branding"), {
+                                    contactLogoUrl: downloadUrl,
+                                    isContactLogoUploaded: true,
+                                    updatedAt: new Date().toISOString()
+                                  }, { merge: true });
+                                  setIsContactLogoUploaded(true);
+                                  setShowLogoSuccessPopup(true);
+                                } catch (error: any) {
+                                  console.error("Error setting contact logo:", error);
+                                } finally {
+                                  setIsUploading(false);
+                                }
+                              });
+                            };
+                            reader.readAsDataURL(file);
+                          }}
+                          disabled={isUploading}
+                        />
+                        {isUploading ? "আপলোড হচ্ছে..." : "ঘূর্ণন লোগো আপলোড করুন"}
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

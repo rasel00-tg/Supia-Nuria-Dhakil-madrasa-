@@ -65,7 +65,7 @@ export default function Navbar({
       icon: Info, 
       submenus: [
         { label: "নোটিশ কর্নার", action: () => { setActiveTab("notice_corner"); setIsOpen(false); } },
-        { label: "ডাউনলোড কর্নার", action: () => {} }
+        { label: "গেমিং কর্ণার", action: () => { setActiveTab("gaming_corner"); setIsOpen(false); } }
       ] 
     },
     { 
