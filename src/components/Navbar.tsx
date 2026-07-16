@@ -120,9 +120,9 @@ export default function Navbar({
         {user?.role === "admin" ? (
           <div className="flex-1 flex items-center gap-3">
             <img 
-              src="/photo/logo.png" 
+              src={logoUrl || "/photo/logo.png"} 
               alt="Logo" 
-              className="h-9 w-9 object-contain rounded-full bg-white p-0.5"
+              className="h-16 w-16 sm:h-20 sm:w-20 object-contain rounded-full bg-white p-1 border-2 border-amber-400 shadow-md transition-all duration-300 hover:scale-105"
               onError={(e) => {
                 e.currentTarget.onerror = null;
                 e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";

@@ -232,7 +232,7 @@ export default function StudentsSection({ logoUrl }: StudentsSectionProps) {
                   {/* Logo Container */}
                   <div className="bg-white/95 p-3 rounded-full shadow-lg border-2 border-amber-400 flex items-center justify-center transform hover:scale-105 transition-transform duration-300">
                     <img 
-                      src="/photo/logo.png" 
+                      src={logoUrl || "/photo/logo.png"} 
                       alt="মাদ্রাসা লোগো" 
                       className="h-16 w-16 sm:h-20 sm:w-20 object-contain rounded-full"
                       onError={(e) => {

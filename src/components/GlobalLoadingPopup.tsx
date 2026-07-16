@@ -10,18 +10,36 @@ export default function GlobalLoadingPopup() {
 
   // Dynamically fetch the latest Logo URL so the popup logo stays in sync with settings
   useEffect(() => {
+    let unsubLegacy: (() => void) | null = null;
     const unsub = onSnapshot(
-      doc(db, "settings", "website"),
+      doc(db, "settings", "branding"),
       (snap) => {
         if (snap.exists()) {
           setLogoUrl(snap.data().logoUrl || null);
+        } else {
+          if (!unsubLegacy) {
+            unsubLegacy = onSnapshot(
+              doc(db, "settings", "website"),
+              (webSnap) => {
+                if (webSnap.exists()) {
+                  setLogoUrl(webSnap.data().logoUrl || null);
+                }
+              },
+              (err) => {
+                console.warn("Unable to reach legacy website config: ", err);
+              }
+            );
+          }
         }
       },
       (err) => {
-        console.error("Error fetching logo for global loading popup:", err);
+        console.warn("Unable to reach branding config (operating in offline/fallback mode): ", err);
       }
     );
-    return () => unsub();
+    return () => {
+      unsub();
+      if (unsubLegacy) unsubLegacy();
+    };
   }, []);
 
   return (
@@ -48,7 +66,7 @@ export default function GlobalLoadingPopup() {
             <div className="absolute -bottom-12 -right-12 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
 
             {/* Premium Animated Neon Glow Spinner with Logo */}
-            <div className="relative w-28 h-28 flex items-center justify-center mb-6">
+            <div className="relative w-36 h-36 flex items-center justify-center mb-6">
               {/* Outer Glowing Spinning Rings */}
               <div className="absolute inset-0 rounded-full border-4 border-emerald-100 shadow-[inset_0_0_8px_rgba(16,185,129,0.1)]"></div>
               
@@ -63,10 +81,10 @@ export default function GlobalLoadingPopup() {
               <motion.div
                 animate={{ scale: [1, 1.04, 1] }}
                 transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                className="relative w-20 h-20 rounded-full bg-emerald-50 border-2 border-emerald-500 flex items-center justify-center p-1.5 shadow-[0_4px_12px_rgba(6,78,59,0.1)] overflow-hidden bg-white z-10"
+                className="relative w-32 h-32 rounded-full bg-emerald-50 border-2 border-emerald-500 flex items-center justify-center p-0 shadow-[0_4px_12px_rgba(6,78,59,0.1)] overflow-hidden bg-white z-10"
               >
                 <img
-                  src="/photo/logo.png"
+                  src={logoUrl || "/photo/logo.png"}
                   alt="SNDM Logo Fallback"
                   className="w-full h-full object-cover rounded-full"
                   referrerPolicy="no-referrer"
@@ -79,8 +97,8 @@ export default function GlobalLoadingPopup() {
             </div>
 
             {/* Required Alinur Tatsama Typography and Message */}
-            <h3 className="font-alinur text-emerald-950 text-lg sm:text-xl font-bold leading-relaxed tracking-wide px-2 drop-shadow-xs">
-              धৈর্য ঈমানের সৌন্দর্য।
+            <h3 className="font-alinur text-emerald-950 text-lg sm:text-xl font-bold leading-relaxed tracking-wide px-2 drop-shadow-xs whitespace-nowrap">
+              ধৈর্য ইমানের অঙ্গ।
             </h3>
             <p className="font-alinur text-emerald-800 text-xs sm:text-sm mt-2 leading-relaxed px-1">
               অনুগ্রহ করে কিছুক্ষণ অপেক্ষা করুন, তথ্য লোড হচ্ছে।

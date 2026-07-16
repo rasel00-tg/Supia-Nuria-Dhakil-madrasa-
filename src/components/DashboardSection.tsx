@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, setDoc, getDocs, getDoc, serverTimestamp, where } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType, uploadFileToImgBB, StreamBuilder } from "../lib/firebase";
 import { Teacher, SuccessStory, CommitteeMember, HonoredPerson, AdmissionForm, Routine, ContactMessage } from "../types";
-import { Trash2, Edit3, Plus, Check, X, CreditCard, Mail, UserPlus, Users, GraduationCap, Calendar, Award, MessageSquare, Heart, CheckCircle2, XCircle, Settings, Megaphone, ChevronDown, LayoutDashboard, Globe } from "lucide-react";
+import { Trash2, Edit3, Plus, Check, X, CreditCard, Mail, UserPlus, Users, GraduationCap, Calendar, Award, MessageSquare, Heart, CheckCircle2, XCircle, Settings, Megaphone, ChevronDown, LayoutDashboard, Globe, Lock } from "lucide-react";
 import PathdanUpdateForm from "./PathdanUpdateForm";
 import SodossoFormUpdateForm from "./SodossoFormUpdateForm";
 import KormochariUpdateForm from "./KormochariUpdateForm";
@@ -98,6 +98,8 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [isMainLogoUploaded, setIsMainLogoUploaded] = useState(false);
+  const [showLogoSuccessPopup, setShowLogoSuccessPopup] = useState(false);
 
   // Dedicated class routines form states
   const [routineClassInput, setRoutineClassInput] = useState("");
@@ -560,6 +562,17 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
         setWebsiteLogoUrl(snap.data().logoUrl || "");
         setHeroBgUrl(snap.data().heroBgUrl || "");
       }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, "settings/website");
+    });
+
+    const unsubBranding = onSnapshot(doc(db, "settings", "branding"), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setIsMainLogoUploaded(!!data.isMainLogoUploaded || !!data.isLogoUploaded);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, "settings/branding");
     });
 
     return () => {
@@ -571,6 +584,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
       unsubAdmissions();
       unsubMessages();
       unsubSettings();
+      unsubBranding();
     };
   }, []);
 
@@ -1176,7 +1190,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                     }`}
                   >
                     <div className="h-1.5 w-1.5 rounded-full bg-amber-500"></div>
-                    <span>মাদ্রাসা লোগো আপডেট</span>
+                    <span>লগো আপডেট</span>
                   </button>
                 </div>
               )}
@@ -1316,7 +1330,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                 {activeAdminSubTab === "honored" && "স্মরণীয় ব্যক্তিগণ তালিকা"}
                 {activeAdminSubTab === "routines" && "শ্রেণী ও পরীক্ষা রুটিনসমূহ"}
                 {activeAdminSubTab === "messages" && "কন্টাক্ট মেসেজ ও অফিশিয়াল বার্তা"}
-                {activeAdminSubTab === "settings" && "মাদ্রাসা লোগো ও ওয়েবসাইট কাস্টমাইজেশন"}
+                {activeAdminSubTab === "settings" && "লগো আপডেট"}
                 {activeAdminSubTab === "hero_background" && "হিরো সেকশন ব্যাকগ্রাউন্ড ইমেজ কাস্টমাইজেশন"}
                 {activeAdminSubTab === "running_notices" && "চলমান নোটিশবোর্ড ও লাইভ নোটিশ ফিড"}
                 {activeAdminSubTab === "public_notices" && "পাবলিক নোটিশবোর্ড ও লাইভ নোটিশ কন্টেন্ট"}
@@ -2651,6 +2665,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                       onClick={async () => {
                         try {
                           await setDoc(doc(db, "settings", "website"), { logoUrl: "" }, { merge: true });
+                          await setDoc(doc(db, "settings", "branding"), { logoUrl: "", isMainLogoUploaded: false, isLogoUploaded: false }, { merge: true });
                           setWebsiteLogoUrl("");
                           setLogoSaveSuccess(true);
                           setTimeout(() => setLogoSaveSuccess(false), 3000);
@@ -2675,26 +2690,41 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           type="file"
                           accept="image/*"
                           className="hidden"
-                          onChange={async (e) => {
+                          onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
 
-                            setIsUploading(true);
                             setLogoSaveSuccess(false);
-                            try {
-                              const downloadUrl = await uploadFileToImgBB(file);
-                              await setDoc(doc(db, "settings", "website"), {
-                                logoUrl: downloadUrl,
-                                updatedAt: new Date().toISOString()
-                              }, { merge: true });
-                              setWebsiteLogoUrl(downloadUrl);
-                              setLogoSaveSuccess(true);
-                              setTimeout(() => setLogoSaveSuccess(false), 3000);
-                            } catch (error: any) {
-                              console.error("Error uploading logo:", error);
-                            } finally {
-                              setIsUploading(false);
-                            }
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              setCropZoom(1);
+                              setCropX(0);
+                              setCropY(0);
+                              setCropFile(file);
+                              setCropSrc(reader.result as string);
+                              setCropFieldSetter(() => async (downloadUrl: string) => {
+                                try {
+                                  setIsUploading(true);
+                                  await setDoc(doc(db, "settings", "website"), {
+                                    logoUrl: downloadUrl,
+                                    updatedAt: new Date().toISOString()
+                                  }, { merge: true });
+                                  await setDoc(doc(db, "settings", "branding"), {
+                                    logoUrl: downloadUrl,
+                                    isMainLogoUploaded: true,
+                                    isLogoUploaded: true,
+                                    updatedAt: new Date().toISOString()
+                                  }, { merge: true });
+                                  setWebsiteLogoUrl(downloadUrl);
+                                  setShowLogoSuccessPopup(true);
+                                } catch (error: any) {
+                                  console.error("Error setting logo from cropper:", error);
+                                } finally {
+                                  setIsUploading(false);
+                                }
+                              });
+                            };
+                            reader.readAsDataURL(file);
                           }}
                           disabled={isUploading}
                         />
@@ -2713,6 +2743,15 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                 logoUrl: val,
                                 updatedAt: new Date().toISOString()
                               }, { merge: true });
+                              if (val) {
+                                await setDoc(doc(db, "settings", "branding"), {
+                                  logoUrl: val,
+                                  isMainLogoUploaded: true,
+                                  isLogoUploaded: true,
+                                  updatedAt: new Date().toISOString()
+                                }, { merge: true });
+                                setShowLogoSuccessPopup(true);
+                              }
                             } catch (err) {
                               console.error("Error updating logo URL manual:", err);
                             }
@@ -3961,6 +4000,58 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                 ক্রপ ও আপলোড সম্পন্ন করুন
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Immersive uploading loading overlay */}
+      {isUploading && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in font-alinur">
+          <div className="bg-white border-2 border-emerald-600 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl space-y-6">
+            <div className="flex justify-center">
+              <div className="relative h-20 w-20 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full border-4 border-emerald-100 animate-pulse"></div>
+                <div className="absolute inset-0 rounded-full border-4 border-t-emerald-800 animate-spin"></div>
+                <div className="h-10 w-10 bg-emerald-800 rounded-full flex items-center justify-center text-white font-bold animate-bounce text-sm">
+                  🕌
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-base font-extrabold text-emerald-950">লোগো আপলোড হচ্ছে...</h3>
+              <p className="text-[11px] text-gray-500 leading-relaxed font-bold animate-pulse">
+                ফাইলটি সার্ভারে প্রসেস করা হচ্ছে। অনুগ্রহ করে কিছু সময় অপেক্ষা করুন।
+              </p>
+            </div>
+            {/* Smooth Progress Wave / Bar Simulation */}
+            <div className="h-2 w-full bg-emerald-50 rounded-full overflow-hidden relative border border-emerald-100">
+              <div className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-emerald-600 via-amber-500 to-emerald-600 rounded-full animate-[pulse_1.5s_infinite] w-full"></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Madrasah Logo Upload Success Modal Dialog */}
+      {showLogoSuccessPopup && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in font-alinur">
+          <div className="bg-white border-2 border-emerald-600 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4">
+            <div className="flex justify-center">
+              <div className="h-16 w-16 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
+                <Check className="h-10 w-10 stroke-[3]" />
+              </div>
+            </div>
+            <h3 className="text-xl font-extrabold text-emerald-950 font-alinur">আপনার লগো আপডেট সফল</h3>
+            <p className="text-xs text-gray-600 leading-relaxed font-bold">
+              মাদ্রাসার অফিসিয়াল লোগোটি সফলভাবে আপডেট করা হয়েছে এবং সম্পূর্ণ ওয়েবসাইটে পরিবর্তন রিয়েল-টাইমে যুক্ত করা হয়েছে।
+            </p>
+            <button
+              onClick={() => {
+                setShowLogoSuccessPopup(false);
+              }}
+              className="w-full bg-emerald-800 hover:bg-emerald-900 text-white font-extrabold text-xs py-2.5 rounded-full transition-colors cursor-pointer text-center shadow-md shadow-emerald-800/10"
+            >
+              ঠিক আছে
+            </button>
           </div>
         </div>
       )}

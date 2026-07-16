@@ -283,6 +283,33 @@ export default function HomeSection({
   setActiveTab?: (tab: string) => void; 
   onSelectMember?: (member: CommitteeMember) => void;
 }) {
+  const [logoUrlWithCache, setLogoUrlWithCache] = useState<string>("/photo/logo.png");
+
+  useEffect(() => {
+    if (logoUrl) {
+      const freshUrl = `${logoUrl}${logoUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
+      setLogoUrlWithCache(freshUrl);
+      
+      // Dynamic preload to <head>
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.href = freshUrl;
+      link.setAttribute('fetchpriority', 'high');
+      document.head.appendChild(link);
+      
+      return () => {
+        try {
+          document.head.removeChild(link);
+        } catch (e) {
+          // ignore
+        }
+      };
+    } else {
+      setLogoUrlWithCache("/photo/logo.png");
+    }
+  }, [logoUrl]);
+
   // Contact Form State
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
@@ -587,6 +614,8 @@ export default function HomeSection({
         const websiteSettings = settingsList.find(s => s.id === "website");
         const heroBgUrl = websiteSettings?.heroBgUrl || "";
         const contactSettings = settingsList.find(s => s.id === "contact");
+        const brandingSettings = settingsList.find(s => s.id === "branding");
+        const contactLogoUrl = brandingSettings?.contactLogoUrl || logoUrl || "/photo/logo.png";
 
         return (
           <StreamBuilder<SuccessStory>
@@ -792,14 +821,16 @@ export default function HomeSection({
                           className="flex justify-center"
                         >
                           {!logoError ? (
-                            <img 
-                              src="/photo/logo.png" 
-                              alt="সুফিয়া নূরীয়া দাখিল মাদ্রাসা লোগো" 
-                              className="h-14 w-14 sm:h-18 sm:w-18 md:h-20 md:w-20 object-contain filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)]" 
-                              onError={() => setLogoError(true)}
-                            />
+                            <div className="h-24 w-24 sm:h-32 sm:w-32 md:h-36 md:w-36 rounded-full overflow-hidden border-4 border-amber-400 bg-white p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.3)] filter drop-shadow-[0_8px_12px_rgba(0,0,0,0.4)] transition-all hover:scale-105 duration-300 flex items-center justify-center">
+                              <img 
+                                src={logoUrlWithCache} 
+                                alt="সুফিয়া নূরীয়া দাখিল মাদ্রাসা লোগো" 
+                                className="w-full h-full object-cover rounded-full" 
+                                onError={() => setLogoError(true)}
+                              />
+                            </div>
                           ) : (
-                            <div className="h-14 w-14 sm:h-18 sm:w-18 md:h-20 md:w-20 rounded-full bg-amber-500/10 border border-amber-400 flex items-center justify-center text-amber-400 font-bold text-xl shadow-lg">
+                            <div className="h-24 w-24 sm:h-32 sm:w-32 md:h-36 md:w-36 rounded-full bg-amber-500/10 border-2 border-amber-400 flex items-center justify-center text-amber-400 font-bold text-3xl sm:text-4xl shadow-lg">
                               🕌
                             </div>
                           )}
@@ -1116,12 +1147,12 @@ export default function HomeSection({
                                     <div className="flex flex-col justify-center items-center space-y-4 w-full">
                                       <div className="flex justify-center items-center relative overflow-visible h-64 sm:h-80 w-full">
                                         {/* Central Glow Badge */}
-                                        <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-emerald-950 border-4 border-amber-400 flex flex-col items-center justify-center text-center shadow-2xl z-10 hover:scale-105 transition-all duration-300 select-none overflow-hidden">
+                                        <div className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-emerald-950 border-4 border-amber-400 flex flex-col items-center justify-center text-center shadow-2xl z-10 hover:scale-105 transition-all duration-300 select-none overflow-hidden">
                                           <div className="absolute inset-0 rounded-full bg-amber-400/10 animate-ping duration-[3000ms]"></div>
                                           <img
-                                            src="/photo/logo.png"
+                                            src={contactLogoUrl}
                                             alt="Madrasah Logo"
-                                            className="w-full h-full object-cover rounded-full bg-white"
+                                            className="absolute inset-0 w-full h-full object-cover rounded-full"
                                             onError={(e) => {
                                               e.currentTarget.onerror = null;
                                               e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";

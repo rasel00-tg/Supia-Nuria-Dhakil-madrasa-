@@ -35,13 +35,36 @@ export default function RoutineSection() {
   ];
 
   useEffect(() => {
-    // Subscribe to dynamic settings
-    const unsubSettings = onSnapshot(doc(db, "settings", "website"), (docSnap) => {
-      if (docSnap.exists()) {
-        setLogoUrl(docSnap.data().logoUrl || null);
+    let unsubLegacy: (() => void) | null = null;
+    const unsub = onSnapshot(
+      doc(db, "settings", "branding"),
+      (snap) => {
+        if (snap.exists()) {
+          setLogoUrl(snap.data().logoUrl || null);
+        } else {
+          if (!unsubLegacy) {
+            unsubLegacy = onSnapshot(
+              doc(db, "settings", "website"),
+              (webSnap) => {
+                if (webSnap.exists()) {
+                  setLogoUrl(webSnap.data().logoUrl || null);
+                }
+              },
+              (err) => {
+                console.warn("Unable to reach legacy website config: ", err);
+              }
+            );
+          }
+        }
+      },
+      (err) => {
+        console.warn("Unable to reach branding config (operating in offline/fallback mode): ", err);
       }
-    });
-    return () => unsubSettings();
+    );
+    return () => {
+      unsub();
+      if (unsubLegacy) unsubLegacy();
+    };
   }, []);
 
   const handleUploadAndLock = async () => {
@@ -830,7 +853,7 @@ export default function RoutineSection() {
                   <div className="flex items-center justify-between pb-6 mb-8" style={{ borderBottom: "2px solid #312e81" }}>
                     <div className="flex items-center gap-4">
                       <img 
-                        src="/photo/logo.png" 
+                        src={logoUrl || "/photo/logo.png"} 
                         alt="Madrasa Logo" 
                         className="h-20 w-20 object-contain rounded-full p-1"
                         style={{ backgroundColor: "#ffffff", border: "1px solid #f1f5f9" }}
@@ -917,7 +940,7 @@ export default function RoutineSection() {
                     <div className="flex items-center justify-between pb-6 mb-8" style={{ borderBottom: "2px solid #312e81" }}>
                       <div className="flex items-center gap-4">
                         <img 
-                          src="/photo/logo.png" 
+                          src={logoUrl || "/photo/logo.png"} 
                           alt="Madrasa Logo" 
                           className="h-20 w-20 object-contain rounded-full p-1"
                           style={{ backgroundColor: "#ffffff", border: "1px solid #f1f5f9" }}

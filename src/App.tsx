@@ -20,7 +20,7 @@ import InstallPrompt from "./components/InstallPrompt";
 import { seedDatabaseIfEmpty } from "./lib/dbSeeder";
 import { GraduationCap, BookOpen, Clock, Heart, Award } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { db, StreamBuilder, uploadFileToImgBB } from "./lib/firebase";
+import { db, StreamBuilder, uploadFileToImgBB, handleFirestoreError, OperationType } from "./lib/firebase";
 import { doc, onSnapshot, collection, query, setDoc } from "firebase/firestore";
 import { Upload } from "lucide-react";
 
@@ -81,6 +81,7 @@ export default function App() {
       const url = await uploadFileToImgBB(file);
       await setDoc(doc(db, "settings", "branding"), {
         logoUrl: url,
+        isMainLogoUploaded: true,
         isLogoUploaded: true
       }, { merge: true });
     } catch (error) {
@@ -106,13 +107,15 @@ export default function App() {
       }
     }
 
+    let unsubLegacy: (() => void) | null = null;
+
     // Subscribe to dynamic website settings (branding & logo)
     const unsubBranding = onSnapshot(doc(db, "settings", "branding"), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         const url = data.logoUrl || null;
         setLogoUrl(url);
-        setIsLogoUploaded(!!data.isLogoUploaded);
+        setIsLogoUploaded(!!data.isMainLogoUploaded || !!data.isLogoUploaded);
 
         // Dynamically update the favicon and PWA manifest
         if (url) {
@@ -179,18 +182,26 @@ export default function App() {
         }
       } else {
         // Fallback to legacy website settings if branding document doesn't exist yet
-        const unsubLegacy = onSnapshot(doc(db, "settings", "website"), (webSnap) => {
-          if (webSnap.exists()) {
-            const data = webSnap.data();
-            setLogoUrl(data.logoUrl || null);
-          }
-        });
-        return () => unsubLegacy();
+        if (!unsubLegacy) {
+          unsubLegacy = onSnapshot(doc(db, "settings", "website"), (webSnap) => {
+            if (webSnap.exists()) {
+              const data = webSnap.data();
+              setLogoUrl(data.logoUrl || null);
+            }
+          }, (err) => {
+            console.warn("Unable to reach legacy website config: ", err);
+          });
+        }
       }
+    }, (err) => {
+      console.warn("Unable to reach branding config (operating in offline/fallback mode): ", err);
     });
 
     return () => {
       unsubBranding();
+      if (unsubLegacy) {
+        unsubLegacy();
+      }
     };
   }, []);
 
@@ -335,9 +346,9 @@ export default function App() {
                     <div className="relative">
                       <div className="absolute inset-0 bg-amber-500/20 blur-xl rounded-full animate-pulse"></div>
                       <img 
-                        src="/photo/logo.png" 
+                        src={logoUrl || "/photo/logo.png"} 
                         alt="Logo" 
-                        className="h-10 w-10 object-contain rounded-full relative z-10"
+                        className="h-18 w-18 sm:h-22 sm:w-22 object-contain rounded-full relative z-10 bg-white p-1 border-2 border-amber-400 shadow-lg transition-all duration-300 hover:scale-105"
                         onError={(e) => {
                           e.currentTarget.onerror = null;
                           e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";

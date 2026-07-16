@@ -71,7 +71,7 @@ export default function StaffSection({ logoUrl }: StaffSectionProps) {
           <div className="flex justify-center">
             <div className="relative p-2.5 bg-white border-2 border-emerald-800/20 rounded-full shadow-lg">
                 <img 
-                  src="/photo/logo.png" 
+                  src={logoUrl || "/photo/logo.png"} 
                   alt="সুফিয়া নূরীয়া দাখিল মাদ্রাসা লোগো" 
                   className="h-24 w-24 object-contain rounded-full bg-white p-0.5"
                   onError={(e) => {
