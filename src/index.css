@@ -65,3 +65,12 @@ html, body, #root {
 .animate-button-pulse-glow {
   animation: button-pulse-glow 2s ease-in-out infinite;
 }
+
+/* Fix for html2canvas oklch unsupported error in Tailwind v4 */
+#application-form-pdf-template *,
+#routine-pdf-template *,
+#exam-routine-pdf-template * {
+  border-color: #cbd5e1;
+  text-decoration-color: #0f172a;
+  outline-color: transparent;
+}

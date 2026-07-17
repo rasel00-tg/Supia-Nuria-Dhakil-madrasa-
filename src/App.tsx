@@ -16,8 +16,11 @@ import StudentsSection from "./components/StudentsSection";
 import CommitteeMemberDetail from "./components/CommitteeMemberDetail";
 import GlobalLoadingPopup from "./components/GlobalLoadingPopup";
 import NoticeSection from "./components/NoticeSection";
+import ReviewCenterSection from "./components/ReviewCenterSection";
 import GamingCornerSection from "./components/GamingCornerSection";
 import InstallPrompt from "./components/InstallPrompt";
+import ApplicationTracking from "./components/ApplicationTracking";
+import HafizgonSection from "./components/HafizgonSection";
 import { seedDatabaseIfEmpty } from "./lib/dbSeeder";
 import { GraduationCap, BookOpen, Clock, Heart, Award } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -30,6 +33,7 @@ const FooterStreamBuilder = StreamBuilder as any;
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>("home");
+  const [isAdmissionFormOpen, setIsAdmissionFormOpen] = useState<boolean>(false);
   const [user, setUser] = useState<any | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null | undefined>(undefined);
   const [isLogoUploaded, setIsLogoUploaded] = useState<boolean>(false);
@@ -229,7 +233,7 @@ export default function App() {
   // When activeTab changes, we push a state into history.
   // When the user presses the hardware/software back button, we intercept it.
   useEffect(() => {
-    if (activeTab === "teachers" || activeTab === "sodosso_form" || activeTab === "staff" || activeTab === "committee" || activeTab === "committee_member_detail" || activeTab === "notice_corner" || activeTab === "routine") {
+    if (activeTab === "teachers" || activeTab === "sodosso_form" || activeTab === "staff" || activeTab === "committee" || activeTab === "committee_member_detail" || activeTab === "notice_corner" || activeTab === "routine" || activeTab === "application_tracking" || activeTab === "hafizgon") {
       // Push history state to enable a backward pop action
       window.history.pushState({ prevTab: activeTab }, "");
 
@@ -298,7 +302,7 @@ export default function App() {
             {activeTab === "honored" && <HonoredSection />}
             {activeTab === "routine" && <RoutineSection />}
             {activeTab === "result" && <ResultSection />}
-            {activeTab === "admission" && <AdmissionSection />}
+            {activeTab === "admission" && <AdmissionSection onFormStateChange={setIsAdmissionFormOpen} logoUrl={logoUrl} />}
             {activeTab === "committee" && (
               <CommitteeSection
                 onSelectMember={(member) => {
@@ -322,7 +326,10 @@ export default function App() {
             {activeTab === "staff" && <StaffSection logoUrl={logoUrl} />}
             {activeTab === "students" && <StudentsSection logoUrl={logoUrl} />}
             {activeTab === "notice_corner" && <NoticeSection />}
+            {activeTab === "hafizgon" && <HafizgonSection />}
             {activeTab === "gaming_corner" && <GamingCornerSection logoUrl={logoUrl} />}
+            {activeTab === "review_center" && <ReviewCenterSection />}
+            {activeTab === "application_tracking" && <ApplicationTracking logoUrl={logoUrl} setActiveTab={setActiveTab} />}
             {activeTab === "login" && (
               <LoginSection onLoginSuccess={handleLoginSuccess} />
             )}
@@ -334,7 +341,7 @@ export default function App() {
       </main>
 
       {/* Sticky Bottom/Footer Section */}
-      {activeTab !== "teachers" && activeTab !== "gaming_corner" && activeTab !== "committee" && activeTab !== "committee_member_detail" && activeTab !== "dashboard" && activeTab !== "sodosso_form" && activeTab !== "staff" && activeTab !== "students" && activeTab !== "honored" && activeTab !== "routine" && user?.role !== "admin" && (
+      {!(activeTab === "admission" && isAdmissionFormOpen) && activeTab !== "teachers" && activeTab !== "review_center" && activeTab !== "gaming_corner" && activeTab !== "committee" && activeTab !== "committee_member_detail" && activeTab !== "dashboard" && activeTab !== "sodosso_form" && activeTab !== "staff" && activeTab !== "students" && activeTab !== "honored" && activeTab !== "routine" && activeTab !== "application_tracking" && activeTab !== "hafizgon" && user?.role !== "admin" && (
         <FooterStreamBuilder
           stream={settingsCollectionQuery}
           builder={(settingsList) => {

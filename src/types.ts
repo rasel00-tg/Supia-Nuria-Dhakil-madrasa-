@@ -116,3 +116,12 @@ export interface Notice {
   isEdited?: boolean;
 }
 
+export interface Hafiz {
+  id: string;
+  name: string;
+  fatherName: string;
+  address: string;
+  photoUrl: string;
+  createdAt?: any;
+}
+

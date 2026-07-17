@@ -82,24 +82,24 @@ export default function Navbar({
       label: "মতামত", 
       icon: MessageSquare, 
       submenus: [
-        { label: "মতামত দিন", action: () => {} }
+        { label: "রিভিউ সেন্টার", action: () => { setActiveTab("review_center"); setIsOpen(false); } }
       ] 
     },
     { 
       id: "gallery", 
-      label: "গ্যালারী", 
+      label: "হিফজ বিভাগ", 
       icon: Image, 
       submenus: [
-        { label: "শিক্ষার্থীদের সাফল্য", action: () => {} },
-        { label: "ছবি", action: () => {} }
+        { label: "হাফেজগন", action: () => { setActiveTab("hafizgon"); setIsOpen(false); } }
       ] 
     },
     { 
       id: "pages", 
-      label: "পেজ", 
+      label: "আবেদন কর্ণার", 
       icon: FileText, 
       submenus: [
-        { label: "অনলাইন আবেদন", action: () => { setActiveTab("admission"); setIsOpen(false); } }
+        { label: "অনলাইন আবেদন", action: () => { setActiveTab("admission"); setIsOpen(false); } },
+        { label: "আবেদন ট্র্যাকিং", action: () => { setActiveTab("application_tracking"); setIsOpen(false); } }
       ] 
     },
     { 
@@ -107,7 +107,16 @@ export default function Navbar({
       label: "যোগাযোগ", 
       icon: Phone, 
       submenus: [
-        { label: "কন্টাক্ট ও ইমেইল", action: () => {} }
+        { label: "কন্টাক্ট ও ইমেইল", action: () => {
+          setActiveTab("home");
+          setIsOpen(false);
+          setTimeout(() => {
+            const section = document.getElementById("official-contact-section");
+            if (section) {
+              section.scrollIntoView({ behavior: "smooth" });
+            }
+          }, 100);
+        } }
       ] 
     },
   ];

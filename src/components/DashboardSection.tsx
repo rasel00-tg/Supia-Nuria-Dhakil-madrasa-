@@ -2,11 +2,17 @@ import React, { useEffect, useState } from "react";
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, setDoc, getDocs, getDoc, serverTimestamp, where } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType, uploadFileToImgBB, StreamBuilder } from "../lib/firebase";
 import { Teacher, SuccessStory, CommitteeMember, HonoredPerson, AdmissionForm, Routine, ContactMessage } from "../types";
-import { Trash2, Edit3, Plus, Check, X, CreditCard, Mail, UserPlus, Users, GraduationCap, Calendar, Award, MessageSquare, Heart, CheckCircle2, XCircle, Settings, Megaphone, ChevronDown, LayoutDashboard, Globe, Lock } from "lucide-react";
+import { Trash2, Edit3, Plus, Check, X, CreditCard, Mail, UserPlus, Users, GraduationCap, Calendar, Award, MessageSquare, Heart, CheckCircle2, XCircle, Settings, Megaphone, ChevronDown, LayoutDashboard, Globe, Lock, ArrowLeft, CheckCircle, AlertCircle, CalendarCheck, CalendarRange, ClipboardList, Loader2, BookOpen } from "lucide-react";
 import PathdanUpdateForm from "./PathdanUpdateForm";
 import SodossoFormUpdateForm from "./SodossoFormUpdateForm";
 import KormochariUpdateForm from "./KormochariUpdateForm";
+import HafizgonUpdateForm from "./HafizgonUpdateForm";
 import { motion, AnimatePresence } from "motion/react";
+
+const toBengaliDigits = (numStr: string | number): string => {
+  const banglaDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+  return numStr.toString().replace(/[0-9]/g, (match) => banglaDigits[parseInt(match, 10)]);
+};
 
 interface DashboardSectionProps {
   user: { email: string; role: "student" | "teacher" | "admin"; name: string };
@@ -101,6 +107,22 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
   const [isMainLogoUploaded, setIsMainLogoUploaded] = useState(false);
   const [isContactLogoUploaded, setIsContactLogoUploaded] = useState(false);
   const [showLogoSuccessPopup, setShowLogoSuccessPopup] = useState(false);
+
+  // Admissions Sub-Views States
+  const [admissionView, setAdmissionView] = useState<"list" | "detail" | "config">("list");
+  const [selectedAdmissionId, setSelectedAdmissionId] = useState<string | null>(null);
+  const [selectedAdmission, setSelectedAdmission] = useState<any | null>(null);
+  const [configAdmission, setConfigAdmission] = useState<any | null>(null);
+  const [accountLoginId, setAccountLoginId] = useState("");
+  const [accountPassword, setAccountPassword] = useState("");
+  const [isConfigSaving, setIsConfigSaving] = useState(false);
+  const [configError, setConfigError] = useState("");
+
+  // Rejection Reason Popup States
+  const [rejectionAdmission, setRejectionAdmission] = useState<any | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [isRejectionSaving, setIsRejectionSaving] = useState(false);
+  const [showRejectionModal, setShowRejectionModal] = useState(false);
 
   // Dedicated class routines form states
   const [routineClassInput, setRoutineClassInput] = useState("");
@@ -877,6 +899,51 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
     }
   };
 
+  const renderAdmissionVerifyField = (adm: any, labelBn: string, labelEn: string, fieldKey: string, value: string) => {
+    const verifiedFields = adm.verifiedFields || {};
+    const isVerified = !!verifiedFields[fieldKey];
+    return (
+      <div key={fieldKey} className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 bg-slate-50 hover:bg-emerald-50/20 rounded-xl border border-slate-100 transition-all gap-3">
+        <div>
+          <span className="text-xs text-slate-500 font-bold block">{labelBn} <span className="font-sans text-[10px] text-slate-400">({labelEn})</span></span>
+          <span className="text-sm text-emerald-950 font-black mt-0.5 block">{value || "N/A"}</span>
+        </div>
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              const docRef = doc(db, "admissions", adm.id);
+              await setDoc(docRef, {
+                verifiedFields: {
+                  [fieldKey]: !isVerified
+                }
+              }, { merge: true });
+            } catch (e) {
+              console.error("Field verify error:", e);
+            }
+          }}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+            isVerified
+              ? "bg-emerald-100 text-emerald-800 border-emerald-200 shadow-xs"
+              : "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200"
+          }`}
+        >
+          {isVerified ? (
+            <>
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+              <span>ভেরিফাইড (Verified)</span>
+            </>
+          ) : (
+            <>
+              <AlertCircle className="w-3.5 h-3.5 text-slate-400" />
+              <span>যাচাই করুন (Verify)</span>
+            </>
+          )}
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div id="dashboard-section" className="space-y-8 py-6 w-full px-2">
       {/* Welcome Banner */}
@@ -1015,6 +1082,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
               { id: "committee", label: "গভর্নিং বডি", icon: Users },
               { id: "honored", label: "স্মরণীয় ব্যক্তিত্ব", icon: Heart },
               { id: "routines", label: "রুটিন শিডিউল", icon: Calendar },
+              { id: "hafizgon", label: "হিফজ বিভাগ", icon: BookOpen },
             ].map((tab) => {
               const Icon = tab.icon;
               return (
@@ -1339,9 +1407,10 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                 {activeAdminSubTab === "pathdan_update" && "এক নজরে পাঠদান তথ্য এডিট ও কাস্টমাইজেশন"}
                 {activeAdminSubTab === "sodosso_form_settings" && "সদস্য ফরম কন্টেন্ট এডিট ও কাস্টমাইজেশন"}
                 {activeAdminSubTab === "contact_update" && "প্রাতিষ্ঠানিক যোগাযোগ ও ঠিকানা আপডেট"}
+                {activeAdminSubTab === "hafizgon" && "হিফজ বিভাগ - হাফেজদের তথ্য ও প্রোফাইল ডাটাবেস"}
               </h3>
             </div>
-            {activeAdminSubTab !== "dashboard" && activeAdminSubTab !== "admissions" && activeAdminSubTab !== "messages" && activeAdminSubTab !== "settings" && activeAdminSubTab !== "hero_background" && activeAdminSubTab !== "running_notices" && activeAdminSubTab !== "public_notices" && activeAdminSubTab !== "pathdan_update" && activeAdminSubTab !== "sodosso_form_settings" && activeAdminSubTab !== "contact_update" && activeAdminSubTab !== "routines" && (
+            {activeAdminSubTab !== "dashboard" && activeAdminSubTab !== "admissions" && activeAdminSubTab !== "messages" && activeAdminSubTab !== "settings" && activeAdminSubTab !== "hero_background" && activeAdminSubTab !== "running_notices" && activeAdminSubTab !== "public_notices" && activeAdminSubTab !== "pathdan_update" && activeAdminSubTab !== "sodosso_form_settings" && activeAdminSubTab !== "contact_update" && activeAdminSubTab !== "routines" && activeAdminSubTab !== "hafizgon" && (
               <button
                 id="admin-add-new-btn"
                 onClick={handleOpenAddForm}
@@ -1525,13 +1594,13 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           <td className="p-3 font-bold text-emerald-950">{cls.name}</td>
                           <td className="p-3 font-mono text-gray-500">{cls.rolls}</td>
                           <td className="p-3 text-center font-bold font-mono text-emerald-900">
-                            <StreamBuilder<any>
-                              stream={collection(db, "students")}
-                              builder={(students) => {
+                            {React.createElement(StreamBuilder, {
+                              stream: collection(db, "students"),
+                              builder: (students: any[]) => {
                                 const count = students.filter(s => s.className === cls.name).length;
                                 return <span>{count} জন</span>;
-                              }}
-                            />
+                              }
+                            })}
                           </td>
                           <td className="p-3 text-center">
                             <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-100">সক্রিয়</span>
@@ -1545,86 +1614,714 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
             </div>
           )}
 
-          {/* 1. Admissions Tracking List */}
+          {/* 1. Admissions Tracking List with Real-Time StreamBuilder */}
           {activeAdminSubTab === "admissions" && (
-            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-              <table className="w-full text-left border-collapse text-sm">
-                <thead>
-                  <tr className="bg-emerald-50 text-emerald-950 font-bold border-b border-gray-100">
-                    <th className="p-4">আবেদন কোড</th>
-                    <th className="p-4">শিক্ষার্থীর নাম</th>
-                    <th className="p-4">শ্রেণী</th>
-                    <th className="p-4">পিতার নাম</th>
-                    <th className="p-4">মোবাইল নং</th>
-                    <th className="p-4">পেমেন্ট</th>
-                    <th className="p-4">স্ট্যাটাস</th>
-                    <th className="p-4 text-center">অ্যাকশন</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {admissions.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="p-8 text-center text-gray-400 font-sans">
-                        কোনো আবেদনের তথ্য পাওয়া যায়নি।
-                      </td>
-                    </tr>
-                  ) : (
-                    admissions.map((adm) => (
-                      <tr key={adm.id} className="hover:bg-emerald-50/10">
-                        <td className="p-4 font-mono font-bold text-xs">{adm.id || adm.form_id || "N/A"}</td>
-                        <td className="p-4 font-bold">{adm.student_name}</td>
-                        <td className="p-4">{adm.class_name || (adm as any).class}</td>
-                        <td className="p-4 text-xs text-gray-600">{adm.father_name}</td>
-                        <td className="p-4 font-mono text-xs">{adm.phone}</td>
-                        <td className="p-4">
-                          <button
-                            onClick={() => handleToggleAdmissionPayment(adm.id, adm.payment_status)}
-                            className={`flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all border ${
-                              adm.payment_status === "Paid"
-                                ? "bg-emerald-50 text-emerald-800 border-emerald-300"
-                                : "bg-red-50 text-red-800 border-red-300"
-                            }`}
-                          >
-                            <CreditCard className="h-3 w-3" />
-                            <span>{adm.payment_status === "Paid" ? "Paid" : "Unpaid"}</span>
-                          </button>
-                        </td>
-                        <td className="p-4">
-                          <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${
-                            adm.status === "Approved" ? "bg-emerald-100 text-emerald-800" : adm.status === "Rejected" ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-800"
-                          }`}>
-                            {adm.status === "Approved" ? "অনুমোদিত" : adm.status === "Rejected" ? "বাতিল" : "পেন্ডিং"}
-                          </span>
-                        </td>
-                        <td className="p-4 text-center">
-                          <div className="flex justify-center space-x-1">
+            <div style={{ fontFamily: 'Alinur Tatsama' }} className="font-alinur space-y-6">
+              {React.createElement(StreamBuilder, {
+                stream: collection(db, "admissions"),
+                builder: (admissionsList: any[], loading: any, error: any) => {
+                  if (loading) {
+                    return (
+                      <div className="flex flex-col items-center justify-center p-16 text-emerald-800 bg-white border border-slate-200 rounded-xl shadow-xs gap-3">
+                        <span className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></span>
+                        <span className="text-sm font-bold">সার্ভার থেকে ডেটা লোড হচ্ছে...</span>
+                      </div>
+                    );
+                  }
+                  if (error) {
+                    return (
+                      <div className="p-8 text-center text-red-500 font-bold bg-white border border-slate-200 rounded-xl shadow-xs">
+                        <XCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
+                        <span>ডেটা লোড করতে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।</span>
+                      </div>
+                    );
+                  }
+
+                  // 1. LIST VIEW
+                  if (admissionView === "list") {
+                    const pendingAdmissions = admissionsList.filter((adm: any) => {
+                      const s = (adm.status || "pending").toLowerCase();
+                      return s !== "approved" && s !== "accepted" && s !== "rejected";
+                    });
+
+                    // Compute dynamic stats based on admissionsList (which contains all records)
+                    const getAdmissionDate = (adm: any): Date | null => {
+                      if (adm.createdAt) {
+                        try {
+                          return adm.createdAt.toDate ? adm.createdAt.toDate() : new Date(adm.createdAt);
+                        } catch (e) {}
+                      }
+                      if (adm.date) {
+                        try {
+                          const parts = adm.date.split("/");
+                          if (parts.length === 3) {
+                            const day = parseInt(parts[0], 10);
+                            const month = parseInt(parts[1], 10) - 1;
+                            const year = parseInt(parts[2], 10);
+                            return new Date(year, month, day);
+                          }
+                          return new Date(adm.date);
+                        } catch (e) {}
+                      }
+                      return null;
+                    };
+
+                    const today = new Date();
+                    let todayTotal = 0;
+                    let todayApproved = 0;
+                    let todayRejected = 0;
+
+                    let monthTotal = 0;
+                    let monthApproved = 0;
+                    let monthRejected = 0;
+
+                    let totalAll = 0;
+                    let totalApproved = 0;
+                    let totalRejected = 0;
+
+                    admissionsList.forEach((adm: any) => {
+                      const status = (adm.status || "pending").toLowerCase();
+                      const isAppr = status === "approved" || status === "accepted";
+                      const isRej = status === "rejected";
+
+                      totalAll++;
+                      if (isAppr) totalApproved++;
+                      if (isRej) totalRejected++;
+
+                      const d = getAdmissionDate(adm);
+                      if (d) {
+                        const isT = d.getDate() === today.getDate() &&
+                                    d.getMonth() === today.getMonth() &&
+                                    d.getFullYear() === today.getFullYear();
+                        if (isT) {
+                          todayTotal++;
+                          if (isAppr) todayApproved++;
+                          if (isRej) todayRejected++;
+                        }
+
+                        const isM = d.getMonth() === today.getMonth() &&
+                                    d.getFullYear() === today.getFullYear();
+                        if (isM) {
+                          monthTotal++;
+                          if (isAppr) monthApproved++;
+                          if (isRej) monthRejected++;
+                        }
+                      }
+                    });
+
+                    return (
+                      <div className="space-y-6">
+                        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                          <div className="bg-emerald-800/5 border-b border-emerald-800/10 p-5">
+                            <h3 className="text-base font-bold text-emerald-950">অনলাইন ভর্তি আবেদন ট্র্যাকিং</h3>
+                            <p className="text-xs text-gray-500 mt-1">শিক্ষার্থীদের জমাকৃত অনলাইন ভর্তি আবেদন রিয়েল-টাইমে পর্যবেক্ষণ ও অ্যাকাউন্ট কনফিগার করুন।</p>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse text-sm">
+                              <thead>
+                                <tr className="bg-emerald-50 text-emerald-950 font-bold border-b border-gray-200">
+                                  <th className="p-4">স্ট্যাটাস</th>
+                                  <th className="p-4">আবেদনের তারিখ</th>
+                                  <th className="p-4">শিক্ষার্থীর নাম</th>
+                                  <th className="p-4">শ্রেণী</th>
+                                  <th className="p-4">আবেদন নাম্বার</th>
+                                  <th className="p-4">পিতার নাম</th>
+                                  <th className="p-4 text-center">অ্যাকশন</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100">
+                                {pendingAdmissions.length === 0 ? (
+                                  <tr>
+                                    <td colSpan={7} className="p-12 text-center text-gray-400 font-bold">
+                                      কোনো অনলাইন আবেদন পাওয়া যায়নি।
+                                    </td>
+                                  </tr>
+                                ) : (
+                                  pendingAdmissions.map((adm: any) => {
+                                    // Determine father name
+                                    let fatherName = "N/A";
+                                    if (adm.g1Relation === "বাবা") {
+                                      fatherName = adm.g1Name;
+                                    } else if (adm.g2Relation === "বাবা") {
+                                      fatherName = adm.g2Name;
+                                    } else {
+                                      fatherName = adm.father_name || adm.g1Name || "N/A";
+                                    }
+
+                                    // Format submission date
+                                    let submissionDateStr = "N/A";
+                                    if (adm.createdAt) {
+                                      try {
+                                        const d = adm.createdAt.toDate ? adm.createdAt.toDate() : new Date(adm.createdAt);
+                                        const rawDate = d.toLocaleDateString("en-GB"); // dd/mm/yyyy
+                                        submissionDateStr = toBengaliDigits(rawDate);
+                                      } catch (e) {
+                                        submissionDateStr = "N/A";
+                                      }
+                                    } else if (adm.date) {
+                                      submissionDateStr = toBengaliDigits(adm.date);
+                                    }
+
+                                    const status = adm.status || "pending";
+                                    const displayStatusBn = status === "Approved" || status === "approved" || status === "accepted" ? "অনুমোদিত" : status === "Rejected" || status === "rejected" ? "বাতিল" : "পেন্ডিং";
+
+                                    return (
+                                      <tr key={adm.id} className="hover:bg-emerald-50/10">
+                                        <td className="p-4">
+                                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold border ${
+                                            status === "Approved" || status === "approved" || status === "accepted"
+                                              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                              : status === "Rejected" || status === "rejected"
+                                              ? "bg-red-50 text-red-800 border-red-200"
+                                              : "bg-amber-50 text-amber-800 border-amber-200"
+                                          }`}>
+                                            {displayStatusBn}
+                                          </span>
+                                        </td>
+                                        <td className="p-4 font-bold text-gray-700">{submissionDateStr}</td>
+                                        <td className="p-4 font-black text-emerald-950">{adm.studentNameBn || adm.student_name}</td>
+                                        <td className="p-4 font-bold text-gray-700">{adm.admissionClass || adm.class_name || (adm as any).class}</td>
+                                        <td className="p-4 font-mono text-xs font-bold text-slate-500">{adm.id}</td>
+                                        <td className="p-4 text-xs text-gray-600 font-bold">{fatherName}</td>
+                                        <td className="p-4 text-center">
+                                          <div className="flex justify-center gap-1.5">
+                                            <button
+                                              onClick={() => {
+                                                setSelectedAdmission(adm);
+                                                setAdmissionView("detail");
+                                              }}
+                                              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-all shadow-xs hover:shadow-md cursor-pointer"
+                                            >
+                                              বিস্তারিত
+                                            </button>
+                                            <button
+                                              onClick={async () => {
+                                                if (confirm("আপনি কি এই আবেদনটি মুছে ফেলতে চান?")) {
+                                                  try {
+                                                    await deleteDoc(doc(db, "admissions", adm.id));
+                                                  } catch (e) {
+                                                    console.error(e);
+                                                  }
+                                                }
+                                              }}
+                                              className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors cursor-pointer"
+                                              title="মুছে ফেলুন"
+                                            >
+                                              <Trash2 className="h-4 w-4" />
+                                            </button>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        {/* ৩টি ডাইনামিক স্ট্যাটিস্টিকস ও কাউন্টার কার্ড */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                          {/* Card 1: Today's Admissions */}
+                          <div className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-2xl p-6 shadow-xs relative overflow-hidden group hover:shadow-md transition-all duration-300" style={{ fontFamily: 'Alinur Tatsama' }}>
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-6 -mt-6 group-hover:scale-110 transition-transform duration-500"></div>
+                            <div className="flex items-center gap-4">
+                              <div className="p-3 bg-emerald-600/10 text-emerald-800 rounded-xl">
+                                <CalendarCheck className="h-6 w-6" />
+                              </div>
+                              <div>
+                                <p className="text-xs font-bold text-emerald-800/80 tracking-wide">আজকের অনলাইন আবেদন সংখ্যা</p>
+                                <h4 className="text-3xl font-black text-emerald-950 mt-1 font-mono">{toBengaliDigits(todayTotal)}</h4>
+                              </div>
+                            </div>
+                            <div className="mt-4 pt-4 border-t border-emerald-100/60 flex items-center justify-between text-xs font-bold text-emerald-900">
+                              <span className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-800 px-2.5 py-1 rounded-lg">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                আজ গৃহীত: {toBengaliDigits(todayApproved)}
+                              </span>
+                              <span className="flex items-center gap-1.5 bg-red-500/10 text-red-800 px-2.5 py-1 rounded-lg">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-50"></span>
+                                আজ বাতিল: {toBengaliDigits(todayRejected)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Card 2: Current Month's Admissions */}
+                          <div className="bg-gradient-to-br from-amber-50 to-white border border-amber-100 rounded-2xl p-6 shadow-xs relative overflow-hidden group hover:shadow-md transition-all duration-300" style={{ fontFamily: 'Alinur Tatsama' }}>
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full -mr-6 -mt-6 group-hover:scale-110 transition-transform duration-500"></div>
+                            <div className="flex items-center gap-4">
+                              <div className="p-3 bg-amber-600/10 text-amber-800 rounded-xl">
+                                <CalendarRange className="h-6 w-6" />
+                              </div>
+                              <div>
+                                <p className="text-xs font-bold text-amber-800/80 tracking-wide">চলমান মাসের অনলাইন আবেদন সংখ্যা</p>
+                                <h4 className="text-3xl font-black text-amber-950 mt-1 font-mono">{toBengaliDigits(monthTotal)}</h4>
+                              </div>
+                            </div>
+                            <div className="mt-4 pt-4 border-t border-amber-100/60 flex items-center justify-between text-xs font-bold text-amber-900">
+                              <span className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-800 px-2.5 py-1 rounded-lg">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                গৃহীত: {toBengaliDigits(monthApproved)}
+                              </span>
+                              <span className="flex items-center gap-1.5 bg-red-500/10 text-red-800 px-2.5 py-1 rounded-lg">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-50"></span>
+                                বাতিল: {toBengaliDigits(monthRejected)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Card 3: Total Admissions */}
+                          <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-200/60 rounded-2xl p-6 shadow-xs relative overflow-hidden group hover:shadow-md transition-all duration-300" style={{ fontFamily: 'Alinur Tatsama' }}>
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-slate-500/5 rounded-full -mr-6 -mt-6 group-hover:scale-110 transition-transform duration-500"></div>
+                            <div className="flex items-center gap-4">
+                              <div className="p-3 bg-slate-600/10 text-slate-800 rounded-xl">
+                                <ClipboardList className="h-6 w-6" />
+                              </div>
+                              <div>
+                                <p className="text-xs font-bold text-slate-800/80 tracking-wide">টোটাল অনলাইন আবেদন সংখ্যা</p>
+                                <h4 className="text-3xl font-black text-slate-950 mt-1 font-mono">{toBengaliDigits(totalAll)}</h4>
+                              </div>
+                            </div>
+                            <div className="mt-4 pt-4 border-t border-slate-200 flex items-center justify-between text-xs font-bold text-slate-900">
+                              <span className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-800 px-2.5 py-1 rounded-lg">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                সর্বমোট গৃহীত: {toBengaliDigits(totalApproved)}
+                              </span>
+                              <span className="flex items-center gap-1.5 bg-red-500/10 text-red-800 px-2.5 py-1 rounded-lg">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-50"></span>
+                                সর্বমোট বাতিল: {toBengaliDigits(totalRejected)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // 2. DETAIL VIEW WITH FIELD-LEVEL VERIFICATION
+                  if (admissionView === "detail" && selectedAdmission) {
+                    const adm = admissionsList.find((a: any) => a.id === selectedAdmission.id) || selectedAdmission;
+                    const verifiedFields = adm.verifiedFields || {};
+
+                    // Helper to render field with toggle verify button
+                    const renderVerifyField = (labelBn: string, labelEn: string, fieldKey: string, value: string) => {
+                      return renderAdmissionVerifyField(adm, labelBn, labelEn, fieldKey, value);
+                    };
+
+                    const isClass6to9 = ["৬ষ্ঠ শ্রেণী", "৭ম শ্রেণী", "৮ম শ্রেণী", "৯ম শ্রেণী"].includes(adm.admissionClass || adm.class_name || (adm as any).class);
+
+                    return (
+                      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm space-y-6">
+                        {/* Header Banner */}
+                        <div className="bg-emerald-800 text-white p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                          <div className="flex items-center gap-3">
                             <button
-                              onClick={() => handleUpdateAdmissionStatus(adm.id, "Approved")}
-                              title="Approve"
-                              className="p-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded transition-colors"
+                              onClick={() => setAdmissionView("list")}
+                              className="p-2 hover:bg-emerald-700/50 rounded-lg transition-colors cursor-pointer text-white"
+                              title="পেছনে ফিরে যান"
                             >
-                              <Check className="h-4.5 w-4.5" />
+                              <ArrowLeft className="w-5 h-5" />
                             </button>
+                            <div>
+                              <h3 className="text-base sm:text-lg font-bold">আবেদনপত্র ভেরিফিকেশন ও বিশদ বিবরণ</h3>
+                              <p className="text-xs text-emerald-100 mt-1">শিক্ষার্থীর জমাকৃত সমস্ত ডাটা একক ফিল্ড-লেভেলে যাচাই করে অনুমোদন করুন।</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold bg-emerald-900 text-amber-300 border border-emerald-700 px-3 py-1.5 rounded-lg font-sans">
+                              কোড: {adm.id}
+                            </span>
+                            <span className={`text-xs font-bold px-3 py-1.5 rounded-lg border ${
+                              adm.status === "Approved" || adm.status === "approved" || adm.status === "accepted"
+                                ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                                : "bg-amber-950 text-amber-300 border-amber-800"
+                            }`}>
+                              অবস্থা: {adm.status === "Approved" || adm.status === "approved" || adm.status === "accepted" ? "অনুমোদিত" : "পেন্ডিং"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="p-6 space-y-8">
+                          {/* 1. Student Personal Information */}
+                          <div className="space-y-4">
+                            <h4 className="text-sm font-bold text-emerald-900 border-b border-emerald-100 pb-2 flex items-center gap-2">
+                              <span className="bg-emerald-800 text-amber-400 w-5 h-5 rounded-full flex items-center justify-center text-[10px]">১</span>
+                              শিক্ষার্থীর ব্যক্তিগত তথ্য (Student Personal Info)
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {renderVerifyField("শিক্ষার্থীর নাম (বাংলা)", "Student Name BN", "studentNameBn", adm.studentNameBn || adm.student_name)}
+                              {renderVerifyField("শিক্ষার্থীর নাম (ইংরেজি)", "Student Name EN", "studentNameEn", adm.studentNameEn)}
+                              {renderVerifyField("ভর্তিচ্ছু শ্রেণী", "Admission Class", "admissionClass", adm.admissionClass || adm.class_name)}
+                              {renderVerifyField("মোবাইল নম্বর", "Mobile Number", "applicantPhone", adm.applicantPhone || adm.phone)}
+                              {renderVerifyField("রক্তের গ্রুপ", "Blood Group", "bloodGroup", adm.bloodGroup)}
+                              {renderVerifyField("লিঙ্গ", "Gender", "gender", adm.gender)}
+                              {renderVerifyField("জন্ম নিবন্ধন / এনআইডি", "NID / Birth Cert", "studentNid", adm.studentNid)}
+                              {renderVerifyField("জন্ম তারিখ", "Date of Birth", "studentDob", adm.studentDob)}
+                              {renderVerifyField("থানা", "Thana", "studentThana", adm.studentThana)}
+                              {renderVerifyField("জেলা", "District", "studentDistrict", adm.studentDistrict)}
+                              {renderVerifyField("বর্তমান ঠিকানা", "Present Address", "studentPresentAddress", adm.studentPresentAddress)}
+                              {renderVerifyField("স্থায়ী ঠিকানা", "Permanent Address", "studentPermanentAddress", adm.studentPermanentAddress)}
+                            </div>
+                          </div>
+
+                          {/* 2. Guardian 1 Information */}
+                          <div className="space-y-4">
+                            <h4 className="text-sm font-bold text-emerald-900 border-b border-emerald-100 pb-2 flex items-center gap-2">
+                              <span className="bg-emerald-800 text-amber-400 w-5 h-5 rounded-full flex items-center justify-center text-[10px]">২</span>
+                              অভিভাবক তথ্য ১ (Guardian 1 Information)
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {renderVerifyField("অভিভাবকের নাম", "Guardian Name", "g1Name", adm.g1Name || adm.father_name)}
+                              {renderVerifyField("সম্পর্ক", "Relation", "g1Relation", adm.g1Relation === "অন্যান্য" ? adm.g1RelationOther : adm.g1Relation)}
+                              {renderVerifyField("যোগাযোগ নাম্বার", "Contact Phone", "g1Phone", adm.g1Phone)}
+                              {renderVerifyField("ইমেইল", "Email Address", "g1Email", adm.g1Email || adm.email)}
+                              {renderVerifyField("এনআইডি নাম্বার", "NID Number", "g1Nid", adm.g1Nid)}
+                              {renderVerifyField("জন্ম তারিখ", "Date of Birth", "g1Dob", adm.g1Dob)}
+                              {renderVerifyField("থানা", "Thana", "g1Thana", adm.g1Thana)}
+                              {renderVerifyField("জেলা", "District", "g1District", adm.g1District)}
+                              {renderVerifyField("বর্তমান ঠিকানা", "Present Address", "g1PresentAddress", adm.g1PresentAddress)}
+                              {renderVerifyField("স্থায়ী ঠিকানা", "Permanent Address", "g1PermanentAddress", adm.g1PermanentAddress)}
+                            </div>
+                          </div>
+
+                          {/* 3. Guardian 2 Information */}
+                          <div className="space-y-4">
+                            <h4 className="text-sm font-bold text-emerald-900 border-b border-emerald-100 pb-2 flex items-center gap-2">
+                              <span className="bg-emerald-800 text-amber-400 w-5 h-5 rounded-full flex items-center justify-center text-[10px]">৩</span>
+                              অভিভাবক তথ্য ২ (Guardian 2 Information)
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {renderVerifyField("অভিভাবকের নাম", "Guardian Name", "g2Name", adm.g2Name || adm.mother_name)}
+                              {renderVerifyField("সম্পর্ক", "Relation", "g2Relation", adm.g2Relation === "অন্যান্য" ? adm.g2RelationOther : adm.g2Relation)}
+                              {renderVerifyField("যোগাযোগ নাম্বার", "Contact Phone", "g2Phone", adm.g2Phone)}
+                              {renderVerifyField("ইমেইল", "Email Address", "g2Email", adm.g2Email)}
+                              {renderVerifyField("এনআইডি নাম্বার", "NID Number", "g2Nid", adm.g2Nid)}
+                              {renderVerifyField("জন্ম তারিখ", "Date of Birth", "g2Dob", adm.g2Dob)}
+                              {renderVerifyField("থানা", "Thana", "g2Thana", adm.g2Thana)}
+                              {renderVerifyField("জেলা", "District", "g2District", adm.g2District)}
+                              {renderVerifyField("বর্তমান ঠিকানা", "Present Address", "g2PresentAddress", adm.g2PresentAddress)}
+                              {renderVerifyField("স্থায়ী ঠিকানা", "Permanent Address", "g2PermanentAddress", adm.g2PermanentAddress)}
+                            </div>
+                          </div>
+
+                          {/* 4. Extra Fields for Class 6 to 9 */}
+                          {isClass6to9 && (
+                            <div className="space-y-4">
+                              <h4 className="text-sm font-bold text-emerald-900 border-b border-emerald-100 pb-2 flex items-center gap-2">
+                                <span className="bg-emerald-800 text-amber-400 w-5 h-5 rounded-full flex items-center justify-center text-[10px]">৪</span>
+                                পূর্ববর্তী প্রাতিষ্ঠানিক তথ্য (Previous Academic Info)
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {renderVerifyField("পূর্বের প্রতিষ্ঠানের নাম", "Prev Institute", "prevInstitute", adm.prevInstitute)}
+                                {renderVerifyField("পূর্বের রোল", "Prev Roll", "prevRoll", adm.prevRoll)}
+                                {renderVerifyField("শেষ জিপিএ (GPA)", "Prev GPA", "prevGpa", adm.prevGpa)}
+                                {renderVerifyField("প্রতিষ্ঠান ত্যাগের কারণ", "Leave Reason", "prevLeaveReason", adm.prevLeaveReason)}
+                                {renderVerifyField("ছাড়পত্র প্রদান করা হয়েছে?", "Clearance Doc", "prevClearance", adm.prevClearance)}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Approval and Rejection controls */}
+                          <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
                             <button
-                              onClick={() => handleUpdateAdmissionStatus(adm.id, "Rejected")}
-                              title="Reject"
-                              className="p-1 bg-red-50 hover:bg-red-100 text-red-700 rounded transition-colors"
+                              type="button"
+                              onClick={() => {
+                                setRejectionAdmission(adm);
+                                setRejectionReason("");
+                                setShowRejectionModal(true);
+                              }}
+                              className="w-full sm:w-auto px-6 py-3 border-2 border-red-200 text-red-600 hover:bg-red-50 font-bold text-sm rounded-xl transition-all shadow-xs hover:shadow-sm cursor-pointer text-center"
                             >
-                              <X className="h-4.5 w-4.5" />
+                              আবেদনটি বাতিল করুন (Reject)
                             </button>
+                            
                             <button
-                              onClick={() => handleDelete(adm.id, "admissions")}
-                              className="p-1 bg-gray-50 hover:bg-gray-100 text-gray-500 rounded"
+                              type="button"
+                              onClick={() => {
+                                setConfigAdmission(adm);
+                                setAccountLoginId(adm.applicantPhone || adm.phone || "");
+                                setAccountPassword("");
+                                setAdmissionView("config");
+                              }}
+                              className="w-full sm:w-auto px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-emerald-600/10 hover:shadow-lg active:scale-98 cursor-pointer text-center"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              চূড়ান্তভাবে গ্রহণ করুন (Approve)
                             </button>
                           </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // 3. ACCOUNT CONFIGURATION PAGE
+                  if (admissionView === "config" && configAdmission) {
+                    const handleAccountSetupSubmit = async (e: React.FormEvent) => {
+                      e.preventDefault();
+                      setConfigError("");
+                      
+                      if (!accountLoginId.trim()) {
+                        setConfigError("লগইন আইডি/মোবাইল নম্বর আবশ্যক।");
+                        return;
+                      }
+                      if (!accountPassword || accountPassword.length <= 5) {
+                        setConfigError("পাসওয়ার্ড অবশ্যই কমপক্ষে ৬ সংখ্যার হতে হবে।");
+                        return;
+                      }
+
+                      setIsConfigSaving(true);
+
+                      try {
+                        // Find total students in this class to assign the next roll
+                        const studentsCol = collection(db, "students");
+                        const qClass = query(studentsCol, where("className", "==", configAdmission.admissionClass || configAdmission.class_name || "শিশু শ্রেণী"));
+                        const snapClass = await getDocs(qClass);
+                        const currentClassSize = snapClass.size;
+                        const nextRollInt = currentClassSize + 1;
+                        const nextRollStr = nextRollInt.toString().padStart(2, "0");
+                        const nextRollBn = toBengaliDigits(nextRollStr);
+
+                        // Save student record in students collection
+                        await addDoc(collection(db, "students"), {
+                          name: configAdmission.studentNameBn || configAdmission.student_name || "নতুন শিক্ষার্থী",
+                          studentNameBn: configAdmission.studentNameBn || "",
+                          studentNameEn: configAdmission.studentNameEn || "",
+                          className: configAdmission.admissionClass || configAdmission.class_name || "শিশু শ্রেণী",
+                          roll: nextRollBn,
+                          phone: configAdmission.applicantPhone || configAdmission.phone || "",
+                          email: accountLoginId.trim().toLowerCase(), // Check during login
+                          loginId: accountLoginId.trim().toLowerCase(), // Check by loginId too
+                          password: accountPassword,
+                          createdAt: new Date().toISOString(),
+                          isDynamicStudent: true,
+                          bloodGroup: configAdmission.bloodGroup || "",
+                          gender: configAdmission.gender || "",
+                          studentNid: configAdmission.studentNid || "",
+                          studentDob: configAdmission.studentDob || "",
+                          studentThana: configAdmission.studentThana || "",
+                          studentDistrict: configAdmission.studentDistrict || "",
+                          studentPresentAddress: configAdmission.studentPresentAddress || "",
+                          studentPermanentAddress: configAdmission.studentPermanentAddress || "",
+                          g1Name: configAdmission.g1Name || "",
+                          g1Phone: configAdmission.g1Phone || "",
+                          g1Nid: configAdmission.g1Nid || "",
+                        });
+
+                        // Set admission form status to Approved
+                        await setDoc(doc(db, "admissions", configAdmission.id), {
+                          status: "Approved",
+                          approvedAt: new Date().toISOString()
+                        }, { merge: true });
+
+                        alert(`অভিনন্দন! আবেদনটি অনুমোদিত হয়েছে। শিক্ষার্থীর জন্য ক্লাস: "${configAdmission.admissionClass || configAdmission.class_name}" এবং রোল: "${nextRollBn}" বরাদ্দ করা হয়েছে।`);
+                        
+                        // Redirect back to list
+                        setAdmissionView("list");
+                        setSelectedAdmission(null);
+                        setConfigAdmission(null);
+                        setAccountLoginId("");
+                        setAccountPassword("");
+
+                      } catch (err) {
+                        console.error("Error configuration save:", err);
+                        setConfigError("অ্যাকাউন্ট তৈরি করতে ডাটাবেস ত্রুটি হয়েছে। অনুগ্রহ করে পুনরায় চেষ্টা করুন।");
+                      } finally {
+                        setIsConfigSaving(false);
+                      }
+                    };
+
+                    return (
+                      <div className="max-w-xl mx-auto bg-white border border-slate-200 rounded-xl overflow-hidden shadow-md">
+                        <div className="bg-emerald-800 text-white p-5 flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setAdmissionView("detail")}
+                            className="p-2 hover:bg-emerald-700/50 rounded-lg transition-colors cursor-pointer text-white"
+                          >
+                            <ArrowLeft className="w-5 h-5" />
+                          </button>
+                          <div>
+                            <h3 className="text-base sm:text-lg font-bold">শিক্ষার্থীর অ্যাকাউন্ট কনফিগারেশন</h3>
+                            <p className="text-xs text-emerald-100 mt-1">শিক্ষার্থীর জন্য স্থায়ী লগইন অ্যাকাউন্ট এবং পাসওয়ার্ড সেটআপ করুন।</p>
+                          </div>
+                        </div>
+
+                        <form onSubmit={handleAccountSetupSubmit} className="p-6 space-y-5">
+                          <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 text-emerald-950 text-xs font-bold leading-relaxed space-y-1">
+                            <p>আবেদনকারী: <span className="text-emerald-800 text-sm font-black">{configAdmission.studentNameBn || configAdmission.student_name}</span></p>
+                            <p>ভর্তিচ্ছু শ্রেণী: <span className="text-amber-600 font-black">{configAdmission.admissionClass || configAdmission.class_name}</span></p>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5 font-sans">
+                              <Mail className="h-4 w-4 text-emerald-700" />
+                              <span>একাউন্ট লগইন তথ্য (লগইন নাম্বার অথবা ইমেইল)</span>
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={accountLoginId}
+                              onChange={(e) => setAccountLoginId(e.target.value)}
+                              placeholder="মোবাইল নাম্বার বা ইমেইল লিখুন"
+                              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all font-sans text-emerald-950 font-bold"
+                            />
+                            <p className="text-[10px] text-gray-400 font-bold">আমরা স্বয়ংক্রিয়ভাবে আবেদনকারীর মোবাইল নম্বর প্রিপপুলেট করেছি।</p>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5 font-sans">
+                              <Lock className="h-4 w-4 text-emerald-700" />
+                              <span>পাসওয়ার্ড (কমপক্ষে ৬ সংখ্যার হতে হবে)</span>
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={accountPassword}
+                              onChange={(e) => setAccountPassword(e.target.value)}
+                              placeholder="যেমন: ১২৩৪৫৬ বা s12345"
+                              minLength={6}
+                              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all font-sans text-emerald-950 font-bold"
+                            />
+                          </div>
+
+                          {configError && (
+                            <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-lg text-xs font-bold">
+                              {configError}
+                            </div>
+                          )}
+
+                          <button
+                            type="submit"
+                            disabled={isConfigSaving}
+                            className="w-full bg-emerald-800 hover:bg-emerald-950 text-amber-400 hover:text-amber-300 font-bold py-3.5 rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 text-sm disabled:bg-emerald-700 cursor-pointer active:scale-98"
+                          >
+                            <span>{isConfigSaving ? "অ্যাকাউন্ট তৈরি হচ্ছে..." : "অ্যাকাউন্ট তৈরি ও আবেদন গ্রহণ করুন"}</span>
+                          </button>
+                        </form>
+                      </div>
+                    );
+                  }
+
+                  return null;
+                }
+              })}
+
+              {/* Rejection Reason Modal */}
+              <AnimatePresence>
+                {showRejectionModal && rejectionAdmission && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 0.6 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => {
+                        if (!isRejectionSaving) {
+                          setShowRejectionModal(false);
+                          setRejectionAdmission(null);
+                        }
+                      }}
+                      className="absolute inset-0 bg-black/80 backdrop-blur-xs"
+                    />
+
+                    {/* Modal Body */}
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                      className="relative bg-white w-full max-w-md rounded-2xl p-6 md:p-8 shadow-2xl border border-red-100 overflow-hidden text-left"
+                      style={{ fontFamily: 'Alinur Tatsama' }}
+                    >
+                      {/* Top Accent Strip */}
+                      <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-600 to-amber-500"></div>
+
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="p-3 bg-red-50 text-red-600 rounded-xl">
+                          <XCircle className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-black text-slate-900">ভর্তি আবেদন বাতিলকরণ</h3>
+                          <p className="text-xs text-slate-500 font-bold">আবেদনটি বাতিলের সুনির্দিষ্ট কারণ উল্লেখ করুন</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/60 text-xs font-bold leading-relaxed space-y-1 text-slate-800">
+                          <p>শিক্ষার্থী: <span className="text-emerald-900 text-sm font-black">{rejectionAdmission.studentNameBn || rejectionAdmission.student_name}</span></p>
+                          <p>ভর্তিচ্ছু শ্রেণী: <span className="text-amber-600 font-black">{rejectionAdmission.admissionClass || rejectionAdmission.class_name}</span></p>
+                          <p>মোবাইল নম্বর: <span className="text-slate-600 font-black font-mono">{rejectionAdmission.applicantPhone || rejectionAdmission.phone}</span></p>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1.5">বাতিলকরণের কারণ লিখুন *</label>
+                          <textarea
+                            required
+                            rows={4}
+                            value={rejectionReason}
+                            onChange={(e) => setRejectionReason(e.target.value)}
+                            placeholder="যেমন: প্রয়োজনীয় কাগজপত্র অসম্পূর্ণ অথবা অভিভাবকের তথ্যে গড়মিল থাকার কারণে আবেদনটি বাতিল হয়েছে।"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all text-slate-900 font-semibold"
+                            style={{ fontFamily: 'Alinur Tatsama' }}
+                          />
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-4">
+                          <button
+                            type="button"
+                            disabled={isRejectionSaving}
+                            onClick={() => {
+                              setShowRejectionModal(false);
+                              setRejectionAdmission(null);
+                            }}
+                            className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                          >
+                            বন্ধ করুন
+                          </button>
+                          
+                          <button
+                            type="button"
+                            disabled={isRejectionSaving || !rejectionReason.trim()}
+                            onClick={async () => {
+                              if (!rejectionReason.trim()) return;
+                              setIsRejectionSaving(true);
+                              try {
+                                await setDoc(
+                                  doc(db, "admissions", rejectionAdmission.id),
+                                  {
+                                    status: "rejected",
+                                    rejectionReason: rejectionReason.trim(),
+                                    rejectedAt: new Date().toISOString()
+                                  },
+                                  { merge: true }
+                                );
+                                alert("আবেদনটি বাতিল করা হয়েছে এবং বাতিলের কারণ সংরক্ষণ করা হয়েছে।");
+                                setShowRejectionModal(false);
+                                setRejectionAdmission(null);
+                                setRejectionReason("");
+                                setAdmissionView("list");
+                              } catch (e) {
+                                console.error("Error rejecting admission:", e);
+                                alert("আবেদন বাতিল করতে সমস্যা হয়েছে। দয়া করে আবার চেষ্টা করুন।");
+                              } finally {
+                                setIsRejectionSaving(false);
+                              }
+                            }}
+                            className="px-5 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                          >
+                            {isRejectionSaving ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                                <span>সংরক্ষণ হচ্ছে...</span>
+                              </>
+                            ) : (
+                              <span>নিশ্চিত করুন</span>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
             </div>
           )}
 
@@ -3497,6 +4194,11 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                 </div>
               </form>
             </div>
+          )}
+
+          {/* 14. Hafizgon Update Form */}
+          {activeAdminSubTab === "hafizgon" && (
+            <HafizgonUpdateForm />
           )}
         </div>
       )}

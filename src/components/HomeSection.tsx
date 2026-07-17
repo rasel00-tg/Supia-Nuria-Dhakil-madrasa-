@@ -1042,7 +1042,7 @@ export default function HomeSection({
                         };
 
                         return (
-                          <section id="contact-and-map" className="border border-emerald-100 rounded-3xl overflow-hidden shadow-2xl bg-white font-alinur relative select-none">
+                          <section id="official-contact-section" className="border border-emerald-100 rounded-3xl overflow-hidden shadow-2xl bg-white font-alinur relative select-none">
                             <div className="grid lg:grid-cols-12 gap-0">
                               {/* Left Column: Contact details and Maps */}
                               <div className={`bg-gradient-to-br from-emerald-900 via-emerald-950 to-emerald-900 text-white p-8 sm:p-12 flex flex-col justify-between relative overflow-hidden min-h-[500px] transition-all duration-700 ${
