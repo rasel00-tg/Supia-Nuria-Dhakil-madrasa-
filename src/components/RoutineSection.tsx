@@ -744,7 +744,7 @@ export default function RoutineSection() {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-indigo-50/50">
-                            {activeExamRoutine.subjects?.map((sub, index) => (
+                            {Array.isArray(activeExamRoutine.subjects) && activeExamRoutine.subjects.map((sub, index) => (
                               <tr
                                 key={index}
                                 className="hover:bg-indigo-50/10 transition-colors odd:bg-slate-50/30 text-center"
@@ -798,7 +798,7 @@ export default function RoutineSection() {
                         className="space-y-2 text-xs text-slate-700"
                         style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                       >
-                        {activeExamRoutine.guidelines?.map((gl, i) => (
+                        {Array.isArray(activeExamRoutine.guidelines) && activeExamRoutine.guidelines.map((gl, i) => (
                           <li key={i} className="flex gap-2">
                             <span className="font-bold">{toBengaliDigits((i + 1).toString())}.</span>
                             <span>{gl}</span>
@@ -894,7 +894,7 @@ export default function RoutineSection() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filtered.map((item, rowIdx) => (
+                      {Array.isArray(filtered) && filtered.map((item, rowIdx) => (
                         <tr 
                           key={item.id} 
                           className="text-xs"
@@ -982,7 +982,7 @@ export default function RoutineSection() {
                         </tr>
                       </thead>
                       <tbody>
-                        {activeExamRoutine.subjects?.map((item, rowIdx) => (
+                        {Array.isArray(activeExamRoutine.subjects) && activeExamRoutine.subjects.map((item, rowIdx) => (
                           <tr 
                             key={rowIdx} 
                             className="text-xs text-center"
@@ -1002,7 +1002,7 @@ export default function RoutineSection() {
                     <div className="mt-8 p-6 rounded-2xl" style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
                       <h3 className="text-sm font-black mb-3" style={{ color: "#1e1b4b" }}>পরীক্ষার্থীদের জন্য সাধারণ নির্দেশনা:</h3>
                       <ul className="space-y-2 text-xs" style={{ color: "#475569" }}>
-                        {activeExamRoutine.guidelines?.map((gl, i) => (
+                        {Array.isArray(activeExamRoutine.guidelines) && activeExamRoutine.guidelines.map((gl, i) => (
                           <li key={i} className="flex gap-2">
                             <span>{toBengaliDigits((i + 1).toString())}.</span>
                             <span>{gl}</span>

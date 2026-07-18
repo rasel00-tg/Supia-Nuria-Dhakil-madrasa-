@@ -21,72 +21,80 @@ export default function LoginSection({ onLoginSuccess }: LoginSectionProps) {
     setLoading(true);
 
     const trimmedInput = email.trim().toLowerCase();
-    const isPhone = /^[0-9]{11}$/.test(trimmedInput);
 
     try {
-      if (role === "admin") {
-        const isValidAdmin = (trimmedInput === "admin@madrasah.com" || (isPhone && trimmedInput === "01700000000")) && password === "admin123";
-        if (isValidAdmin) {
-          onLoginSuccess({ email: "admin@madrasah.com", role: "admin", name: "প্রধান এডমিনিস্ট্রেটর" });
-          setLoading(false);
-          return;
-        }
-      } else if (role === "teacher") {
-        const isValidTeacher = (trimmedInput === "teacher@madrasah.com" || (isPhone && trimmedInput === "01711111111")) && password === "teacher123";
-        if (isValidTeacher) {
-          onLoginSuccess({ email: "teacher@madrasah.com", role: "teacher", name: "হাফেজ মাওলানা আব্দুর রহমান" });
-          setLoading(false);
-          return;
-        }
-      } else if (role === "student") {
-        // 1. Check hardcoded first
-        const isValidHardcodedStudent = (trimmedInput === "student@madrasah.com" || (isPhone && trimmedInput === "01712345678")) && password === "student123";
-        if (isValidHardcodedStudent) {
-          onLoginSuccess({ email: "student@madrasah.com", role: "student", name: "মোহাম্মদ আলী" });
-          setLoading(false);
-          return;
-        }
+      let userDoc: any = null;
+      let userRole: "admin" | "teacher" | "student" = "student";
 
-        // 2. Check dynamic student accounts in Firestore students collection
-        const studentsRef = collection(db, "students");
-        let studentDoc: any = null;
-        let matchedEmail = "";
+      // 1. Try Admin Collection
+      const adminSnap = await getDocs(query(collection(db, "admins"), where("loginId", "==", trimmedInput)));
+      if (!adminSnap.empty) {
+        userDoc = adminSnap.docs[0].data();
+        userRole = "admin";
+      } else {
+        const adminPhoneSnap = await getDocs(query(collection(db, "admins"), where("phone", "==", trimmedInput)));
+        if (!adminPhoneSnap.empty) {
+          userDoc = adminPhoneSnap.docs[0].data();
+          userRole = "admin";
+        }
+      }
 
-        if (isPhone) {
-          const qPhone = query(studentsRef, where("phone", "==", trimmedInput));
-          const snapPhone = await getDocs(qPhone);
-          if (!snapPhone.empty) {
-            studentDoc = snapPhone.docs[0].data();
-            matchedEmail = studentDoc.email || studentDoc.loginId || trimmedInput;
-          }
+      // 2. Try Teacher Collection
+      if (!userDoc) {
+        const teacherSnap = await getDocs(query(collection(db, "teachers"), where("loginId", "==", trimmedInput)));
+        if (!teacherSnap.empty) {
+          userDoc = teacherSnap.docs[0].data();
+          userRole = "teacher";
         } else {
-          const qEmail = query(studentsRef, where("email", "==", trimmedInput));
-          const snapEmail = await getDocs(qEmail);
-          if (!snapEmail.empty) {
-            studentDoc = snapEmail.docs[0].data();
-            matchedEmail = trimmedInput;
-          } else {
-            const qLoginId = query(studentsRef, where("loginId", "==", trimmedInput));
-            const snapLoginId = await getDocs(qLoginId);
-            if (!snapLoginId.empty) {
-              studentDoc = snapLoginId.docs[0].data();
-              matchedEmail = studentDoc.email || trimmedInput;
-            }
+          const teacherPhoneSnap = await getDocs(query(collection(db, "teachers"), where("phone", "==", trimmedInput)));
+          if (!teacherPhoneSnap.empty) {
+            userDoc = teacherPhoneSnap.docs[0].data();
+            userRole = "teacher";
           }
         }
+      }
 
-        if (studentDoc && studentDoc.password === password) {
-          onLoginSuccess({
-            email: matchedEmail,
-            role: "student",
-            name: studentDoc.name || studentDoc.studentNameBn || studentDoc.studentNameEn || "শিক্ষার্থী"
-          });
-          setLoading(false);
+      // 3. Try Student Collection
+      if (!userDoc) {
+        const studentSnap = await getDocs(query(collection(db, "students"), where("loginId", "==", trimmedInput)));
+        if (!studentSnap.empty) {
+          userDoc = studentSnap.docs[0].data();
+          userRole = "student";
+        } else {
+          const studentPhoneSnap = await getDocs(query(collection(db, "students"), where("phone", "==", trimmedInput)));
+          if (!studentPhoneSnap.empty) {
+            userDoc = studentPhoneSnap.docs[0].data();
+            userRole = "student";
+          }
+        }
+      }
+
+      // 4. Hardcoded Fallbacks (Legacy/Initial)
+      if (!userDoc) {
+        if ((trimmedInput === "admin@madrasah.com" || trimmedInput === "01700000000") && password === "admin123") {
+          onLoginSuccess({ email: "admin@madrasah.com", role: "admin", name: "প্রধান এডমিনিস্ট্রেটর" });
+          return;
+        }
+        if ((trimmedInput === "teacher@madrasah.com" || trimmedInput === "01711111111") && password === "teacher123") {
+          onLoginSuccess({ email: "teacher@madrasah.com", role: "teacher", name: "হাফেজ মাওলানা আব্দুর রহমান" });
+          return;
+        }
+        if ((trimmedInput === "student@madrasah.com" || trimmedInput === "01712345678") && password === "student123") {
+          onLoginSuccess({ email: "student@madrasah.com", role: "student", name: "মোহাম্মদ আলী" });
           return;
         }
       }
 
-      setError("দুঃখিত, আপনার দেওয়া ইমেইল/নাম্বার অথবা পাসওয়ার্ডটি সঠিক নয়। অনুগ্রহ করে নিচের নির্দেশনা দেখুন।");
+      if (userDoc && userDoc.password === password) {
+        onLoginSuccess({
+          email: userDoc.email || userDoc.loginId || trimmedInput,
+          role: userRole,
+          name: userDoc.name || userDoc.studentNameBn || "ব্যবহারকারী"
+        });
+        return;
+      }
+
+      setError("দুঃখিত, আপনার দেওয়া ইমেইল/নাম্বার অথবা পাসওয়ার্ডটি সঠিক নয়।");
     } catch (err) {
       console.error("Login verification failed:", err);
       setError("সার্ভার ত্রুটি। অনুগ্রহ করে পুনরায় চেষ্টা করুন।");

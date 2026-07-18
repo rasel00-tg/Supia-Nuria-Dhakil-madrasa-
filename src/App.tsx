@@ -21,6 +21,7 @@ import GamingCornerSection from "./components/GamingCornerSection";
 import InstallPrompt from "./components/InstallPrompt";
 import ApplicationTracking from "./components/ApplicationTracking";
 import HafizgonSection from "./components/HafizgonSection";
+import GovernmentWebsitesSection from "./components/GovernmentWebsitesSection";
 import { seedDatabaseIfEmpty } from "./lib/dbSeeder";
 import { GraduationCap, BookOpen, Clock, Heart, Award } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -43,6 +44,34 @@ export default function App() {
 
   const [jdcUploading, setJdcUploading] = useState<boolean>(false);
   const [imranUploading, setImranUploading] = useState<boolean>(false);
+
+  // Connectivity States
+  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+  const [showOfflineModal, setShowOfflineModal] = useState<boolean>(!navigator.onLine);
+  const [showOnlineToast, setShowOnlineToast] = useState<boolean>(false);
+
+  // Connectivity Listener
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      setShowOfflineModal(false);
+      setShowOnlineToast(true);
+      setTimeout(() => setShowOnlineToast(false), 4000);
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      setShowOfflineModal(true);
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   const handleJdcLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -233,7 +262,7 @@ export default function App() {
   // When activeTab changes, we push a state into history.
   // When the user presses the hardware/software back button, we intercept it.
   useEffect(() => {
-    if (activeTab === "teachers" || activeTab === "sodosso_form" || activeTab === "staff" || activeTab === "committee" || activeTab === "committee_member_detail" || activeTab === "notice_corner" || activeTab === "routine" || activeTab === "application_tracking" || activeTab === "hafizgon") {
+    if (activeTab === "teachers" || activeTab === "sodosso_form" || activeTab === "staff" || activeTab === "committee" || activeTab === "committee_member_detail" || activeTab === "notice_corner" || activeTab === "routine" || activeTab === "application_tracking" || activeTab === "hafizgon" || activeTab === "government_websites") {
       // Push history state to enable a backward pop action
       window.history.pushState({ prevTab: activeTab }, "");
 
@@ -327,6 +356,7 @@ export default function App() {
             {activeTab === "students" && <StudentsSection logoUrl={logoUrl} />}
             {activeTab === "notice_corner" && <NoticeSection />}
             {activeTab === "hafizgon" && <HafizgonSection />}
+            {activeTab === "government_websites" && <GovernmentWebsitesSection />}
             {activeTab === "gaming_corner" && <GamingCornerSection logoUrl={logoUrl} />}
             {activeTab === "review_center" && <ReviewCenterSection />}
             {activeTab === "application_tracking" && <ApplicationTracking logoUrl={logoUrl} setActiveTab={setActiveTab} />}
@@ -341,7 +371,7 @@ export default function App() {
       </main>
 
       {/* Sticky Bottom/Footer Section */}
-      {!(activeTab === "admission" && isAdmissionFormOpen) && activeTab !== "teachers" && activeTab !== "review_center" && activeTab !== "gaming_corner" && activeTab !== "committee" && activeTab !== "committee_member_detail" && activeTab !== "dashboard" && activeTab !== "sodosso_form" && activeTab !== "staff" && activeTab !== "students" && activeTab !== "honored" && activeTab !== "routine" && activeTab !== "application_tracking" && activeTab !== "hafizgon" && user?.role !== "admin" && (
+      {!(activeTab === "admission" && isAdmissionFormOpen) && activeTab !== "teachers" && activeTab !== "review_center" && activeTab !== "gaming_corner" && activeTab !== "committee" && activeTab !== "committee_member_detail" && activeTab !== "dashboard" && activeTab !== "sodosso_form" && activeTab !== "staff" && activeTab !== "students" && activeTab !== "honored" && activeTab !== "routine" && activeTab !== "application_tracking" && activeTab !== "hafizgon" && activeTab !== "government_websites" && user?.role !== "admin" && (
         <FooterStreamBuilder
           stream={settingsCollectionQuery}
           builder={(settingsList) => {
@@ -481,6 +511,80 @@ export default function App() {
           }}
         />
       )}
+
+      {/* Connectivity UI Components */}
+      <AnimatePresence>
+        {showOfflineModal && (
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl p-8 text-center space-y-6 border-2 border-rose-100"
+            >
+              <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-2">
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                >
+                  <svg className="w-10 h-10 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m1.414 2.83L5.414 21M5.636 5.636a9 9 0 0112.728 0M12 12v.01" />
+                  </svg>
+                </motion.div>
+              </div>
+              <h3 className="text-xl font-black text-slate-800 leading-tight">
+                আপনার ইন্টারনেট সংযোগ বিচ্ছিন্ন হয়েছে🥹
+              </h3>
+              <p className="text-sm font-bold text-slate-500 leading-relaxed">
+                ইন্টারনেট চালু করে পুনরায় চালু করুন
+              </p>
+              <button 
+                onClick={() => setShowOfflineModal(false)}
+                className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-emerald-600/20 active:scale-95 transition-all"
+              >
+                ওকে
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showOnlineToast && (
+          <div className="fixed top-24 left-0 right-0 z-[1000] flex justify-center px-4 pointer-events-none font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>
+            <motion.div 
+              initial={{ opacity: 0, y: -50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -50 }}
+              className="bg-emerald-600 text-white px-8 py-3 rounded-full shadow-2xl flex items-center gap-3 border border-emerald-400/30 backdrop-blur-xl"
+            >
+              <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <span className="font-black text-sm">আপনি পূনরায় অনলাইন হয়েছেন!</span>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {!isOnline && !showOfflineModal && (
+          <motion.div 
+            initial={{ y: 100 }}
+            animate={{ y: 0 }}
+            exit={{ y: 100 }}
+            className="fixed bottom-0 left-0 right-0 z-[900] bg-gradient-to-r from-rose-600 to-amber-600 text-white py-2 px-4 text-center font-alinur shadow-[0_-4px_20px_rgba(0,0,0,0.2)]"
+            style={{ fontFamily: 'Alinur Tatsama' }}
+          >
+            <p className="text-xs sm:text-sm font-black flex items-center justify-center gap-2">
+              <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+              সকল আপডেট তাৎক্ষণিক পেতে ইন্টারনেট সংযোগ চালু করুন
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

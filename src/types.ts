@@ -1,10 +1,80 @@
 export interface Teacher {
   id: string;
+  uid?: string;
   name: string;
+  nameEn?: string;
   designation: string;
   photoUrl: string;
   phone: string;
   email?: string;
+  whatsapp?: string;
+  presentAddress?: string;
+  permanentAddress?: string;
+  wardNo?: string;
+  thana?: string;
+  district?: string;
+  division?: string;
+  nid?: string;
+  birthYear?: string;
+  religion?: string;
+  nationality?: string;
+  indexNumber?: string;
+  department?: string;
+  joiningDate?: string;
+  createdAt?: any;
+
+  // Guardian Info
+  fatherName?: string;
+  motherName?: string;
+  fatherNid?: string;
+  motherNid?: string;
+  guardianPresentAddress?: string;
+  guardianPermanentAddress?: string;
+  guardianWardNo?: string;
+  guardianThana?: string;
+  guardianDistrict?: string;
+  guardianDivision?: string;
+  guardianReligion?: string;
+  guardianNationality?: string;
+
+  // Educational Qualifications
+  qualifications?: {
+    ssc?: Qualification;
+    hsc?: Qualification;
+    bachelor?: Qualification;
+    masters?: Qualification;
+    bed?: Qualification;
+    med?: Qualification;
+    others?: Qualification & { name?: string };
+  };
+
+  // Financial Info
+  bankInfo?: {
+    bankName: string;
+    accountName: string;
+    accountNo: string;
+    branchName: string;
+    routingNo?: string;
+  };
+  mobileBanking?: {
+    serviceName: string;
+    number: string;
+  };
+
+  // Institutional Info
+  subject?: string;
+
+  // Login Info
+  loginId?: string;
+  password?: string;
+}
+
+export interface Qualification {
+  boardOrUniv: string;
+  instituteName: string;
+  departmentOrGroup: string;
+  passingYear: string;
+  result: string;
 }
 
 export interface SuccessStory {

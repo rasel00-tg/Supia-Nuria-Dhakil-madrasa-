@@ -1,17 +1,32 @@
 import React, { useEffect, useState } from "react";
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, setDoc, getDocs, getDoc, serverTimestamp, where } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, setDoc, getDocs, getDoc, serverTimestamp, where, limit } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType, uploadFileToImgBB, StreamBuilder } from "../lib/firebase";
 import { Teacher, SuccessStory, CommitteeMember, HonoredPerson, AdmissionForm, Routine, ContactMessage } from "../types";
-import { Trash2, Edit3, Plus, Check, X, CreditCard, Mail, UserPlus, Users, GraduationCap, Calendar, Award, MessageSquare, Heart, CheckCircle2, XCircle, Settings, Megaphone, ChevronDown, LayoutDashboard, Globe, Lock, ArrowLeft, CheckCircle, AlertCircle, CalendarCheck, CalendarRange, ClipboardList, Loader2, BookOpen } from "lucide-react";
+import { Trash2, Edit3, Plus, Check, X, CreditCard, Mail, UserPlus, Users, GraduationCap, Calendar, Award, MessageSquare, Heart, CheckCircle2, XCircle, Settings, Megaphone, ChevronDown, LayoutDashboard, Globe, Lock, ArrowLeft, CheckCircle, AlertCircle, CalendarCheck, CalendarRange, ClipboardList, Loader2, BookOpen, Home, Compass, HelpCircle, Send, Clock, LogOut, Activity, TrendingUp } from "lucide-react";
 import PathdanUpdateForm from "./PathdanUpdateForm";
 import SodossoFormUpdateForm from "./SodossoFormUpdateForm";
 import KormochariUpdateForm from "./KormochariUpdateForm";
 import HafizgonUpdateForm from "./HafizgonUpdateForm";
+import TeacherManagement from "./TeacherManagement";
 import { motion, AnimatePresence } from "motion/react";
 
 const toBengaliDigits = (numStr: string | number): string => {
   const banglaDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
   return numStr.toString().replace(/[0-9]/g, (match) => banglaDigits[parseInt(match, 10)]);
+};
+
+const toEnglishDigits = (numStr: string | number): string => {
+  const banglaToEnglish: { [key: string]: string } = {
+    "০": "0", "১": "1", "২": "2", "৩": "3", "৪": "4", "৫": "5", "৬": "6", "৭": "7", "৮": "8", "৯": "9"
+  };
+  return numStr.toString().replace(/[০-৯]/g, (match) => banglaToEnglish[match]);
+};
+
+const compareRolls = (roll1: string | number, roll2: string | number): boolean => {
+  if (roll1 === undefined || roll1 === null || roll2 === undefined || roll2 === null) return false;
+  const r1Str = toEnglishDigits(roll1.toString().trim()).replace(/^0+/, "");
+  const r2Str = toEnglishDigits(roll2.toString().trim()).replace(/^0+/, "");
+  return r1Str === r2Str;
 };
 
 interface DashboardSectionProps {
@@ -21,6 +36,13 @@ interface DashboardSectionProps {
 export default function DashboardSection({ user }: DashboardSectionProps) {
   const [activeAdminSubTab, setActiveAdminSubTab] = useState<string>("dashboard");
   const [selectedClass, setSelectedClass] = useState<string>("All");
+  
+  // Student Dashboard state variables
+  const [studentActiveTab, setStudentActiveTab] = useState<"home" | "homework" | "features" | "support">("home");
+  const [supportSubject, setSupportSubject] = useState("");
+  const [supportMessage, setSupportMessage] = useState("");
+  const [isSubmittingSupport, setIsSubmittingSupport] = useState(false);
+  const [supportSuccess, setSupportSuccess] = useState(false);
   
   // Real-time collections state
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -115,6 +137,14 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
   const [configAdmission, setConfigAdmission] = useState<any | null>(null);
   const [accountLoginId, setAccountLoginId] = useState("");
   const [accountPassword, setAccountPassword] = useState("");
+  const [selectedRoll, setSelectedRoll] = useState("");
+  const [duplicateStudentName, setDuplicateStudentName] = useState("");
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [showStudentDetailsModal, setShowStudentDetailsModal] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isUploadingProfile, setIsUploadingProfile] = useState(false);
+  const [selectedHomework, setSelectedHomework] = useState<any | null>(null);
+  const [showHomeworkDetailModal, setShowHomeworkDetailModal] = useState(false);
   const [isConfigSaving, setIsConfigSaving] = useState(false);
   const [configError, setConfigError] = useState("");
 
@@ -725,13 +755,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
     setEditingId(item.id);
     setUploadError("");
     setIsFormOpen(true);
-    if (type === "teachers") {
-      setField1(item.name || "");
-      setField2(item.designation || "");
-      setField3(item.phone || "");
-      setField4(item.email || "");
-      setField5(item.photoUrl || "");
-    } else if (type === "stories") {
+    if (type === "stories") {
       setField1(item.student_name || "");
       setField2(item.achievement || "");
       setField3(item.year?.toString() || "");
@@ -780,11 +804,26 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
           await addDoc(collection(db, "teachers"), payload);
         }
       } else if (subTab === "stories") {
-        const payload = { student_name: field1, achievement: field2, year: parseInt(field3) || 2026, imageUrl: field4 || "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80" };
+        const payload = { 
+          student_name: field1, 
+          achievement: field2, 
+          year: parseInt(field3) || 2026, 
+          imageUrl: field4 || "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80",
+          timestamp: new Date() // Added for auto-delete logic
+        };
         if (editingId) {
           await updateDoc(doc(db, "success_stories", editingId), payload);
         } else {
-          await addDoc(collection(db, "success_stories"), payload);
+          // Auto-Delete Oldest Record Logic
+          const successCol = collection(db, "success_stories");
+          const q = query(successCol, orderBy("timestamp", "asc"), limit(1));
+          const snap = await getDocs(q);
+          
+          await addDoc(successCol, payload);
+          
+          if (!snap.empty) {
+            await deleteDoc(doc(db, "success_stories", snap.docs[0].id));
+          }
         }
       } else if (subTab === "committee") {
         const payload = { 
@@ -946,55 +985,806 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
 
   return (
     <div id="dashboard-section" className="space-y-8 py-6 w-full px-2">
-      {/* Welcome Banner */}
-      <div className="bg-emerald-800 text-white p-6 sm:p-8 rounded-xl border-b-4 border-amber-500 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <span className="text-xs font-bold text-amber-300 uppercase tracking-widest font-mono">
-            স্বাগতম ড্যাশবোর্ড
-          </span>
-          <h2 className="text-2xl font-bold font-serif mt-1">{user.name}</h2>
-          <p className="text-sm text-emerald-100">{user.email} ({user.role === "admin" ? "অ্যাডমিনিস্ট্রেটর" : user.role === "teacher" ? "মাদ্রাসার শিক্ষক" : "শিক্ষার্থী"})</p>
-        </div>
-        <div className="flex-shrink-0">
-          <div className="bg-emerald-950/40 border border-emerald-700/60 px-4 py-2.5 rounded-xl text-center">
-            <span className="text-xs text-emerald-200 block">বর্তমান সেশন</span>
-            <span className="text-sm font-bold text-amber-400 font-serif">২০২৬-২০২৭</span>
-          </div>
-        </div>
-      </div>
-
       {/* ------------------- STUDENT DASHBOARD ------------------- */}
       {user.role === "student" && (
-        <div id="student-dashboard" className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-xl p-6 border border-slate-200/80 shadow-sm space-y-4">
-            <div className="bg-emerald-50 h-12 w-12 rounded-xl flex items-center justify-center border border-emerald-100">
-              <Calendar className="h-6 w-6 text-emerald-800" />
-            </div>
-            <div>
-              <h3 className="font-bold text-lg text-emerald-950 font-serif">আমার ক্লাস রুটিন</h3>
-              <p className="text-sm text-gray-500 mt-1">আপনার রুটিন ও ক্লাস টাইম চেক করুন রুটিন ট্যাব থেকে।</p>
-            </div>
-          </div>
+        <div id="student-dashboard" className="space-y-6 pb-24 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>
+          <StreamBuilder<any>
+            stream={query(collection(db, "students"))}
+            builder={(students: any[], loading: boolean, error: any) => {
+              const loggedInStudent = students.find((s: any) => 
+                (s.email && s.email.trim().toLowerCase() === user.email.trim().toLowerCase()) ||
+                (s.loginId && s.loginId.trim().toLowerCase() === user.email.trim().toLowerCase()) ||
+                (s.phone && s.phone.trim().toLowerCase() === user.email.trim().toLowerCase()) ||
+                (s.name && s.name.trim().toLowerCase() === user.name.trim().toLowerCase())
+              );
 
-          <div className="bg-white rounded-xl p-6 border border-slate-200/80 shadow-sm space-y-4">
-            <div className="bg-emerald-50 h-12 w-12 rounded-xl flex items-center justify-center border border-emerald-100">
-              <Award className="h-6 w-6 text-emerald-800" />
-            </div>
-            <div>
-              <h3 className="font-bold text-lg text-emerald-950 font-serif">পরীক্ষার ফলাফল</h3>
-              <p className="text-sm text-gray-500 mt-1">ফলাফল ট্যাব ব্যবহার করে রোল ১০০১ এবং রেজিস্ট্রেশন ২০২৬০১ সার্চ করে মার্কশিট দেখুন।</p>
-            </div>
-          </div>
+              const studentName = loggedInStudent?.studentNameBn || loggedInStudent?.name || user.name || "মোহাম্মদ আলী";
+              const studentClass = loggedInStudent?.className || "১০ম শ্রেণী";
+              const studentRoll = loggedInStudent?.roll || "০১";
+              const studentPhone = loggedInStudent?.phone || "";
 
-          <div className="bg-white rounded-xl p-6 border border-slate-200/80 shadow-sm space-y-4 col-span-full md:col-span-1">
-            <div className="bg-emerald-50 h-12 w-12 rounded-xl flex items-center justify-center border border-emerald-100">
-              <CheckCircle2 className="h-6 w-6 text-emerald-800" />
-            </div>
-            <div>
-              <h3 className="font-bold text-lg text-emerald-950 font-serif">ভর্তি স্ট্যাটাস</h3>
-              <p className="text-sm text-gray-500 mt-1">আপনার অনলাইন ভর্তির তথ্য এবং আবেদন রিসিভ কপি সুরক্ষিত রয়েছে।</p>
-            </div>
-          </div>
+              // Current Date logic
+              const today = new Date();
+              const formattedDate = today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+              
+              const defaultPhoto = loggedInStudent?.gender === "নারী" 
+                ? "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&h=300&q=80" 
+                : "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&h=300&q=80";
+              const studentPhoto = loggedInStudent?.photoUrl || loggedInStudent?.imageUrl || defaultPhoto;
+
+              const handleSupportSubmit = async (e: React.FormEvent) => {
+                e.preventDefault();
+                if (!supportMessage.trim()) return;
+                setIsSubmittingSupport(true);
+                try {
+                  await addDoc(collection(db, "messages"), {
+                    name: studentName,
+                    email: user.email,
+                    phone: studentPhone || "শিক্ষার্থী পোর্টাল",
+                    subject: supportSubject || "শিক্ষার্থী পোর্টাল সাপোর্ট বার্তা",
+                    message: supportMessage,
+                    createdAt: new Date().toISOString(),
+                    isRead: false
+                  });
+                  setSupportSuccess(true);
+                  setSupportMessage("");
+                  setSupportSubject("");
+                  setTimeout(() => setSupportSuccess(false), 5000);
+                } catch (err) {
+                  console.error("Support message error:", err);
+                } finally {
+                  setIsSubmittingSupport(false);
+                }
+              };
+
+              return (
+                <div className="relative -mt-8 -mx-2 bg-[#f8fafc] pb-28 min-h-screen">
+                  {/* সলিড গ্রীন হেডার ব্লক (Solid Green Header Block) */}
+                  <div className="bg-emerald-900 pt-16 pb-28 px-6 rounded-b-[40px] shadow-lg relative z-0">
+                    {/* অ্যানিমেটেড লগআউট বাটন (Top Right Logout Button) */}
+                    <motion.button
+                      whileHover={{ scale: 1.1, rotate: 90 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setShowLogoutConfirm(true)}
+                      className="absolute top-8 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white/90 backdrop-blur-sm border border-white/10 transition-all cursor-pointer z-20"
+                    >
+                      <LogOut className="h-5 w-5" />
+                    </motion.button>
+
+                    <div className="max-w-md mx-auto text-center">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                        >
+                          <Clock className="h-4 w-4 text-amber-400" />
+                        </motion.div>
+                        <p className="text-emerald-300 font-bold text-sm tracking-wide opacity-90" style={{ fontFamily: 'Alinur Tatsama' }}>{formattedDate}</p>
+                      </div>
+                      <motion.h2 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-3xl font-black text-white mt-1 leading-tight" 
+                        style={{ fontFamily: 'Alinur Tatsama' }}
+                      >
+                        {studentName}
+                      </motion.h2>
+                      <motion.p 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="text-emerald-100/80 font-bold text-lg mt-1" 
+                        style={{ fontFamily: 'Alinur Tatsama' }}
+                      >
+                        {studentClass}
+                      </motion.p>
+                    </div>
+                  </div>
+
+                  {/* টপ মোস্ট প্রোফাইল কার্ড (Top-most Profile Card) - Overlapping */}
+                  {studentActiveTab !== "homework" && (
+                    <div className="max-w-md mx-auto px-4 -mt-20 relative z-10">
+                      <div className="bg-white rounded-[32px] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-white/60 flex flex-col items-center text-center backdrop-blur-sm">
+                        <div className="relative mb-5 group">
+                          <div className="absolute inset-0 bg-emerald-500/15 rounded-full blur-xl"></div>
+                          <div className="relative z-10">
+                            <img 
+                              src={studentPhoto} 
+                              alt="শিক্ষার্থীর ছবি" 
+                              className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-xl bg-white"
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = defaultPhoto;
+                              }}
+                            />
+                            
+                            {/* ওয়ান-টাইম প্রোফাইল পিকচার আপলোড (One-Time Upload) */}
+                            {(!loggedInStudent?.photoUrl && !loggedInStudent?.imageUrl) && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <label className="cursor-pointer bg-black/40 hover:bg-black/60 text-white p-2 rounded-full backdrop-blur-sm transition-all group-hover:scale-110">
+                                  {isUploadingProfile ? (
+                                    <Loader2 className="h-6 w-6 animate-spin" />
+                                  ) : (
+                                    <Plus className="h-6 w-6" />
+                                  )}
+                                  <input 
+                                    type="file" 
+                                    className="hidden" 
+                                    accept="image/*"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      
+                                      setIsUploadingProfile(true);
+                                      try {
+                                        const url = await uploadFileToImgBB(file);
+                                        // Update Firestore for this student
+                                        const studentQuery = query(collection(db, "students"), where("roll", "==", studentRoll));
+                                        const studentDocs = await getDocs(studentQuery);
+                                        if (!studentDocs.empty) {
+                                          const studentDoc = studentDocs.docs[0];
+                                          await updateDoc(doc(db, "students", studentDoc.id), {
+                                            photoUrl: url,
+                                            updatedAt: new Date().toISOString()
+                                          });
+                                          // Update local state if needed (or let StreamBuilder handle it)
+                                          window.location.reload(); // Quick refresh to lock the upload
+                                        }
+                                      } catch (err) {
+                                        console.error("Profile upload error:", err);
+                                        alert("ছবি আপলোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+                                      } finally {
+                                        setIsUploadingProfile(false);
+                                      }
+                                    }}
+                                  />
+                                </label>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <p className="text-sm text-emerald-800 font-black px-4 py-1.5 bg-emerald-50 rounded-full border border-emerald-100 inline-flex items-center gap-2" style={{ fontFamily: 'Alinur Tatsama' }}>
+                          <GraduationCap className="h-4 w-4" />
+                          <span>রোল নম্বর: {toBengaliDigits(studentRoll)}</span>
+                        </p>
+
+                        <button
+                          onClick={() => setShowStudentDetailsModal(true)}
+                          className="mt-6 w-full py-3.5 bg-gradient-to-br from-emerald-600 to-emerald-800 hover:from-emerald-700 hover:to-emerald-900 text-white font-bold rounded-2xl transition-all shadow-lg shadow-emerald-700/20 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                          style={{ fontFamily: 'Alinur Tatsama' }}
+                        >
+                          <UserPlus className="h-5 w-5 text-amber-300" />
+                          <span>বিস্তারিত (Details)</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Body Content Container */}
+                  <div className="max-w-md mx-auto px-4 mt-8 space-y-6">
+
+                  {/* Student Details Modal */}
+                  <AnimatePresence>
+                    {showStudentDetailsModal && (
+                      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        {/* Backdrop */}
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          onClick={() => setShowStudentDetailsModal(false)}
+                          className="absolute inset-0 bg-emerald-950/40 backdrop-blur-sm"
+                        />
+
+                        {/* Modal Content */}
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                          className="relative bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border border-emerald-100"
+                          style={{ fontFamily: 'Alinur Tatsama' }}
+                        >
+                          {/* Header Decor */}
+                          <div className="h-2 bg-gradient-to-r from-emerald-600 via-teal-500 to-amber-500" />
+                          
+                          <div className="p-6 md:p-8">
+                            <div className="flex justify-between items-center mb-6">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-emerald-50 rounded-xl text-emerald-700">
+                                  <Users className="w-6 h-6" />
+                                </div>
+                                <h3 className="text-xl font-black text-emerald-950" style={{ fontFamily: 'Alinur Tatsama' }}>বিস্তারিত তথ্য (Details)</h3>
+                              </div>
+                              <button 
+                                onClick={() => setShowStudentDetailsModal(false)}
+                                className="p-2 hover:bg-red-50 text-red-400 hover:text-red-600 rounded-xl transition-colors cursor-pointer"
+                              >
+                                <X className="w-6 h-6" />
+                              </button>
+                            </div>
+
+                            <div className="space-y-4">
+                              {[
+                                { label: "একাউন্ট নাম্বার (Account ID)", value: loggedInStudent?.email || loggedInStudent?.loginId || "প্রদান করা হয়নি", icon: Mail },
+                                { label: "পিতার নাম (Father's Name)", value: loggedInStudent?.g1Name || loggedInStudent?.fatherNameBn || "প্রদান করা হয়নি", icon: GraduationCap },
+                                { label: "ঠিকানা (Address)", value: loggedInStudent?.studentPresentAddress || "প্রদান করা হয়নি", icon: Home },
+                                { label: "পিতার কন্টাক্ট নাম্বার (Phone)", value: loggedInStudent?.g1Phone || loggedInStudent?.fatherPhone || "প্রদান করা হয়নি", icon: Send },
+                              ].map((item, idx) => (
+                                <div key={idx} className="p-4 bg-emerald-50/40 rounded-2xl border border-emerald-100/50 group hover:bg-emerald-50 transition-colors">
+                                  <div className="flex items-center gap-3 mb-1">
+                                    <item.icon className="w-4 h-4 text-emerald-600" />
+                                    <p className="text-xs font-bold text-emerald-700" style={{ fontFamily: 'Alinur Tatsama' }}>{item.label}</p>
+                                  </div>
+                                  <p className="text-sm font-black text-slate-900 ml-7" style={{ fontFamily: 'Alinur Tatsama' }}>{item.value}</p>
+                                </div>
+                              ))}
+                            </div>
+
+                            <button
+                              onClick={() => setShowStudentDetailsModal(false)}
+                              className="w-full mt-8 py-3.5 bg-emerald-800 hover:bg-emerald-900 text-amber-400 font-bold rounded-2xl shadow-lg shadow-emerald-900/20 transition-all active:scale-98 cursor-pointer"
+                              style={{ fontFamily: 'Alinur Tatsama' }}
+                            >
+                              বন্ধ করুন
+                            </button>
+                          </div>
+                        </motion.div>
+                      </div>
+                    )}
+
+                    {/* Homework Detail Modal */}
+                    {showHomeworkDetailModal && selectedHomework && (
+                      <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+                        {/* Backdrop */}
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          onClick={() => setShowHomeworkDetailModal(false)}
+                          className="absolute inset-0 bg-slate-950/60 backdrop-blur-md"
+                        />
+
+                        {/* Modal Content */}
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9, y: 30 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.9, y: 30 }}
+                          className="relative bg-white w-full max-w-lg rounded-[32px] overflow-hidden shadow-2xl border border-white/50 max-h-[85vh] flex flex-col"
+                          style={{ fontFamily: 'Alinur Tatsama' }}
+                        >
+                          <div className="bg-emerald-900 p-6 text-white shrink-0 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-8 bg-white/5 rounded-full -mr-4 -mt-4 blur-2xl"></div>
+                            <div className="flex justify-between items-start relative z-10">
+                              <div>
+                                <span className="text-amber-400 text-xs font-bold uppercase tracking-widest px-2.5 py-1 bg-white/10 rounded-lg">বিস্তারিত হোমওয়ার্ক</span>
+                                <h3 className="text-2xl font-black mt-2">{selectedHomework.subject}</h3>
+                              </div>
+                              <button 
+                                onClick={() => setShowHomeworkDetailModal(false)}
+                                className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors cursor-pointer"
+                              >
+                                <X className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
+                            {selectedHomework.tasks.map((task: any, idx: number) => (
+                              <div key={task.id || idx} className="bg-slate-50/50 rounded-3xl p-6 border border-slate-100 relative group">
+                                <div className="absolute left-0 top-6 bottom-6 w-1.5 bg-emerald-600 rounded-r-full group-hover:w-2 transition-all"></div>
+                                <div className="space-y-4">
+                                  <div>
+                                    <h4 className="text-lg font-black text-emerald-950">{task.title}</h4>
+                                    <p className="text-sm text-slate-600 mt-2 leading-relaxed bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">{task.description}</p>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-2 gap-4 pt-2">
+                                    <div className="space-y-1">
+                                      <span className="text-[10px] text-slate-400 font-bold uppercase flex items-center gap-1.5">
+                                        <Users className="h-3 w-3" />
+                                        শিক্ষকের নাম
+                                      </span>
+                                      <p className="text-sm font-black text-emerald-800">{task.teacherName || "মাদ্রাসা শিক্ষক"}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <span className="text-[10px] text-slate-400 font-bold uppercase flex items-center gap-1.5">
+                                        <CalendarRange className="h-3 w-3" />
+                                        পাবলিশ তারিখ
+                                      </span>
+                                      <p className="text-sm font-black text-slate-700">{task.publishDate || (task.createdAt ? new Date(task.createdAt).toLocaleDateString('bn-BD') : "তথ্য নেই")}</p>
+                                    </div>
+                                    <div className="col-span-2 space-y-1 pt-2">
+                                      <div className="flex items-center justify-between bg-amber-50 px-4 py-2 rounded-xl border border-amber-100">
+                                        <span className="text-xs text-amber-800 font-bold flex items-center gap-2">
+                                          <Clock className="h-4 w-4" />
+                                          শেষ হওয়ার তারিখ (Deadline):
+                                        </span>
+                                        <span className="text-sm font-black text-amber-900">{toBengaliDigits(task.dueDate || "শীঘ্রই")}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="p-6 bg-slate-50 shrink-0 border-t border-slate-100">
+                            <button
+                              onClick={() => setShowHomeworkDetailModal(false)}
+                              className="w-full py-4 bg-emerald-800 hover:bg-emerald-900 text-white font-bold rounded-2xl shadow-xl shadow-emerald-900/10 transition-all active:scale-95 cursor-pointer"
+                            >
+                              বন্ধ করুন
+                            </button>
+                          </div>
+                        </motion.div>
+                      </div>
+                    )}
+
+                    {/* Logout Confirmation Modal */}
+                    {showLogoutConfirm && (
+                      <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          onClick={() => setShowLogoutConfirm(false)}
+                          className="absolute inset-0 bg-slate-950/60 backdrop-blur-md"
+                        />
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                          className="relative bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl border border-slate-100 text-center"
+                          style={{ fontFamily: 'Alinur Tatsama' }}
+                        >
+                          <div className="bg-red-50 h-20 w-20 rounded-full flex items-center justify-center mx-auto mb-6 text-red-600 border border-red-100">
+                            <LogOut className="h-10 w-10" />
+                          </div>
+                          <h3 className="text-2xl font-black text-slate-900 mb-2">লগআউট কনফার্মেশন</h3>
+                          <p className="text-slate-600 font-bold mb-8">আপনি কি লগআউট করতে চান?</p>
+                          <div className="grid grid-cols-2 gap-4">
+                            <button
+                              onClick={() => setShowLogoutConfirm(false)}
+                              className="py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black rounded-2xl transition-all cursor-pointer"
+                            >
+                              না (No)
+                            </button>
+                            <button
+                              onClick={() => {
+                                localStorage.removeItem("sndm_user");
+                                window.location.href = "/";
+                              }}
+                              className="py-3.5 bg-red-600 hover:bg-red-700 text-white font-black rounded-2xl shadow-lg shadow-red-600/20 transition-all cursor-pointer"
+                            >
+                              হ্যাঁ (Yes)
+                            </button>
+                          </div>
+                        </motion.div>
+                      </div>
+                    )}
+
+                  </AnimatePresence>
+
+                  {/* Main Sub-view Content based on studentActiveTab */}
+                  <AnimatePresence mode="wait">
+                    {studentActiveTab === "home" && (
+                      <motion.div
+                        key="home"
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -15 }}
+                        className="space-y-6"
+                        style={{ fontFamily: 'Alinur Tatsama' }}
+                      >
+                        {/* ড্যাশবোর্ড ট্র্যাকিং মডিউল (Academic Tracking Modules) */}
+                        <div className="grid grid-cols-1 gap-4">
+                          {/* আজকের হাজিরা ও মাসিক পারসেন্টেজ (Combined Stream for Attendance) */}
+                          <StreamBuilder
+                            stream={query(collection(db, "attendance"), where("studentRoll", "==", studentRoll), where("month", "==", today.toLocaleString('en-US', { month: 'long' })))}
+                            builder={(attendanceRecords: any[]) => {
+                              const isPresentToday = attendanceRecords.some(r => r.date === today.toISOString().split('T')[0] && r.status === "Present");
+                              const currentMonthName = today.toLocaleString('bn-BD', { month: 'long' });
+                              const totalDaysInMonth = attendanceRecords.length;
+                              const presentDays = attendanceRecords.filter(r => r.status === "Present").length;
+                              const percentage = totalDaysInMonth > 0 ? Math.round((presentDays / totalDaysInMonth) * 100) : 90; // Default 90% if no data
+
+                              return (
+                                <div className="grid grid-cols-2 gap-4">
+                                  {/* আজকের হাজিরা স্ট্যাটাস */}
+                                  <motion.div 
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="bg-white rounded-[28px] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.04)] border border-slate-50 flex flex-col items-center text-center"
+                                  >
+                                    <div className={`h-10 w-10 rounded-2xl flex items-center justify-center mb-2 ${isPresentToday ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}>
+                                      <CalendarCheck className="h-6 w-6" />
+                                    </div>
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1" style={{ fontFamily: 'Alinur Tatsama' }}>আজকের হাজিরা</span>
+                                    <span className={`text-lg font-black ${isPresentToday ? "text-emerald-700" : "text-amber-700"}`} style={{ fontFamily: 'Alinur Tatsama' }}>
+                                      {isPresentToday ? "উপস্থিত (P)" : "তথ্য নেই"}
+                                    </span>
+                                  </motion.div>
+
+                                  {/* মাসিক হাজিরার হার */}
+                                  <motion.div 
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="bg-white rounded-[28px] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.04)] border border-slate-50 flex flex-col items-center text-center"
+                                  >
+                                    <div className="h-10 w-10 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-2">
+                                      <TrendingUp className="h-6 w-6" />
+                                    </div>
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1" style={{ fontFamily: 'Alinur Tatsama' }}>{currentMonthName} মাসের হাজিরা</span>
+                                    <div className="flex flex-col items-center">
+                                      <span className="text-xl font-black text-indigo-900" style={{ fontFamily: 'Alinur Tatsama' }}>{toBengaliDigits(percentage)}%</span>
+                                      <div className="w-16 h-1 bg-slate-100 rounded-full mt-1 overflow-hidden">
+                                        <motion.div 
+                                          initial={{ width: 0 }}
+                                          animate={{ width: `${percentage}%` }}
+                                          className="h-full bg-indigo-500"
+                                        />
+                                      </div>
+                                    </div>
+                                  </motion.div>
+                                </div>
+                              );
+                            }}
+                          />
+
+                          {/* সর্বশেষ রেজাল্ট স্ট্যাটাস */}
+                          <StreamBuilder
+                            stream={query(collection(db, "results"), where("roll", "==", studentRoll), orderBy("year", "desc"))}
+                            builder={(results: any[]) => {
+                              const latestResult = results[0] || { gpa: "৪.৮৫", grade: "A" }; // Default fallback
+                              return (
+                                <motion.div 
+                                  initial={{ opacity: 0, y: 20 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  className="bg-white rounded-[28px] p-5 shadow-[0_10px_40px_rgba(0,0,0,0.05)] border border-emerald-100/50 flex items-center justify-between group overflow-hidden relative"
+                                >
+                                  <div className="absolute right-0 top-0 bottom-0 w-24 bg-emerald-500/5 -skew-x-12 translate-x-8 group-hover:translate-x-4 transition-transform" />
+                                  
+                                  <div className="flex items-center gap-4 relative z-10">
+                                    <div className="h-12 w-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center border border-amber-100 shadow-sm">
+                                      <Award className="h-7 w-7" />
+                                    </div>
+                                    <div>
+                                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5" style={{ fontFamily: 'Alinur Tatsama' }}>সর্বশেষ রেজাল্ট স্ট্যাটাস</p>
+                                      <h4 className="text-lg font-black text-emerald-950" style={{ fontFamily: 'Alinur Tatsama' }}>{latestResult.examType || "বার্ষিক পরীক্ষা"} - {toBengaliDigits(latestResult.year || "২০২৬")}</h4>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="text-right relative z-10">
+                                    <span className="block text-2xl font-black text-emerald-700 leading-none" style={{ fontFamily: 'Alinur Tatsama' }}>{toBengaliDigits(latestResult.gpa)}</span>
+                                    <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 mt-1 inline-block" style={{ fontFamily: 'Alinur Tatsama' }}>গ্রেড: {latestResult.grade}</span>
+                                  </div>
+                                </motion.div>
+                              );
+                            }}
+                          />
+                        </div>
+
+                        {/* Additional cards removed as per directive */}
+                      </motion.div>
+                    )}
+
+                    {studentActiveTab === "homework" && (
+                      <motion.div
+                        key="homework"
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -15 }}
+                        style={{ fontFamily: 'Alinur Tatsama' }}
+                      >
+                        {/* Real-time Homework stream builder */}
+                        <StreamBuilder<any>
+                          stream={query(collection(db, "homework"), orderBy("createdAt", "desc"))}
+                          builder={(homeworkList: any[], loadingHw: boolean, errorHw: any) => {
+                            if (loadingHw) {
+                              return (
+                                <div className="text-center py-12" style={{ fontFamily: 'Alinur Tatsama' }}>
+                                  <Loader2 className="h-8 w-8 text-emerald-800 animate-spin mx-auto" />
+                                  <p className="text-sm text-gray-500 mt-2">হোমওয়ার্ক লোড হচ্ছে...</p>
+                                </div>
+                              );
+                            }
+
+                            const classHomework = homeworkList.filter((hw: any) => 
+                              hw.className === studentClass || hw.class === studentClass || !hw.className
+                            );
+
+                            // Grouping homework by subject
+                            const groupedHomework = classHomework.reduce((acc: any, hw: any) => {
+                              const subject = hw.subject || "সাধারণ বিষয়";
+                              if (!acc[subject]) acc[subject] = [];
+                              acc[subject].push(hw);
+                              return acc;
+                            }, {});
+
+                            const subjects = Object.keys(groupedHomework).sort();
+
+                            return (
+                              <div className="space-y-6" style={{ fontFamily: 'Alinur Tatsama' }}>
+                                <div className="flex items-center gap-3 px-1">
+                                  <div className="h-10 w-10 bg-emerald-800 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-900/20">
+                                    <BookOpen className="h-6 w-6" />
+                                  </div>
+                                  <h3 className="text-2xl font-black text-emerald-950" style={{ fontFamily: 'Alinur Tatsama' }}>📚 আজকের হোমওয়ার্ক</h3>
+                                </div>
+
+                                {subjects.length === 0 ? (
+                                  <div className="bg-white rounded-3xl p-10 border border-slate-100 shadow-sm text-center space-y-4">
+                                    <div className="bg-emerald-50 h-20 w-20 rounded-full flex items-center justify-center mx-auto border border-emerald-100">
+                                      <ClipboardList className="h-10 w-10 text-emerald-700" />
+                                    </div>
+                                    <h4 className="font-bold text-xl text-slate-800" style={{ fontFamily: 'Alinur Tatsama' }}>কোনো হোমওয়ার্ক পাওয়া যায়নি</h4>
+                                    <p className="text-sm text-slate-500 max-w-xs mx-auto" style={{ fontFamily: 'Alinur Tatsama' }}>
+                                      আপনার শ্রেণী ({studentClass}) এর জন্য এই মুহূর্তে কোনো সচল হোমওয়ার্ক দেওয়া নেই।
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <div className="grid gap-3">
+                                    {subjects.map((subject, idx) => (
+                                      <motion.button
+                                        key={subject}
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: idx * 0.05 }}
+                                        onClick={() => {
+                                          setSelectedHomework({
+                                            subject: subject,
+                                            tasks: groupedHomework[subject]
+                                          });
+                                          setShowHomeworkDetailModal(true);
+                                        }}
+                                        className="w-full bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_30px_rgba(0,0,0,0.06)] transition-all flex items-center justify-between group cursor-pointer"
+                                      >
+                                        <div className="flex items-center gap-4">
+                                          <div className="h-12 w-12 bg-emerald-50 text-emerald-700 rounded-xl flex items-center justify-center border border-emerald-100 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                                            <TrendingUp className="h-6 w-6" />
+                                          </div>
+                                          <h4 className="font-black text-lg text-emerald-950 group-hover:text-emerald-800" style={{ fontFamily: 'Alinur Tatsama' }}>{subject}</h4>
+                                        </div>
+                                        <div className="bg-amber-50 text-amber-700 px-4 py-1.5 rounded-full border border-amber-100 font-black text-sm" style={{ fontFamily: 'Alinur Tatsama' }}>
+                                          {toBengaliDigits(groupedHomework[subject].length)}টি হোমওয়ার্ক
+                                        </div>
+                                      </motion.button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }}
+                        />
+                      </motion.div>
+                    )}
+
+                    {studentActiveTab === "features" && (
+                      <motion.div
+                        key="features"
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -15 }}
+                        className="space-y-6"
+                        style={{ fontFamily: 'Alinur Tatsama' }}
+                      >
+                        <div className="bg-gradient-to-r from-emerald-800 to-teal-700 text-white rounded-2xl p-5 shadow-sm">
+                          <h3 className="font-bold text-lg flex items-center gap-2" style={{ fontFamily: 'Alinur Tatsama' }}>
+                            <Compass className="h-5 w-5 text-amber-300" />
+                            <span>শিক্ষার্থী ফিচার ও রিসোর্স সেন্টার</span>
+                          </h3>
+                          <p className="text-xs text-emerald-100 mt-1" style={{ fontFamily: 'Alinur Tatsama' }}>মাদ্রাসার শিক্ষার্থীদের জন্য সকল গুরুত্বপূর্ণ টুলস ও লিংক এক জায়গায়।</p>
+                        </div>
+
+                        {/* Features List */}
+                        <div className="grid gap-4">
+                          <div className="bg-white rounded-[24px] p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_30px_rgba(0,0,0,0.06)] transition-all group flex items-center gap-4">
+                            <div className="bg-emerald-50 h-12 w-12 rounded-2xl flex items-center justify-center border border-emerald-100 flex-shrink-0 group-hover:bg-emerald-600 transition-colors group-hover:border-emerald-500">
+                              <Megaphone className="h-6 w-6 text-emerald-800 group-hover:text-white transition-colors" />
+                            </div>
+                            <div>
+                              <h4 className="font-black text-base text-emerald-950" style={{ fontFamily: 'Alinur Tatsama' }}>মাদ্রাসার নোটিশবোর্ড</h4>
+                              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed" style={{ fontFamily: 'Alinur Tatsama' }}>মাদ্রাসার সকল জরুরী নোটিশ ও নির্দেশনাবলী।</p>
+                            </div>
+                          </div>
+
+                          <div className="bg-white rounded-[24px] p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_30px_rgba(0,0,0,0.06)] transition-all group flex items-center gap-4">
+                            <div className="bg-emerald-50 h-12 w-12 rounded-2xl flex items-center justify-center border border-emerald-100 flex-shrink-0 group-hover:bg-emerald-600 transition-colors group-hover:border-emerald-500">
+                              <Globe className="h-6 w-6 text-emerald-800 group-hover:text-white transition-colors" />
+                            </div>
+                            <div>
+                              <h4 className="font-black text-base text-emerald-950" style={{ fontFamily: 'Alinur Tatsama' }}>সরকারি গুরুত্বপূর্ণ ওয়েবসাইট</h4>
+                              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed" style={{ fontFamily: 'Alinur Tatsama' }}>শিক্ষা বোর্ড ও অন্যান্য দরকারী ওয়েব পোর্টালসমূহ।</p>
+                            </div>
+                          </div>
+
+                          <div className="bg-white rounded-[24px] p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_30px_rgba(0,0,0,0.06)] transition-all group flex items-center gap-4">
+                            <div className="bg-emerald-50 h-12 w-12 rounded-2xl flex items-center justify-center border border-emerald-100 flex-shrink-0 group-hover:bg-emerald-600 transition-colors group-hover:border-emerald-500">
+                              <BookOpen className="h-6 w-6 text-emerald-800 group-hover:text-white transition-colors" />
+                            </div>
+                            <div>
+                              <h4 className="font-black text-base text-emerald-950" style={{ fontFamily: 'Alinur Tatsama' }}>হিফজ ও হাফেজ তথ্যপঞ্জি</h4>
+                              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed" style={{ fontFamily: 'Alinur Tatsama' }}>হিফজ বিভাগের শিক্ষার্থী ও সফল হাফেজদের বায়োডাটা।</p>
+                            </div>
+                          </div>
+
+                          <div className="bg-white rounded-[24px] p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_30px_rgba(0,0,0,0.06)] transition-all group flex items-center gap-4">
+                            <div className="bg-emerald-50 h-12 w-12 rounded-2xl flex items-center justify-center border border-emerald-100 flex-shrink-0 group-hover:bg-emerald-600 transition-colors group-hover:border-emerald-500">
+                              <GraduationCap className="h-6 w-6 text-emerald-800 group-hover:text-white transition-colors" />
+                            </div>
+                            <div>
+                              <h4 className="font-black text-base text-emerald-950" style={{ fontFamily: 'Alinur Tatsama' }}>ভর্তি ও ট্র্যাকিং সিস্টেম</h4>
+                              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed" style={{ fontFamily: 'Alinur Tatsama' }}>অনলাইনে ভর্তি আবেদন ও আবেদনের স্থিতি ট্র্যাক করুন।</p>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {studentActiveTab === "support" && (
+                      <motion.div
+                        key="support"
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -15 }}
+                        className="space-y-6"
+                        style={{ fontFamily: 'Alinur Tatsama' }}
+                      >
+                        <div className="bg-gradient-to-r from-emerald-800 to-teal-700 text-white rounded-2xl p-5 shadow-sm">
+                          <h3 className="font-bold text-lg flex items-center gap-2" style={{ fontFamily: 'Alinur Tatsama' }}>
+                            <HelpCircle className="h-5 w-5 text-amber-300" />
+                            <span>সহযোগিতা ও সাপোর্ট ডেস্ক</span>
+                          </h3>
+                          <p className="text-xs text-emerald-100 mt-1" style={{ fontFamily: 'Alinur Tatsama' }}>আপনার যেকোনো শিক্ষা-সংক্রান্ত জিজ্ঞাসা বা প্রযুক্তিগত সমস্যার জন্য আমাদের জানান।</p>
+                        </div>
+
+                        <div className="grid gap-6 md:grid-cols-3">
+                          {/* Left: Contact Info */}
+                          <div className="md:col-span-1 bg-white border border-slate-200/85 rounded-2xl p-5 shadow-xs space-y-4">
+                            <h4 className="font-bold text-base text-slate-800 border-b border-slate-100 pb-2" style={{ fontFamily: 'Alinur Tatsama' }}>জরুরী যোগাযোগ</h4>
+                            <div className="space-y-3 text-xs text-slate-600">
+                              <p className="flex items-center gap-2" style={{ fontFamily: 'Alinur Tatsama' }}>
+                                <span className="bg-emerald-50 p-1.5 rounded-lg text-emerald-800 font-bold" style={{ fontFamily: 'Alinur Tatsama' }}>ফোন:</span>
+                                <span className="font-mono">০১৭০০০-০০০০০০</span>
+                              </p>
+                              <p className="flex items-center gap-2" style={{ fontFamily: 'Alinur Tatsama' }}>
+                                <span className="bg-emerald-50 p-1.5 rounded-lg text-emerald-800 font-bold" style={{ fontFamily: 'Alinur Tatsama' }}>ইমেইল:</span>
+                                <span>support@madrasah.com</span>
+                              </p>
+                              <p className="flex items-center gap-2" style={{ fontFamily: 'Alinur Tatsama' }}>
+                                <span className="bg-emerald-50 p-1.5 rounded-lg text-emerald-800 font-bold" style={{ fontFamily: 'Alinur Tatsama' }}>অফিস:</span>
+                                <span>সকাল ৯:০০ - বিকাল ৪:০০</span>
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Right: Message Form */}
+                          <div className="md:col-span-2 bg-white border border-slate-200/85 rounded-2xl p-5 shadow-xs">
+                            <h4 className="font-bold text-base text-slate-800 border-b border-slate-100 pb-2 mb-4" style={{ fontFamily: 'Alinur Tatsama' }}>বার্তা পাঠান</h4>
+                            
+                            {supportSuccess ? (
+                              <div className="bg-emerald-50 text-emerald-800 p-4 rounded-xl border border-emerald-100 text-center space-y-2">
+                                <CheckCircle className="h-8 w-8 text-emerald-600 mx-auto" />
+                                <h5 className="font-bold" style={{ fontFamily: 'Alinur Tatsama' }}>বার্তা সফলভাবে পাঠানো হয়েছে!</h5>
+                                <p className="text-xs text-emerald-700/85" style={{ fontFamily: 'Alinur Tatsama' }}>খুব শীঘ্রই মাদ্রাসার সাপোর্ট টিম আপনার সাথে যোগাযোগ করবে, ইনশাআল্লাহ।</p>
+                              </div>
+                            ) : (
+                              <form onSubmit={handleSupportSubmit} className="space-y-4">
+                                <div className="space-y-1">
+                                  <label className="text-xs font-bold text-gray-700 block" style={{ fontFamily: 'Alinur Tatsama' }}>বার্তার বিষয়</label>
+                                  <input 
+                                    type="text" 
+                                    value={supportSubject}
+                                    onChange={(e) => setSupportSubject(e.target.value)}
+                                    placeholder="বার্তার বিষয় লিখুন" 
+                                    required
+                                    className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-emerald-950 bg-slate-50/50"
+                                    style={{ fontFamily: 'Alinur Tatsama' }}
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-xs font-bold text-gray-700 block" style={{ fontFamily: 'Alinur Tatsama' }}>বার্তা বিবরণ</label>
+                                  <textarea 
+                                    value={supportMessage}
+                                    onChange={(e) => setSupportMessage(e.target.value)}
+                                    placeholder="আপনার বার্তা বিস্তারিত লিখুন" 
+                                    required
+                                    rows={3}
+                                    className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-emerald-950 bg-slate-50/50"
+                                    style={{ fontFamily: 'Alinur Tatsama' }}
+                                  ></textarea>
+                                </div>
+                                <button
+                                  type="submit"
+                                  disabled={isSubmittingSupport}
+                                  className="w-full py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-xs disabled:opacity-50"
+                                  style={{ fontFamily: 'Alinur Tatsama' }}
+                                >
+                                  {isSubmittingSupport ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                      <span>পাঠানো হচ্ছে...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Send className="h-4 w-4" />
+                                      <span>বার্তা সাবমিট করুন</span>
+                                    </>
+                                  )}
+                                </button>
+                              </form>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  </div>
+                  
+                  {/* ২. ফিক্সড বটম নেভিগেশন মেনু সংযোজন (Fixed Bottom Navigation Menu) */}
+                  <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-lg border-t border-slate-100/50 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] pb-safe pt-3 px-6 flex justify-around items-center max-w-lg mx-auto sm:rounded-t-[32px] border-x border-slate-100/50" style={{ fontFamily: 'Alinur Tatsama' }}>
+                    <button
+                      type="button"
+                      onClick={() => setStudentActiveTab("home")}
+                      className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-2xl transition-all ${
+                        studentActiveTab === "home" 
+                          ? "text-emerald-800 font-black bg-emerald-50" 
+                          : "text-slate-500 hover:text-emerald-800"
+                      }`}
+                      style={{ fontFamily: 'Alinur Tatsama' }}
+                    >
+                      <Home className="h-5 w-5" />
+                      <span className="text-[10px] tracking-wide" style={{ fontFamily: 'Alinur Tatsama' }}>হোম</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setStudentActiveTab("homework")}
+                      className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-2xl transition-all ${
+                        studentActiveTab === "homework" 
+                          ? "text-emerald-800 font-black bg-emerald-50" 
+                          : "text-slate-500 hover:text-emerald-800"
+                      }`}
+                      style={{ fontFamily: 'Alinur Tatsama' }}
+                    >
+                      <ClipboardList className="h-5 w-5" />
+                      <span className="text-[10px] tracking-wide" style={{ fontFamily: 'Alinur Tatsama' }}>হোমওয়ার্ক</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setStudentActiveTab("features")}
+                      className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-2xl transition-all ${
+                        studentActiveTab === "features" 
+                          ? "text-emerald-800 font-black bg-emerald-50" 
+                          : "text-slate-500 hover:text-emerald-800"
+                      }`}
+                      style={{ fontFamily: 'Alinur Tatsama' }}
+                    >
+                      <Compass className="h-5 w-5" />
+                      <span className="text-[10px] tracking-wide" style={{ fontFamily: 'Alinur Tatsama' }}>ফিচার</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setStudentActiveTab("support")}
+                      className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-2xl transition-all ${
+                        studentActiveTab === "support" 
+                          ? "text-emerald-800 font-black bg-emerald-50" 
+                          : "text-slate-500 hover:text-emerald-800"
+                      }`}
+                      style={{ fontFamily: 'Alinur Tatsama' }}
+                    >
+                      <HelpCircle className="h-5 w-5" />
+                      <span className="text-[10px] tracking-wide" style={{ fontFamily: 'Alinur Tatsama' }}>সাপোর্ট</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            }}
+          />
         </div>
       )}
 
@@ -1410,7 +2200,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                 {activeAdminSubTab === "hafizgon" && "হিফজ বিভাগ - হাফেজদের তথ্য ও প্রোফাইল ডাটাবেস"}
               </h3>
             </div>
-            {activeAdminSubTab !== "dashboard" && activeAdminSubTab !== "admissions" && activeAdminSubTab !== "messages" && activeAdminSubTab !== "settings" && activeAdminSubTab !== "hero_background" && activeAdminSubTab !== "running_notices" && activeAdminSubTab !== "public_notices" && activeAdminSubTab !== "pathdan_update" && activeAdminSubTab !== "sodosso_form_settings" && activeAdminSubTab !== "contact_update" && activeAdminSubTab !== "routines" && activeAdminSubTab !== "hafizgon" && (
+            {activeAdminSubTab !== "dashboard" && activeAdminSubTab !== "admissions" && activeAdminSubTab !== "messages" && activeAdminSubTab !== "settings" && activeAdminSubTab !== "hero_background" && activeAdminSubTab !== "running_notices" && activeAdminSubTab !== "public_notices" && activeAdminSubTab !== "pathdan_update" && activeAdminSubTab !== "sodosso_form_settings" && activeAdminSubTab !== "contact_update" && activeAdminSubTab !== "routines" && activeAdminSubTab !== "hafizgon" && activeAdminSubTab !== "teachers" && (
               <button
                 id="admin-add-new-btn"
                 onClick={handleOpenAddForm}
@@ -2037,11 +2827,27 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                             
                             <button
                               type="button"
-                              onClick={() => {
+                              onClick={async () => {
                                 setConfigAdmission(adm);
                                 setAccountLoginId(adm.applicantPhone || adm.phone || "");
                                 setAccountPassword("");
+                                setSelectedRoll("");
                                 setAdmissionView("config");
+
+                                // Precalculate next roll
+                                try {
+                                  const targetClass = adm.admissionClass || adm.class_name || "শিশু শ্রেণী";
+                                  const studentsCol = collection(db, "students");
+                                  const qClass = query(studentsCol, where("className", "==", targetClass));
+                                  const snapClass = await getDocs(qClass);
+                                  const currentClassSize = snapClass.size;
+                                  const nextRollInt = currentClassSize + 1;
+                                  const nextRollStr = nextRollInt.toString().padStart(2, "0");
+                                  const nextRollBn = toBengaliDigits(nextRollStr);
+                                  setSelectedRoll(nextRollBn);
+                                } catch (e) {
+                                  setSelectedRoll("০১");
+                                }
                               }}
                               className="w-full sm:w-auto px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-emerald-600/10 hover:shadow-lg active:scale-98 cursor-pointer text-center"
                             >
@@ -2067,26 +2873,43 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                         setConfigError("পাসওয়ার্ড অবশ্যই কমপক্ষে ৬ সংখ্যার হতে হবে।");
                         return;
                       }
+                      if (!selectedRoll.trim()) {
+                        setConfigError("রোল নম্বর আবশ্যক।");
+                        return;
+                      }
 
                       setIsConfigSaving(true);
 
                       try {
-                        // Find total students in this class to assign the next roll
+                        const targetClass = configAdmission.admissionClass || configAdmission.class_name || "শিশু শ্রেণী";
                         const studentsCol = collection(db, "students");
-                        const qClass = query(studentsCol, where("className", "==", configAdmission.admissionClass || configAdmission.class_name || "শিশু শ্রেণী"));
+                        const qClass = query(studentsCol, where("className", "==", targetClass));
                         const snapClass = await getDocs(qClass);
-                        const currentClassSize = snapClass.size;
-                        const nextRollInt = currentClassSize + 1;
-                        const nextRollStr = nextRollInt.toString().padStart(2, "0");
-                        const nextRollBn = toBengaliDigits(nextRollStr);
+
+                        // Check for duplicate roll in this class
+                        let existingStudent: any = null;
+                        snapClass.forEach((docSnap) => {
+                          const sData = docSnap.data();
+                          if (sData.roll && compareRolls(sData.roll, selectedRoll)) {
+                            existingStudent = sData;
+                          }
+                        });
+
+                        if (existingStudent) {
+                          const existingName = existingStudent.studentNameBn || existingStudent.name || "অন্য";
+                          setDuplicateStudentName(existingName);
+                          setShowDuplicateModal(true);
+                          setIsConfigSaving(false);
+                          return;
+                        }
 
                         // Save student record in students collection
                         await addDoc(collection(db, "students"), {
                           name: configAdmission.studentNameBn || configAdmission.student_name || "নতুন শিক্ষার্থী",
                           studentNameBn: configAdmission.studentNameBn || "",
                           studentNameEn: configAdmission.studentNameEn || "",
-                          className: configAdmission.admissionClass || configAdmission.class_name || "শিশু শ্রেণী",
-                          roll: nextRollBn,
+                          className: targetClass,
+                          roll: selectedRoll.trim(),
                           phone: configAdmission.applicantPhone || configAdmission.phone || "",
                           email: accountLoginId.trim().toLowerCase(), // Check during login
                           loginId: accountLoginId.trim().toLowerCase(), // Check by loginId too
@@ -2112,7 +2935,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           approvedAt: new Date().toISOString()
                         }, { merge: true });
 
-                        alert(`অভিনন্দন! আবেদনটি অনুমোদিত হয়েছে। শিক্ষার্থীর জন্য ক্লাস: "${configAdmission.admissionClass || configAdmission.class_name}" এবং রোল: "${nextRollBn}" বরাদ্দ করা হয়েছে।`);
+                        alert(`অভিনন্দন! আবেদনটি অনুমোদিত হয়েছে। শিক্ষার্থীর জন্য ক্লাস: "${targetClass}" এবং রোল: "${selectedRoll.trim()}" বরাদ্দ করা হয়েছে।`);
                         
                         // Redirect back to list
                         setAdmissionView("list");
@@ -2120,6 +2943,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                         setConfigAdmission(null);
                         setAccountLoginId("");
                         setAccountPassword("");
+                        setSelectedRoll("");
 
                       } catch (err) {
                         console.error("Error configuration save:", err);
@@ -2183,6 +3007,26 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                             />
                           </div>
 
+                          {/* "Select Roll" Field with Alinur Tatsama custom font style */}
+                          <div className="space-y-1" style={{ fontFamily: 'Alinur Tatsama' }}>
+                            <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>
+                              <GraduationCap className="h-4 w-4 text-emerald-700" />
+                              <span>রোল সিলেক্ট (Select Roll) *</span>
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={selectedRoll}
+                              onChange={(e) => setSelectedRoll(e.target.value)}
+                              placeholder="রোল নম্বর লিখুন (যেমন: ০১)"
+                              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all font-alinur text-emerald-950 font-bold"
+                              style={{ fontFamily: 'Alinur Tatsama' }}
+                            />
+                            <p className="text-[10px] text-emerald-700 font-bold" style={{ fontFamily: 'Alinur Tatsama' }}>
+                              রোল নম্বরটি ইউনিক হওয়া আবশ্যক। একই শ্রেণীতে অন্য কারো এই রোল থাকলে অনুমোদন ব্লক হবে।
+                            </p>
+                          </div>
+
                           {configError && (
                             <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-lg text-xs font-bold">
                               {configError}
@@ -2192,9 +3036,12 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           <button
                             type="submit"
                             disabled={isConfigSaving}
-                            className="w-full bg-emerald-800 hover:bg-emerald-950 text-amber-400 hover:text-amber-300 font-bold py-3.5 rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 text-sm disabled:bg-emerald-700 cursor-pointer active:scale-98"
+                            className="w-full bg-emerald-800 hover:bg-emerald-950 text-amber-400 hover:text-amber-300 font-bold py-3.5 rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 text-sm disabled:bg-emerald-700 cursor-pointer active:scale-98 font-alinur"
+                            style={{ fontFamily: 'Alinur Tatsama' }}
                           >
-                            <span>{isConfigSaving ? "অ্যাকাউন্ট তৈরি হচ্ছে..." : "অ্যাকাউন্ট তৈরি ও আবেদন গ্রহণ করুন"}</span>
+                            <span style={{ fontFamily: 'Alinur Tatsama' }}>
+                              {isConfigSaving ? "অ্যাকাউন্ট তৈরি হচ্ছে..." : "অ্যাকাউন্ট তৈরি ও আবেদন গ্রহণ করুন"}
+                            </span>
                           </button>
                         </form>
                       </div>
@@ -2321,49 +3168,62 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                     </motion.div>
                   </div>
                 )}
+
+                {showDuplicateModal && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 0.6 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setShowDuplicateModal(false)}
+                      className="absolute inset-0 bg-black/80 backdrop-blur-xs"
+                    />
+
+                    {/* Modal Body */}
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                      className="relative bg-white w-full max-w-md rounded-2xl p-6 md:p-8 shadow-2xl border border-red-100 overflow-hidden text-center"
+                      style={{ fontFamily: 'Alinur Tatsama' }}
+                    >
+                      {/* Top Accent Strip */}
+                      <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-600 to-amber-500"></div>
+
+                      <div className="flex flex-col items-center gap-3 mb-6">
+                        <div className="p-4 bg-red-50 text-red-600 rounded-full">
+                          <AlertCircle className="w-10 h-10" />
+                        </div>
+                        <h3 className="text-xl font-black text-slate-900 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>রোল নম্বর ডুপ্লিকেট সতর্কতা</h3>
+                      </div>
+
+                      <div className="space-y-4">
+                        <p className="text-base font-bold text-slate-700 leading-relaxed font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>
+                          এই রোলটি ({duplicateStudentName}) শিক্ষার্থীর। অনুগ্রহ করে অন্য রোল সিলেক্ট করুন।
+                        </p>
+
+                        <div className="pt-4">
+                          <button
+                            type="button"
+                            onClick={() => setShowDuplicateModal(false)}
+                            className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-red-600/10 cursor-pointer font-alinur"
+                            style={{ fontFamily: 'Alinur Tatsama' }}
+                          >
+                            অন্য রোল সিলেক্ট করুন
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
               </AnimatePresence>
             </div>
           )}
 
           {/* 2. Teachers List Management */}
           {activeAdminSubTab === "teachers" && (
-            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-              <table className="w-full text-left border-collapse text-sm">
-                <thead>
-                  <tr className="bg-emerald-50 text-emerald-950 font-bold border-b border-gray-100">
-                    <th className="p-4">ছবি</th>
-                    <th className="p-4">নাম</th>
-                    <th className="p-4">পদবী</th>
-                    <th className="p-4">মোবাইল নং</th>
-                    <th className="p-4">ইমেইল</th>
-                    <th className="p-4 text-center">অ্যাকশন</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {teachers.map((item) => (
-                    <tr key={item.id} className="hover:bg-emerald-50/10">
-                      <td className="p-4">
-                        <img src={item.photoUrl} alt="" className="w-10 h-10 object-cover rounded-full border border-emerald-600 shadow-sm" />
-                      </td>
-                      <td className="p-4 font-bold">{item.name}</td>
-                      <td className="p-4">{item.designation}</td>
-                      <td className="p-4 font-mono">{item.phone}</td>
-                      <td className="p-4">{item.email || "N/A"}</td>
-                      <td className="p-4 text-center">
-                        <div className="flex justify-center space-x-2">
-                          <button onClick={() => handleEdit(item, "teachers")} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded">
-                            <Edit3 className="h-4 w-4" />
-                          </button>
-                          <button onClick={() => handleDelete(item.id, "teachers")} className="p-1.5 text-red-600 hover:bg-red-50 rounded">
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <TeacherManagement />
           )}
 
           {/* 3. Success Stories List Management */}

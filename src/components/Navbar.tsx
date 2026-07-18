@@ -1,5 +1,5 @@
 import { useState, ChangeEvent } from "react";
-import { Menu, X, BookOpen, GraduationCap, Calendar, Search, FileText, Lock, Clock, Calendar as CalendarIcon, ChevronDown, ChevronUp, Users, Info, Building, Image, MessageSquare, Phone } from "lucide-react";
+import { Menu, X, BookOpen, GraduationCap, Calendar, Search, FileText, Lock, Clock, Calendar as CalendarIcon, ChevronDown, ChevronUp, Users, Info, Building, Image, MessageSquare, Phone, Globe } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { db, StreamBuilder } from "../lib/firebase";
 import { collection, query, orderBy, limit } from "firebase/firestore";
@@ -101,6 +101,12 @@ export default function Navbar({
         { label: "অনলাইন আবেদন", action: () => { setActiveTab("admission"); setIsOpen(false); } },
         { label: "আবেদন ট্র্যাকিং", action: () => { setActiveTab("application_tracking"); setIsOpen(false); } }
       ] 
+    },
+    { 
+      id: "government_websites", 
+      label: "সরকারি গুরুত্বপূর্ণ ওয়েবসাইট", 
+      icon: Globe, 
+      action: () => { setActiveTab("government_websites"); setIsOpen(false); } 
     },
     { 
       id: "contact", 
