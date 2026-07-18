@@ -952,8 +952,8 @@ function TeacherFullPageForm({ teacher, onClose }: { teacher: Teacher | null; on
       </div>
 
       <style>{`
-        .font-alinur { font-family: 'Alinur Tatsama', sans-serif; }
-        input, select, textarea, button, h1, h2, h3, h4, h5, p, span { font-family: 'Alinur Tatsama', sans-serif !important; }
+        .font-alinur { font-family: 'Ador Noirit', 'Alinur Tatsama', sans-serif !important; }
+        input, select, textarea, button, h1, h2, h3, h4, h5, p, span, div { font-family: 'Ador Noirit', 'Alinur Tatsama', sans-serif !important; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
