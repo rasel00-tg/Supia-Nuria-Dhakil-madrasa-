@@ -28,6 +28,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { db, StreamBuilder, uploadFileToImgBB, handleFirestoreError, OperationType } from "./lib/firebase";
 import { doc, onSnapshot, collection, query, setDoc } from "firebase/firestore";
 import { Upload } from "lucide-react";
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 const settingsCollectionQuery = query(collection(db, "settings"));
 const FooterStreamBuilder = StreamBuilder as any;
@@ -585,6 +586,7 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+      <SpeedInsights />
     </div>
   );
 }
