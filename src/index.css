@@ -3,9 +3,9 @@
 
 @font-face {
   font-family: 'Ador Noirit';
-  src: url('https://lipighor.com/webfont/LiAdorNoirritVR.woff2?V=2.0') format('woff2'),
-       url('/fonts/AdorNoirit.woff2') format('woff2'),
-       url('https://lipighor.com/webfont/LiAdorNoirritVR.woff?V=2.0') format('woff');
+  src: url('https://lipighor.com/webfont/LiAdorNoirritVR.woff2?v=1.0.1') format('woff2'),
+       url('/fonts/AdorNoirit.woff2?v=1.0.1') format('woff2'),
+       url('https://lipighor.com/webfont/LiAdorNoirritVR.woff?v=1.0.1') format('woff');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -13,9 +13,9 @@
 
 @font-face {
   font-family: 'Alinur Tatsama';
-  src: url('https://lipighor.com/webfont/LiAdorNoirritVR.woff2?V=2.0') format('woff2'),
-       url('/fonts/AdorNoirit.woff2') format('woff2'),
-       url('https://lipighor.com/webfont/LiAdorNoirritVR.woff?V=2.0') format('woff');
+  src: url('https://lipighor.com/webfont/LiAdorNoirritVR.woff2?v=1.0.1') format('woff2'),
+       url('/fonts/AdorNoirit.woff2?v=1.0.1') format('woff2'),
+       url('https://lipighor.com/webfont/LiAdorNoirritVR.woff?v=1.0.1') format('woff');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -39,6 +39,12 @@ html, body, #root {
   width: 100% !important;
   max-width: 100% !important;
   overflow-x: hidden;
+  font-family: 'Ador Noirit', 'Alinur Tatsama', "Hind Siliguri", "Anek Bangla", sans-serif !important;
+}
+
+/* Force font for all input elements and headers */
+input, select, textarea, button, h1, h2, h3, h4, h5, h6, p, span, div {
+  font-family: 'Ador Noirit', 'Alinur Tatsama', sans-serif !important;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
