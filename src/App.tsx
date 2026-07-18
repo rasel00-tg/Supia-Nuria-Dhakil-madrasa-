@@ -515,7 +515,7 @@ export default function App() {
       {/* Connectivity UI Components */}
       <AnimatePresence>
         {showOfflineModal && (
-          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md font-alinur" style={{ fontFamily: 'Ador Noirit' }}>
             <motion.div 
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -551,7 +551,7 @@ export default function App() {
 
       <AnimatePresence>
         {showOnlineToast && (
-          <div className="fixed top-24 left-0 right-0 z-[1000] flex justify-center px-4 pointer-events-none font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>
+          <div className="fixed top-24 left-0 right-0 z-[1000] flex justify-center px-4 pointer-events-none font-alinur" style={{ fontFamily: 'Ador Noirit' }}>
             <motion.div 
               initial={{ opacity: 0, y: -50 }}
               animate={{ opacity: 1, y: 0 }}
@@ -576,7 +576,7 @@ export default function App() {
             animate={{ y: 0 }}
             exit={{ y: 100 }}
             className="fixed bottom-0 left-0 right-0 z-[900] bg-gradient-to-r from-rose-600 to-amber-600 text-white py-2 px-4 text-center font-alinur shadow-[0_-4px_20px_rgba(0,0,0,0.2)]"
-            style={{ fontFamily: 'Alinur Tatsama' }}
+            style={{ fontFamily: 'Ador Noirit' }}
           >
             <p className="text-xs sm:text-sm font-black flex items-center justify-center gap-2">
               <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>

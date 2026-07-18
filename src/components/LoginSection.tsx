@@ -153,7 +153,7 @@ export default function LoginSection({ onLoginSuccess }: LoginSectionProps) {
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div className="space-y-1">
-            <label htmlFor="login-email" className="text-xs font-bold text-gray-700 flex items-center font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>
+            <label htmlFor="login-email" className="text-xs font-bold text-gray-700 flex items-center font-alinur" style={{ fontFamily: 'Ador Noirit' }}>
               <Mail className="h-3.5 w-3.5 text-emerald-700 mr-1.5" />
               <span>ইমেইল বা মোবাইল নাম্বার</span>
             </label>
@@ -165,7 +165,7 @@ export default function LoginSection({ onLoginSuccess }: LoginSectionProps) {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="ইমেইল অথবা নাম্বার লিখুন"
               className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all font-alinur text-emerald-950"
-              style={{ fontFamily: 'Alinur Tatsama' }}
+              style={{ fontFamily: 'Ador Noirit' }}
             />
           </div>
 
@@ -196,7 +196,7 @@ export default function LoginSection({ onLoginSuccess }: LoginSectionProps) {
           </div>
 
           {error && (
-            <div id="login-error-alert" className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-lg text-xs font-medium font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>
+            <div id="login-error-alert" className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-lg text-xs font-medium font-alinur" style={{ fontFamily: 'Ador Noirit' }}>
               {error}
             </div>
           )}
@@ -206,7 +206,7 @@ export default function LoginSection({ onLoginSuccess }: LoginSectionProps) {
             type="submit"
             disabled={loading}
             className="w-full bg-emerald-800 hover:bg-emerald-950 text-amber-400 hover:text-amber-300 font-bold py-3 rounded-lg shadow-md transition-all flex items-center justify-center space-x-2 text-sm disabled:bg-emerald-700 font-alinur"
-            style={{ fontFamily: 'Alinur Tatsama' }}
+            style={{ fontFamily: 'Ador Noirit' }}
           >
             {loading ? (
               <span>যাচাই করা হচ্ছে...</span>

@@ -70,7 +70,7 @@ export default function GovernmentWebsitesSection() {
     }
   ];
 
-  const fontStyle = { fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' };
+  const fontStyle = { fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' };
 
   return (
     <div id="government-websites-section" className="py-12 bg-[#faf9f6] min-h-screen font-alinur">

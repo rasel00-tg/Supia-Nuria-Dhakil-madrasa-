@@ -1,42 +1,17 @@
-@font-face {
-  font-family: 'Ador Noirit';
-  src: url('https://lipighor.com/webfont/LiAdorNoirritVR.woff2?v=1.0.2') format('woff2'),
-       url('https://lipighor.com/webfont/LiAdorNoirritVR.woff?v=1.0.2') format('woff');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
+html, body, *, :root {
+  font-family: 'Noto Sans Bengali', 'Tiro Bangla', sans-serif !important;
 }
-
-@font-face {
-  font-family: 'Alinur Tatsama';
-  src: url('https://lipighor.com/webfont/LiAdorNoirritVR.woff2?v=1.0.2') format('woff2'),
-       url('https://lipighor.com/webfont/LiAdorNoirritVR.woff?v=1.0.2') format('woff');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=JetBrains+Mono:wght@400;500;700&family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Hind+Siliguri:wght@400;500;600;700&family=Anek+Bangla:wght@400;500;600;700;800&display=swap');
-@import "tailwindcss";
 
 @theme {
-  --font-sans: "Ador Noirit", "Alinur Tatsama", "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-sans: "Noto Sans Bengali", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Tiro Bangla", "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-  --font-bengali: "Ador Noirit", "Hind Siliguri", "Anek Bangla", "Inter", sans-serif;
-  --font-alinur: "Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif;
+  --font-bengali: "Noto Sans Bengali", "Tiro Bangla", "Hind Siliguri", "Anek Bangla", "Inter", sans-serif;
+  --font-alinur: "Noto Sans Bengali", "Tiro Bangla", "Hind Siliguri", "Anek Bangla", sans-serif;
   --font-shadhinota: "LI Shadhinota 2.2", "Hind Siliguri", "Anek Bangla", sans-serif;
   --font-ruposhi: "Ruposhi Bangla", "Hind Siliguri", "Anek Bangla", sans-serif;
   --font-bornomala: "Bornomala", "Hind Siliguri", "Anek Bangla", sans-serif;
   --font-arabic: "Amiri", serif;
-}
-
-:root, html, body, * {
-  font-family: 'Ador Noirit', 'Alinur Tatsama', "Hind Siliguri", "Anek Bangla", sans-serif !important;
-}
-
-input, select, textarea, button, h1, h2, h3, h4, h5, h6, p, span, div, li, a {
-  font-family: 'Ador Noirit', 'Alinur Tatsama', sans-serif !important;
 }
 
 html, body, #root {

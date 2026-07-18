@@ -96,7 +96,7 @@ export default function NoticeSection() {
   }, []);
 
   return (
-    <div id="notice-corner-container" className="py-8 bg-[#fcfcf9] min-h-screen font-alinur" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>
+    <div id="notice-corner-container" className="py-8 bg-[#fcfcf9] min-h-screen font-alinur" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         
         {/* Top Banner Section */}
@@ -116,16 +116,16 @@ export default function NoticeSection() {
               <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
               
               <Calendar className="h-12 w-12 text-amber-400 mb-3 animate-pulse relative z-10" />
-              <span className="text-white text-lg font-bold tracking-wide relative z-10 font-alinur" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>
+              <span className="text-white text-lg font-bold tracking-wide relative z-10 font-alinur" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>
                 সুফিয়া নূরীয়া দাখিল মাদ্রাসা নোটিশবোর্ড
               </span>
-              <span className="text-emerald-200 text-xs mt-1 relative z-10 font-alinur" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>
+              <span className="text-emerald-200 text-xs mt-1 relative z-10 font-alinur" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>
                 ব্যানার ইমেজ সেট করার জন্য নিচের গোপন গেটওয়েটি ব্যবহার করুন
               </span>
 
               {/* Discreet Secret Upload Gateway */}
               <div className="absolute bottom-4 right-4 z-20">
-                <label className="cursor-pointer bg-white/10 hover:bg-white/20 hover:scale-105 active:scale-95 text-white/80 hover:text-white px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/20 transition-all flex items-center space-x-1.5 backdrop-blur-xs font-alinur" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>
+                <label className="cursor-pointer bg-white/10 hover:bg-white/20 hover:scale-105 active:scale-95 text-white/80 hover:text-white px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/20 transition-all flex items-center space-x-1.5 backdrop-blur-xs font-alinur" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>
                   <span>{uploading ? "আপলোড হচ্ছে..." : "গোপন ব্যানার আপলোড"}</span>
                   <input
                     type="file"
@@ -159,7 +159,7 @@ export default function NoticeSection() {
 
         {/* Custom Description Title */}
         <div className="text-center mb-10 px-4">
-          <p className="text-[11px] sm:text-xs text-emerald-950 font-medium leading-relaxed tracking-wide font-alinur" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>
+          <p className="text-[11px] sm:text-xs text-emerald-950 font-medium leading-relaxed tracking-wide font-alinur" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>
             সুফিয়া নূরীয়া দাখিল মাদ্রাসার গুরুত্বপূর্ণ নোটিশ, জরুরি ঘোষণা, একাডেমিক তথ্য এবং বিভিন্ন কার্যক্রমের সর্বশেষ আপডেট নিয়মিতভাবে এখানে প্রকাশ করা হয়।
           </p>
           <div className="h-[2px] w-20 bg-amber-500 mx-auto rounded-full mt-3"></div>
@@ -171,7 +171,7 @@ export default function NoticeSection() {
             return (
               <div className="flex flex-col items-center justify-center py-16 space-y-4">
                 <div className="animate-spin rounded-full h-10 w-10 border-4 border-emerald-800 border-t-transparent"></div>
-                <p className="text-xs text-emerald-800 font-bold font-alinur" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>নোটিশসমূহ লোড হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...</p>
+                <p className="text-xs text-emerald-800 font-bold font-alinur" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>নোটিশসমূহ লোড হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...</p>
               </div>
             );
           }
@@ -180,7 +180,7 @@ export default function NoticeSection() {
             return (
               <div className="p-6 bg-red-50 border border-red-200 rounded-2xl flex items-center space-x-3 text-red-700">
                 <AlertCircle className="h-5 w-5 shrink-0" />
-                <p className="text-sm font-bold font-alinur" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>দুঃখিত, নোটিশসমূহ লোড করতে ত্রুটি ঘটেছে। অনুগ্রহ করে পরে চেষ্টা করুন।</p>
+                <p className="text-sm font-bold font-alinur" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>দুঃখিত, নোটিশসমূহ লোড করতে ত্রুটি ঘটেছে। অনুগ্রহ করে পরে চেষ্টা করুন।</p>
               </div>
             );
           }
@@ -191,8 +191,8 @@ export default function NoticeSection() {
                 <div className="bg-amber-50 h-14 w-14 rounded-full flex items-center justify-center mx-auto border border-amber-100">
                   <Calendar className="h-7 w-7 text-amber-600" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-700 font-alinur" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>কোনো নোটিশ পাওয়া যায়নি</h3>
-                <p className="text-xs text-gray-400 max-w-xs mx-auto leading-relaxed font-alinur" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>
+                <h3 className="text-lg font-bold text-gray-700 font-alinur" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>কোনো নোটিশ পাওয়া যায়নি</h3>
+                <p className="text-xs text-gray-400 max-w-xs mx-auto leading-relaxed font-alinur" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>
                   এই মুহূর্তে মাদ্রাসার ডাটাবেসে কোনো সক্রিয় নোটিশ নেই। পরবর্তীতে পুনরায় চেক করুন।
                 </p>
               </div>
@@ -219,15 +219,15 @@ export default function NoticeSection() {
                     {/* Left: Date Block (Split UI) */}
                     <div className="w-24 sm:w-28 bg-gradient-to-b from-emerald-900 to-[#061426] shrink-0 flex flex-col justify-center items-center py-5 px-2 text-center select-none border-r border-slate-100 relative">
                       {/* Upper: Month Name */}
-                      <div className="text-[10px] sm:text-xs font-bold text-sky-300 uppercase tracking-wide mb-1 font-alinur" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>
+                      <div className="text-[10px] sm:text-xs font-bold text-sky-300 uppercase tracking-wide mb-1 font-alinur" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>
                         {monthStr}
                       </div>
                       {/* Middle: Bold Day Numeral */}
-                      <div className="text-3xl sm:text-4xl font-extrabold text-white font-alinur tracking-tighter leading-none py-1" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>
+                      <div className="text-3xl sm:text-4xl font-extrabold text-white font-alinur tracking-tighter leading-none py-1" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>
                         {dayStr}
                       </div>
                       {/* Lower: Grey Year Numeral */}
-                      <div className="text-[10px] sm:text-xs font-bold text-slate-400 font-alinur mt-1" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>
+                      <div className="text-[10px] sm:text-xs font-bold text-slate-400 font-alinur mt-1" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>
                         {yearStr}
                       </div>
                       
@@ -239,18 +239,18 @@ export default function NoticeSection() {
                     <div className="flex-1 p-5 sm:p-6 flex flex-col justify-between space-y-3">
                       <div className="space-y-1.5">
                         {/* Title */}
-                        <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug font-alinur group-hover:text-emerald-800 transition-colors line-clamp-2" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>
+                        <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug font-alinur group-hover:text-emerald-800 transition-colors line-clamp-2" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>
                           {notice.title}
                         </h3>
                         {/* Single line short description */}
-                        <p className="text-xs sm:text-sm text-gray-500 line-clamp-1 leading-relaxed font-medium font-alinur" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>
+                        <p className="text-xs sm:text-sm text-gray-500 line-clamp-1 leading-relaxed font-medium font-alinur" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>
                           {notice.description}
                         </p>
                       </div>
 
                       {/* Read More Clickable Link */}
                       <div className="pt-2 flex items-center justify-between text-xs font-bold">
-                        <span className="text-emerald-700 hover:text-amber-600 font-alinur flex items-center space-x-0.5 transition-all group-hover:translate-x-1 duration-200" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>
+                        <span className="text-emerald-700 hover:text-amber-600 font-alinur flex items-center space-x-0.5 transition-all group-hover:translate-x-1 duration-200" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>
                           <span>[ আরও পড়ুন ]</span>
                         </span>
                       </div>
@@ -276,15 +276,15 @@ export default function NoticeSection() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
                   className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-xl w-full overflow-hidden flex flex-col max-h-[85vh]"
-                  style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}
+                  style={{ fontFamily: '"Ador Noirit", sans-serif' }}
                 >
                   {/* Modal Header */}
-                  <div className="bg-gradient-to-r from-emerald-950 via-emerald-900 to-[#0a1e3a] text-white p-5 sm:p-6 flex justify-between items-center border-b border-slate-800 relative select-none shrink-0" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>
+                  <div className="bg-gradient-to-r from-emerald-950 via-emerald-900 to-[#0a1e3a] text-white p-5 sm:p-6 flex justify-between items-center border-b border-slate-800 relative select-none shrink-0" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>
                     <div className="space-y-1">
-                      <span className="text-[10px] font-bold text-sky-400 uppercase tracking-wide" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>
+                      <span className="text-[10px] font-bold text-sky-400 uppercase tracking-wide" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>
                         সুফিয়া নূরীয়া দাখিল মাদ্রাসা নোটিশবোর্ড
                       </span>
-                      <h4 className="font-bold text-sm sm:text-base text-white font-alinur" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>
+                      <h4 className="font-bold text-sm sm:text-base text-white font-alinur" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>
                         বিস্তারিত নোটিশ ভিউ
                       </h4>
                     </div>
@@ -303,11 +303,11 @@ export default function NoticeSection() {
                     {/* Timestamp & Date */}
                     <div className="flex items-center space-x-1.5 text-xs text-emerald-800 font-bold bg-emerald-50 border border-emerald-100 rounded-lg px-3.5 py-2 w-fit">
                       <Calendar className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
-                      <span className="font-alinur" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>প্রকাশের সময়: {formattedDateTime}</span>
+                      <span className="font-alinur" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>প্রকাশের সময়: {formattedDateTime}</span>
                     </div>
 
                     {/* Title */}
-                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-snug font-alinur" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-snug font-alinur" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>
                       {selectedNotice.title}
                     </h2>
 
@@ -315,7 +315,7 @@ export default function NoticeSection() {
                     <div className="h-[1px] w-full bg-slate-100"></div>
 
                     {/* Notice Description Body */}
-                    <div className="text-sm sm:text-base text-gray-700 font-alinur font-medium leading-relaxed whitespace-pre-wrap" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>
+                    <div className="text-sm sm:text-base text-gray-700 font-alinur font-medium leading-relaxed whitespace-pre-wrap" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>
                       {selectedNotice.description}
                     </div>
                   </div>
@@ -325,7 +325,7 @@ export default function NoticeSection() {
                     {/* isEdited Flag Check */}
                     <div>
                       {selectedNotice.isEdited && (
-                        <span className="inline-flex items-center space-x-1 text-xs font-bold text-red-600 bg-red-50 border border-red-100 px-3 py-1 rounded-full font-alinur" style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}>
+                        <span className="inline-flex items-center space-x-1 text-xs font-bold text-red-600 bg-red-50 border border-red-100 px-3 py-1 rounded-full font-alinur" style={{ fontFamily: '"Ador Noirit", sans-serif' }}>
                           <span>● সংস্করণ হয়েছে</span>
                         </span>
                       )}
@@ -334,7 +334,7 @@ export default function NoticeSection() {
                     <button
                       onClick={() => setSelectedNotice(null)}
                       className="w-full sm:w-auto bg-[#0a1e3a] hover:bg-slate-900 text-white font-bold px-5 py-2 rounded-xl text-xs sm:text-sm cursor-pointer transition-colors text-center font-alinur"
-                      style={{ fontFamily: '"Alinur Tatsama", sans-serif' }}
+                      style={{ fontFamily: '"Ador Noirit", sans-serif' }}
                     >
                       বন্ধ করুন
                     </button>

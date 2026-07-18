@@ -315,15 +315,15 @@ export default function AdmissionSection({ onFormStateChange, logoUrl }: { onFor
                     className={`w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-alinur ${
                       applicantPhoneError ? "border-red-500 focus:ring-red-500" : "border-emerald-300"
                     }`}
-                    style={{ fontFamily: 'Alinur Tatsama' }}
+                    style={{ fontFamily: 'Ador Noirit' }}
                   />
                   {applicantPhoneError && (
-                    <p className="text-red-500 text-xs font-bold mt-1.5" style={{ fontFamily: 'Alinur Tatsama' }}>
+                    <p className="text-red-500 text-xs font-bold mt-1.5" style={{ fontFamily: 'Ador Noirit' }}>
                       {applicantPhoneError}
                     </p>
                   )}
                   <div className="text-right mt-1">
-                    <span className="text-xs text-slate-500 font-bold" style={{ fontFamily: 'Alinur Tatsama' }}>
+                    <span className="text-xs text-slate-500 font-bold" style={{ fontFamily: 'Ador Noirit' }}>
                       {`${toBengaliDigits(11 - (formData.applicantPhone?.length || 0))}টি বাকি`}
                     </span>
                   </div>
@@ -336,7 +336,7 @@ export default function AdmissionSection({ onFormStateChange, logoUrl }: { onFor
                     value={formData.admissionClass}
                     onChange={e => handleInputChange("admissionClass", e.target.value)}
                     className="w-full border border-emerald-300 rounded-xl px-4 py-3 appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-alinur"
-                    style={{ fontFamily: 'Alinur Tatsama' }}
+                    style={{ fontFamily: 'Ador Noirit' }}
                   >
                     {classes.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
@@ -351,47 +351,47 @@ export default function AdmissionSection({ onFormStateChange, logoUrl }: { onFor
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">বাংলা পূর্ণ নাম *</label>
-                  <input type="text" required value={formData.studentNameBn} onChange={e => handleInputChange("studentNameBn", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="বাংলায় নাম" />
+                  <input type="text" required value={formData.studentNameBn} onChange={e => handleInputChange("studentNameBn", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="বাংলায় নাম" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">ইংরেজি পূর্ণ নাম *</label>
-                  <input type="text" required value={formData.studentNameEn} onChange={e => handleInputChange("studentNameEn", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="ইংরেজিতে নাম" />
+                  <input type="text" required value={formData.studentNameEn} onChange={e => handleInputChange("studentNameEn", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="ইংরেজিতে নাম" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">রক্তের গ্রুপ</label>
-                  <select value={formData.bloodGroup} onChange={e => handleInputChange("bloodGroup", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>
+                  <select value={formData.bloodGroup} onChange={e => handleInputChange("bloodGroup", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }}>
                     {bloodGroups.map(bg => <option key={bg} value={bg}>{bg}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">লিঙ্গ</label>
-                  <select value={formData.gender} onChange={e => handleInputChange("gender", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>
+                  <select value={formData.gender} onChange={e => handleInputChange("gender", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }}>
                     {genders.map(g => <option key={g} value={g}>{g}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">এনআইডি/নিবন্ধন নাম্বার *</label>
-                  <input type="text" required value={formData.studentNid} onChange={e => handleInputChange("studentNid", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="জন্ম নিবন্ধন বা এনআইডি" />
+                  <input type="text" required value={formData.studentNid} onChange={e => handleInputChange("studentNid", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="জন্ম নিবন্ধন বা এনআইডি" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">জন্মসাল *</label>
-                  <input type="date" required value={formData.studentDob} onChange={e => handleInputChange("studentDob", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} />
+                  <input type="date" required value={formData.studentDob} onChange={e => handleInputChange("studentDob", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">থানা *</label>
-                  <input type="text" required value={formData.studentThana} onChange={e => handleInputChange("studentThana", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="থানার নাম" />
+                  <input type="text" required value={formData.studentThana} onChange={e => handleInputChange("studentThana", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="থানার নাম" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">জেলা *</label>
-                  <input type="text" required value={formData.studentDistrict} onChange={e => handleInputChange("studentDistrict", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="জেলার নাম" />
+                  <input type="text" required value={formData.studentDistrict} onChange={e => handleInputChange("studentDistrict", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="জেলার নাম" />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-bold text-slate-700 mb-1">বর্তমান ঠিকানা *</label>
-                  <input type="text" required value={formData.studentPresentAddress} onChange={e => handleInputChange("studentPresentAddress", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="বর্তমান ঠিকানা বিস্তারিত" />
+                  <input type="text" required value={formData.studentPresentAddress} onChange={e => handleInputChange("studentPresentAddress", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="বর্তমান ঠিকানা বিস্তারিত" />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-bold text-slate-700 mb-1">স্থায়ী ঠিকানা *</label>
-                  <input type="text" required value={formData.studentPermanentAddress} onChange={e => handleInputChange("studentPermanentAddress", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="স্থায়ী ঠিকানা বিস্তারিত" />
+                  <input type="text" required value={formData.studentPermanentAddress} onChange={e => handleInputChange("studentPermanentAddress", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="স্থায়ী ঠিকানা বিস্তারিত" />
                 </div>
               </div>
             </div>
@@ -402,15 +402,15 @@ export default function AdmissionSection({ onFormStateChange, logoUrl }: { onFor
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">অভিভাবকের নাম *</label>
-                  <input type="text" required value={formData.g1Name} onChange={e => handleInputChange("g1Name", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="নাম" />
+                  <input type="text" required value={formData.g1Name} onChange={e => handleInputChange("g1Name", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="নাম" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">সম্পর্ক *</label>
-                  <select value={formData.g1Relation} onChange={e => handleInputChange("g1Relation", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>
+                  <select value={formData.g1Relation} onChange={e => handleInputChange("g1Relation", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }}>
                     {relations.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
                   {formData.g1Relation === "অন্যান্য" && (
-                    <input type="text" required value={formData.g1RelationOther} onChange={e => handleInputChange("g1RelationOther", e.target.value)} placeholder="সম্পর্ক উল্লেখ করুন" className="w-full border border-slate-300 rounded-lg px-3 py-2 mt-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} />
+                    <input type="text" required value={formData.g1RelationOther} onChange={e => handleInputChange("g1RelationOther", e.target.value)} placeholder="সম্পর্ক উল্লেখ করুন" className="w-full border border-slate-300 rounded-lg px-3 py-2 mt-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} />
                   )}
                 </div>
                 <div>
@@ -425,16 +425,16 @@ export default function AdmissionSection({ onFormStateChange, logoUrl }: { onFor
                       className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur ${
                         g1PhoneError ? "border-red-500 focus:ring-red-500" : "border-slate-300"
                       }`}
-                      style={{ fontFamily: 'Alinur Tatsama' }}
+                      style={{ fontFamily: 'Ador Noirit' }}
                       placeholder="মোবাইল নাম্বার" 
                     />
                     {g1PhoneError && (
-                      <p className="text-red-500 text-xs font-bold mt-1" style={{ fontFamily: 'Alinur Tatsama' }}>
+                      <p className="text-red-500 text-xs font-bold mt-1" style={{ fontFamily: 'Ador Noirit' }}>
                         {g1PhoneError}
                       </p>
                     )}
                     <div className="text-right mt-1">
-                      <span className="text-xs text-slate-500 font-bold" style={{ fontFamily: 'Alinur Tatsama' }}>
+                      <span className="text-xs text-slate-500 font-bold" style={{ fontFamily: 'Ador Noirit' }}>
                         {`${toBengaliDigits(11 - (formData.g1Phone?.length || 0))}টি বাকি`}
                       </span>
                     </div>
@@ -442,31 +442,31 @@ export default function AdmissionSection({ onFormStateChange, logoUrl }: { onFor
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">ইমেইল (ঐচ্ছিক)</label>
-                  <input type="email" value={formData.g1Email} onChange={e => handleInputChange("g1Email", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="ইমেইল এড্রেস" />
+                  <input type="email" value={formData.g1Email} onChange={e => handleInputChange("g1Email", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="ইমেইল এড্রেস" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">এনআইডি নাম্বার *</label>
-                  <input type="text" required value={formData.g1Nid} onChange={e => handleInputChange("g1Nid", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="এনআইডি নাম্বার" />
+                  <input type="text" required value={formData.g1Nid} onChange={e => handleInputChange("g1Nid", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="এনআইডি নাম্বার" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">জন্মসাল *</label>
-                  <input type="date" required value={formData.g1Dob} onChange={e => handleInputChange("g1Dob", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} />
+                  <input type="date" required value={formData.g1Dob} onChange={e => handleInputChange("g1Dob", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">থানা *</label>
-                  <input type="text" required value={formData.g1Thana} onChange={e => handleInputChange("g1Thana", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="থানার নাম" />
+                  <input type="text" required value={formData.g1Thana} onChange={e => handleInputChange("g1Thana", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="থানার নাম" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">জেলা *</label>
-                  <input type="text" required value={formData.g1District} onChange={e => handleInputChange("g1District", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="জেলার নাম" />
+                  <input type="text" required value={formData.g1District} onChange={e => handleInputChange("g1District", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="জেলার নাম" />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-bold text-slate-700 mb-1">বর্তমান ঠিকানা *</label>
-                  <input type="text" required value={formData.g1PresentAddress} onChange={e => handleInputChange("g1PresentAddress", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="বর্তমান ঠিকানা বিস্তারিত" />
+                  <input type="text" required value={formData.g1PresentAddress} onChange={e => handleInputChange("g1PresentAddress", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="বর্তমান ঠিকানা বিস্তারিত" />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-bold text-slate-700 mb-1">স্থায়ী ঠিকানা *</label>
-                  <input type="text" required value={formData.g1PermanentAddress} onChange={e => handleInputChange("g1PermanentAddress", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="স্থায়ী ঠিকানা বিস্তারিত" />
+                  <input type="text" required value={formData.g1PermanentAddress} onChange={e => handleInputChange("g1PermanentAddress", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="স্থায়ী ঠিকানা বিস্তারিত" />
                 </div>
               </div>
             </div>
@@ -477,15 +477,15 @@ export default function AdmissionSection({ onFormStateChange, logoUrl }: { onFor
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">অভিভাবকের নাম *</label>
-                  <input type="text" required value={formData.g2Name} onChange={e => handleInputChange("g2Name", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="নাম" />
+                  <input type="text" required value={formData.g2Name} onChange={e => handleInputChange("g2Name", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="নাম" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">সম্পর্ক *</label>
-                  <select value={formData.g2Relation} onChange={e => handleInputChange("g2Relation", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>
+                  <select value={formData.g2Relation} onChange={e => handleInputChange("g2Relation", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }}>
                     {relations.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
                   {formData.g2Relation === "অন্যান্য" && (
-                    <input type="text" required value={formData.g2RelationOther} onChange={e => handleInputChange("g2RelationOther", e.target.value)} placeholder="সম্পর্ক উল্লেখ করুন" className="w-full border border-slate-300 rounded-lg px-3 py-2 mt-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} />
+                    <input type="text" required value={formData.g2RelationOther} onChange={e => handleInputChange("g2RelationOther", e.target.value)} placeholder="সম্পর্ক উল্লেখ করুন" className="w-full border border-slate-300 rounded-lg px-3 py-2 mt-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} />
                   )}
                 </div>
                 <div>
@@ -500,16 +500,16 @@ export default function AdmissionSection({ onFormStateChange, logoUrl }: { onFor
                       className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur ${
                         g2PhoneError ? "border-red-500 focus:ring-red-500" : "border-slate-300"
                       }`}
-                      style={{ fontFamily: 'Alinur Tatsama' }}
+                      style={{ fontFamily: 'Ador Noirit' }}
                       placeholder="মোবাইল নাম্বার" 
                     />
                     {g2PhoneError && (
-                      <p className="text-red-500 text-xs font-bold mt-1" style={{ fontFamily: 'Alinur Tatsama' }}>
+                      <p className="text-red-500 text-xs font-bold mt-1" style={{ fontFamily: 'Ador Noirit' }}>
                         {g2PhoneError}
                       </p>
                     )}
                     <div className="text-right mt-1">
-                      <span className="text-xs text-slate-500 font-bold" style={{ fontFamily: 'Alinur Tatsama' }}>
+                      <span className="text-xs text-slate-500 font-bold" style={{ fontFamily: 'Ador Noirit' }}>
                         {`${toBengaliDigits(11 - (formData.g2Phone?.length || 0))}টি বাকি`}
                       </span>
                     </div>
@@ -517,31 +517,31 @@ export default function AdmissionSection({ onFormStateChange, logoUrl }: { onFor
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">ইমেইল (ঐচ্ছিক)</label>
-                  <input type="email" value={formData.g2Email} onChange={e => handleInputChange("g2Email", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="ইমেইল এড্রেস" />
+                  <input type="email" value={formData.g2Email} onChange={e => handleInputChange("g2Email", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="ইমেইল এড্রেস" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">এনআইডি নাম্বার *</label>
-                  <input type="text" required value={formData.g2Nid} onChange={e => handleInputChange("g2Nid", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="এনআইডি নাম্বার" />
+                  <input type="text" required value={formData.g2Nid} onChange={e => handleInputChange("g2Nid", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="এনআইডি নাম্বার" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">জন্মসাল *</label>
-                  <input type="date" required value={formData.g2Dob} onChange={e => handleInputChange("g2Dob", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} />
+                  <input type="date" required value={formData.g2Dob} onChange={e => handleInputChange("g2Dob", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">থানা *</label>
-                  <input type="text" required value={formData.g2Thana} onChange={e => handleInputChange("g2Thana", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="থানার নাম" />
+                  <input type="text" required value={formData.g2Thana} onChange={e => handleInputChange("g2Thana", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="থানার নাম" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">জেলা *</label>
-                  <input type="text" required value={formData.g2District} onChange={e => handleInputChange("g2District", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="জেলার নাম" />
+                  <input type="text" required value={formData.g2District} onChange={e => handleInputChange("g2District", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="জেলার নাম" />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-bold text-slate-700 mb-1">বর্তমান ঠিকানা *</label>
-                  <input type="text" required value={formData.g2PresentAddress} onChange={e => handleInputChange("g2PresentAddress", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="বর্তমান ঠিকানা বিস্তারিত" />
+                  <input type="text" required value={formData.g2PresentAddress} onChange={e => handleInputChange("g2PresentAddress", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="বর্তমান ঠিকানা বিস্তারিত" />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-bold text-slate-700 mb-1">স্থায়ী ঠিকানা *</label>
-                  <input type="text" required value={formData.g2PermanentAddress} onChange={e => handleInputChange("g2PermanentAddress", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="স্থায়ী ঠিকানা বিস্তারিত" />
+                  <input type="text" required value={formData.g2PermanentAddress} onChange={e => handleInputChange("g2PermanentAddress", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="স্থায়ী ঠিকানা বিস্তারিত" />
                 </div>
               </div>
             </div>
@@ -553,23 +553,23 @@ export default function AdmissionSection({ onFormStateChange, logoUrl }: { onFor
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
                     <label className="block text-sm font-bold text-slate-700 mb-1">পূর্বের প্রতিষ্ঠানের নাম *</label>
-                    <input type="text" required={showExtraFields} value={formData.prevInstitute} onChange={e => handleInputChange("prevInstitute", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="প্রতিষ্ঠানের নাম" />
+                    <input type="text" required={showExtraFields} value={formData.prevInstitute} onChange={e => handleInputChange("prevInstitute", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="প্রতিষ্ঠানের নাম" />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-1">রোল *</label>
-                    <input type="text" required={showExtraFields} value={formData.prevRoll} onChange={e => handleInputChange("prevRoll", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="রোল নাম্বার" />
+                    <input type="text" required={showExtraFields} value={formData.prevRoll} onChange={e => handleInputChange("prevRoll", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="রোল নাম্বার" />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-1">শেষ জিপিএ *</label>
-                    <input type="text" required={showExtraFields} value={formData.prevGpa} onChange={e => handleInputChange("prevGpa", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="জিপিএ" />
+                    <input type="text" required={showExtraFields} value={formData.prevGpa} onChange={e => handleInputChange("prevGpa", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="জিপিএ" />
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-bold text-slate-700 mb-1">পূর্বের প্রতিষ্ঠান ত্যাগ করার কারণ * (সর্বোচ্চ ১০০ অক্ষর)</label>
-                    <input type="text" maxLength={100} required={showExtraFields} value={formData.prevLeaveReason} onChange={e => handleInputChange("prevLeaveReason", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="কারণ উল্লেখ করুন" />
+                    <input type="text" maxLength={100} required={showExtraFields} value={formData.prevLeaveReason} onChange={e => handleInputChange("prevLeaveReason", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }} placeholder="কারণ উল্লেখ করুন" />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-1">পূর্বের প্রতিষ্ঠানের ছাড়পত্র আছে কিনা? *</label>
-                    <select required={showExtraFields} value={formData.prevClearance} onChange={e => handleInputChange("prevClearance", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>
+                    <select required={showExtraFields} value={formData.prevClearance} onChange={e => handleInputChange("prevClearance", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 font-alinur" style={{ fontFamily: 'Ador Noirit' }}>
                       <option value="হ্যাঁ">হ্যাঁ</option>
                       <option value="না">না</option>
                     </select>
@@ -611,7 +611,7 @@ export default function AdmissionSection({ onFormStateChange, logoUrl }: { onFor
                   ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30" 
                   : "bg-slate-300 text-slate-500 cursor-not-allowed"
               }`}
-              style={{ fontFamily: 'Alinur Tatsama' }}
+              style={{ fontFamily: 'Ador Noirit' }}
             >
               {isSubmitting ? (
                 <>
@@ -634,24 +634,24 @@ export default function AdmissionSection({ onFormStateChange, logoUrl }: { onFor
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 font-alinur"
-            style={{ fontFamily: 'Alinur Tatsama' }}
+            style={{ fontFamily: 'Ador Noirit' }}
           >
             <motion.div 
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
               className="bg-white max-w-md w-full rounded-3xl p-6 shadow-2xl relative"
-              style={{ fontFamily: 'Alinur Tatsama' }}
+              style={{ fontFamily: 'Ador Noirit' }}
             >
               <button 
                 onClick={() => setPopupMessage(null)}
                 className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full p-1"
-                style={{ fontFamily: 'Alinur Tatsama' }}
+                style={{ fontFamily: 'Ador Noirit' }}
               >
                 <X className="w-5 h-5" />
               </button>
               
-              <div className="text-center py-4" style={{ fontFamily: 'Alinur Tatsama' }}>
+              <div className="text-center py-4" style={{ fontFamily: 'Ador Noirit' }}>
                 {popupMessage.type === 'error' && <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />}
                 {popupMessage.type === 'success' && <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto mb-4" />}
                 {popupMessage.type === 'alert' && <AlertCircle className="w-16 h-16 text-amber-500 mx-auto mb-4" />}
@@ -660,7 +660,7 @@ export default function AdmissionSection({ onFormStateChange, logoUrl }: { onFor
                   popupMessage.type === 'error' ? 'text-red-600' : 
                   popupMessage.type === 'success' ? 'text-emerald-600' : 
                   'text-amber-600'
-                }`} style={{ fontFamily: 'Alinur Tatsama' }}>
+                }`} style={{ fontFamily: 'Ador Noirit' }}>
                   {popupMessage.text}
                 </p>
 
@@ -668,7 +668,7 @@ export default function AdmissionSection({ onFormStateChange, logoUrl }: { onFor
                   <button 
                     onClick={downloadApplicationPDF}
                     className="mt-6 mx-auto bg-gradient-to-r from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl flex items-center justify-center gap-3 font-bold transition-all hover:scale-105 border border-emerald-400"
-                    style={{ fontFamily: 'Alinur Tatsama' }}
+                    style={{ fontFamily: 'Ador Noirit' }}
                   >
                     <Download className="w-5 h-5" />
                     আবেদন ফরম ডাউনলোড
@@ -678,7 +678,7 @@ export default function AdmissionSection({ onFormStateChange, logoUrl }: { onFor
                 <button 
                   onClick={() => setPopupMessage(null)}
                   className="mt-8 bg-slate-800 text-white px-8 py-2 rounded-lg font-bold hover:bg-slate-700 transition-colors"
-                  style={{ fontFamily: 'Alinur Tatsama' }}
+                  style={{ fontFamily: 'Ador Noirit' }}
                 >
                   বন্ধ করুন
                 </button>

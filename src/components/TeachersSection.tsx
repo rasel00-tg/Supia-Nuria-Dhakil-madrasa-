@@ -9,7 +9,7 @@ const teachersQuery = query(collection(db, "teachers"), orderBy("createdAt", "de
 
 export default function TeachersSection() {
   return (
-    <div className="min-h-screen bg-[#fdfdfb] font-alinur pb-20" style={{ fontFamily: 'Alinur Tatsama' }}>
+    <div className="min-h-screen bg-[#fdfdfb] font-alinur pb-20" style={{ fontFamily: 'Ador Noirit' }}>
       <div className="max-w-7xl mx-auto px-4 py-16 space-y-16">
         
         {/* Page Header */}

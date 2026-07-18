@@ -936,10 +936,10 @@ export default function HomeSection({
 
                         {/* Header Section with Custom font "font-alinur" */}
                         <div className="text-center w-full space-y-1.5 sm:space-y-3 relative z-10 font-alinur font-sans">
-                          <h2 className="text-[17px] xs:text-xl sm:text-4xl font-black text-amber-400 tracking-tight leading-none whitespace-nowrap" style={{ fontFamily: "Alinur Tatsama, sans-serif" }}>
+                          <h2 className="text-[17px] xs:text-xl sm:text-4xl font-black text-amber-400 tracking-tight leading-none whitespace-nowrap" style={{ fontFamily: "Ador Noirit, sans-serif" }}>
                             মাদ্রাসা পরিচালনা কমিটির সদস্যবৃন্দ
                           </h2>
-                          <p className="text-[11px] sm:text-base text-emerald-100 font-semibold max-w-2xl mx-auto leading-normal font-sans" style={{ fontFamily: "Alinur Tatsama, sans-serif" }}>
+                          <p className="text-[11px] sm:text-base text-emerald-100 font-semibold max-w-2xl mx-auto leading-normal font-sans" style={{ fontFamily: "Ador Noirit, sans-serif" }}>
                             মাদ্রাসার সুষ্ঠু ও সুশৃঙ্খল পরিচালনায় নিয়োজিত পরিচালনা কমিটির সম্মানিত সদস্যবৃন্দ
                           </p>
                           <div className="h-1 w-20 sm:h-1.5 sm:w-28 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400 mx-auto rounded-full mt-2 sm:mt-4 shadow-sm"></div>
@@ -963,7 +963,7 @@ export default function HomeSection({
                                 {/* Top Ribbon Banner (Role) */}
                                 <div 
                                   className={`w-full py-2 sm:py-3 px-3 text-center text-white font-extrabold text-[10px] xs:text-xs sm:text-sm select-none truncate ${bannerBg}`}
-                                  style={{ fontFamily: "Alinur Tatsama, sans-serif" }}
+                                  style={{ fontFamily: "Ador Noirit, sans-serif" }}
                                 >
                                   {member.role || "সদস্য"}
                                 </div>
@@ -1727,7 +1727,7 @@ export default function HomeSection({
                         </div>
                       )}
 
-                      {/* Custom Premium Form Success Popup (Alinur Tatsama font) */}
+                      {/* Custom Premium Form Success Popup (Ador Noirit font) */}
                       <AnimatePresence>
                         {showSuccessPopup && (
                           <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 z-[999] font-alinur">
@@ -1758,7 +1758,7 @@ export default function HomeSection({
                         )}
                       </AnimatePresence>
 
-                      {/* Custom Form Warning Popup (Alinur Tatsama font) */}
+                      {/* Custom Form Warning Popup (Ador Noirit font) */}
                       <AnimatePresence>
                         {showWarningPopup && (
                           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[999] font-alinur">

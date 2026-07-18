@@ -45,7 +45,7 @@ export default function TeacherManagement() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#fdfdfb] p-2 sm:p-6 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>
+    <div className="w-full min-h-screen bg-[#fdfdfb] p-2 sm:p-6 font-alinur" style={{ fontFamily: 'Ador Noirit' }}>
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header Section */}
@@ -220,7 +220,7 @@ export default function TeacherManagement() {
 
       <AnimatePresence>
         {successMessage && (
-          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 pointer-events-none font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 pointer-events-none font-alinur" style={{ fontFamily: 'Ador Noirit' }}>
             <motion.div 
               initial={{ opacity: 0, y: 50, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -286,7 +286,7 @@ function TeacherDetailModal({ teacher, onClose, onSuccess }: { teacher: Teacher,
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-emerald-950/40 backdrop-blur-sm font-alinur"
-      style={{ fontFamily: 'Alinur Tatsama' }}
+      style={{ fontFamily: 'Ador Noirit' }}
     >
       <motion.div 
         initial={{ scale: 0.9, y: 20 }}
@@ -746,7 +746,7 @@ function TeacherFullPageForm({ teacher, onClose }: { teacher: Teacher | null; on
   );
 
   return (
-    <div className="w-full min-h-screen bg-[#fdfdfb] flex flex-col font-alinur pb-24" style={{ fontFamily: 'Alinur Tatsama' }}>
+    <div className="w-full min-h-screen bg-[#fdfdfb] flex flex-col font-alinur pb-24" style={{ fontFamily: 'Ador Noirit' }}>
       {/* Page Header */}
       <div className="px-6 py-6 sm:px-10 bg-white border-b-2 border-slate-50 flex items-center justify-between sticky top-0 z-[100] shadow-sm">
         <div className="flex items-center gap-4">
@@ -952,8 +952,8 @@ function TeacherFullPageForm({ teacher, onClose }: { teacher: Teacher | null; on
       </div>
 
       <style>{`
-        .font-alinur { font-family: 'Ador Noirit', 'Alinur Tatsama', sans-serif !important; }
-        input, select, textarea, button, h1, h2, h3, h4, h5, p, span, div { font-family: 'Ador Noirit', 'Alinur Tatsama', sans-serif !important; }
+        .font-alinur { font-family: 'Ador Noirit', sans-serif !important; }
+        input, select, textarea, button, h1, h2, h3, h4, h5, p, span, div { font-family: 'Ador Noirit', sans-serif !important; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>

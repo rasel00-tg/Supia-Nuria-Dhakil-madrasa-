@@ -104,7 +104,7 @@ export default function ApplicationTracking({ logoUrl, setActiveTab }: Applicati
   };
 
   return (
-    <div className="w-full bg-slate-50 min-h-screen pb-20 font-alinur select-none" style={{ fontFamily: "'Alinur Tatsama', sans-serif" }}>
+    <div className="w-full bg-slate-50 min-h-screen pb-20 font-alinur select-none" style={{ fontFamily: "'Ador Noirit', sans-serif" }}>
       {/* 1. Dynamic Banner StreamBuilder */}
       <StreamBuilder<any>
         stream={bannerConfigQuery}
@@ -235,10 +235,10 @@ export default function ApplicationTracking({ logoUrl, setActiveTab }: Applicati
                       onChange={(e) => handleInputChange("applicantPhone", e.target.value)}
                       placeholder="01XXXXXXXXX"
                       className="w-full border border-slate-200 hover:border-emerald-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 rounded-xl px-4 py-3 focus:outline-none bg-white font-alinur text-slate-800 text-sm font-semibold transition-all"
-                      style={{ fontFamily: "'Alinur Tatsama', sans-serif" }}
+                      style={{ fontFamily: "'Ador Noirit', sans-serif" }}
                     />
                     <div className="text-right mt-1">
-                      <span className="text-xs text-slate-500 font-bold" style={{ fontFamily: "'Alinur Tatsama', sans-serif" }}>
+                      <span className="text-xs text-slate-500 font-bold" style={{ fontFamily: "'Ador Noirit', sans-serif" }}>
                         {`${toBengaliDigits(11 - formData.applicantPhone.length)}টি বাকি`}
                       </span>
                     </div>
@@ -255,7 +255,7 @@ export default function ApplicationTracking({ logoUrl, setActiveTab }: Applicati
                     onChange={(e) => handleInputChange("studentNameBn", e.target.value)}
                     placeholder="বাংলায় পূর্ণ নাম লিখুন"
                     className="w-full border border-slate-200 hover:border-emerald-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 rounded-xl px-4 py-3 focus:outline-none bg-white font-alinur text-slate-800 text-sm font-semibold transition-all"
-                    style={{ fontFamily: "'Alinur Tatsama', sans-serif" }}
+                    style={{ fontFamily: "'Ador Noirit', sans-serif" }}
                   />
                 </div>
 
@@ -269,7 +269,7 @@ export default function ApplicationTracking({ logoUrl, setActiveTab }: Applicati
                     onChange={(e) => handleInputChange("studentNameEn", e.target.value)}
                     placeholder="ইংরেজিতে পূর্ণ নাম লিখুন"
                     className="w-full border border-slate-200 hover:border-emerald-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 rounded-xl px-4 py-3 focus:outline-none bg-white font-alinur text-slate-800 text-sm font-semibold transition-all"
-                    style={{ fontFamily: "'Alinur Tatsama', sans-serif" }}
+                    style={{ fontFamily: "'Ador Noirit', sans-serif" }}
                   />
                 </div>
 
@@ -280,7 +280,7 @@ export default function ApplicationTracking({ logoUrl, setActiveTab }: Applicati
                     value={formData.admissionClass}
                     onChange={(e) => handleInputChange("admissionClass", e.target.value)}
                     className="w-full border border-slate-200 hover:border-emerald-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 rounded-xl px-4 py-3 focus:outline-none bg-white font-alinur text-slate-800 text-sm font-semibold transition-all cursor-pointer"
-                    style={{ fontFamily: "'Alinur Tatsama', sans-serif" }}
+                    style={{ fontFamily: "'Ador Noirit', sans-serif" }}
                   >
                     {classes.map(c => (
                       <option key={c} value={c}>{c}</option>
@@ -295,7 +295,7 @@ export default function ApplicationTracking({ logoUrl, setActiveTab }: Applicati
                     value={formData.bloodGroup}
                     onChange={(e) => handleInputChange("bloodGroup", e.target.value)}
                     className="w-full border border-slate-200 hover:border-emerald-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 rounded-xl px-4 py-3 focus:outline-none bg-white font-alinur text-slate-800 text-sm font-semibold transition-all cursor-pointer"
-                    style={{ fontFamily: "'Alinur Tatsama', sans-serif" }}
+                    style={{ fontFamily: "'Ador Noirit', sans-serif" }}
                   >
                     {bloodGroups.map(bg => (
                       <option key={bg} value={bg}>{bg}</option>
@@ -425,7 +425,7 @@ export default function ApplicationTracking({ logoUrl, setActiveTab }: Applicati
                         exit={{ opacity: 0, scale: 0.9, y: 30 }}
                         transition={{ type: "spring", damping: 25, stiffness: 280 }}
                         className="relative bg-white w-full max-w-lg rounded-3xl p-6 md:p-8 shadow-2xl border border-slate-100 overflow-hidden text-center flex flex-col items-center"
-                        style={{ fontFamily: 'Alinur Tatsama' }}
+                        style={{ fontFamily: 'Ador Noirit' }}
                       >
                         {/* Top Accent Strip */}
                         <div className={`absolute top-0 left-0 right-0 h-2 bg-gradient-to-r ${
