@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { initializeFirestore, Query, onSnapshot, DocumentData } from "firebase/firestore";
+import { initializeFirestore, Query, onSnapshot, DocumentData, enableIndexedDbPersistence } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import React, { useEffect, useState, ReactNode } from "react";
 import { loadingService } from "./loadingService";
@@ -20,6 +20,19 @@ const app = initializeApp(firebaseConfig);
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
 }, "ai-studio-cd3763db-984b-4a51-9a2b-e448ca0250a9");
+
+// Enable offline persistence for better performance when re-connecting or minimizing the app
+if (typeof window !== "undefined") {
+  enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code === 'failed-precondition') {
+      // Multiple tabs open, persistence can only be enabled in one tab at a time.
+      console.warn("Firestore persistence failed: multiple tabs open");
+    } else if (err.code === 'unimplemented-state') {
+      // The current browser does not support all of the features required to enable persistence
+      console.warn("Firestore persistence failed: browser not supported");
+    }
+  });
+}
 
 // Export Firebase Storage instance initialized with proper storage bucket config
 export const storage = getStorage(app);

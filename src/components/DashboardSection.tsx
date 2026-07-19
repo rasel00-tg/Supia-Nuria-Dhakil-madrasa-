@@ -1479,6 +1479,31 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                 ? "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&h=300&q=80" 
                 : "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&h=300&q=80";
               const studentPhoto = loggedInStudent?.photoUrl || loggedInStudent?.imageUrl || defaultPhoto;
+              
+              const handleSupportSubmit = async (e: React.FormEvent) => {
+                e.preventDefault();
+                if (!supportMessage.trim()) return;
+                setIsSubmittingSupport(true);
+                try {
+                  await addDoc(collection(db, "messages"), {
+                    name: studentName,
+                    email: user.email,
+                    phone: studentPhone || "শিক্ষার্থী পোর্টাল",
+                    subject: supportSubject || "শিক্ষার্থী পোর্টাল সাপোর্ট বার্তা",
+                    message: supportMessage,
+                    createdAt: new Date().toISOString(),
+                    isRead: false
+                  });
+                  setSupportSuccess(true);
+                  setSupportMessage("");
+                  setSupportSubject("");
+                  setTimeout(() => setSupportSuccess(false), 5000);
+                } catch (err) {
+                  console.error("Support message error:", err);
+                } finally {
+                  setIsSubmittingSupport(false);
+                }
+              };
 
               return (
                 <StudentDashboardInner

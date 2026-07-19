@@ -53,15 +53,26 @@ export default function App() {
   // Connectivity Listener
   useEffect(() => {
     const handleOnline = () => {
-      setIsOnline(true);
-      setShowOfflineModal(false);
-      setShowOnlineToast(true);
-      setTimeout(() => setShowOnlineToast(false), 4000);
+      setIsOnline(prev => {
+        if (prev === false) {
+          setShowOfflineModal(false);
+          setShowOnlineToast(true);
+          // Auto-hide the toast after 4 seconds
+          setTimeout(() => setShowOnlineToast(false), 4000);
+          return true;
+        }
+        return prev;
+      });
     };
 
     const handleOffline = () => {
-      setIsOnline(false);
-      setShowOfflineModal(true);
+      setIsOnline(prev => {
+        if (prev === true) {
+          setShowOfflineModal(true);
+          return false;
+        }
+        return prev;
+      });
     };
 
     window.addEventListener("online", handleOnline);
@@ -563,7 +574,7 @@ export default function App() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <span className="font-black text-sm">আপনি পূনরায় অনলাইন হয়েছেন!</span>
+              <span className="font-black text-sm">আপনার পেজ এখন লোড ও প্রস্তুত! (Your page loaded ready)</span>
             </motion.div>
           </div>
         )}

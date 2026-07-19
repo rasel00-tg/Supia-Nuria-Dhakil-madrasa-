@@ -288,14 +288,13 @@ export default function HomeSection({
   useEffect(() => {
     if (logoUrl !== undefined) {
       if (logoUrl) {
-        const freshUrl = `${logoUrl}${logoUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
-        setLogoUrlWithCache(freshUrl);
+        setLogoUrlWithCache(logoUrl);
         
         // Dynamic preload to <head>
         const link = document.createElement('link');
         link.rel = 'preload';
         link.as = 'image';
-        link.href = freshUrl;
+        link.href = logoUrl;
         link.setAttribute('fetchpriority', 'high');
         document.head.appendChild(link);
         
