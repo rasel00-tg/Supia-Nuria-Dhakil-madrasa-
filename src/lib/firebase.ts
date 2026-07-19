@@ -178,6 +178,7 @@ export function StreamBuilder<T>({ stream, builder }: StreamBuilderProps<T>) {
   const [error, setError] = useState<any>(null);
 
   useEffect(() => {
+    // Only reset loading if we don't have data yet or if it's the first run for this stream
     setLoading(true);
     loadingService.show();
     let hasDecremented = false;

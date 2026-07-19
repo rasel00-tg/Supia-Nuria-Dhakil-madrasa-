@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { collection, query, doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db, StreamBuilder, uploadFileToImgBB } from "../lib/firebase";
 import { Routine } from "../types";
@@ -161,8 +161,9 @@ export default function RoutineSection() {
     }
   };
 
-  // Build query for routines
-  const routinesQuery = query(collection(db, "routines"));
+  // Build stable queries for StreamBuilder to prevent re-subscription loops
+  const routinesQuery = useMemo(() => query(collection(db, "routines")), []);
+  const routineConfigQuery = useMemo(() => query(collection(db, "routine_config")), []);
 
   return (
     <div 
@@ -171,7 +172,7 @@ export default function RoutineSection() {
       style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
     >
       <StreamBuilder<any>
-        stream={query(collection(db, "routine_config"))}
+        stream={routineConfigQuery}
         builder={(configList) => {
           const configDoc = configList.find(c => c.id === "icons") || {};
           const isRoutineIconsUploaded = configDoc.isRoutineIconsUploaded || false;
