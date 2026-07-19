@@ -302,17 +302,19 @@ export default function App() {
       {/* PWA App Install Prompt Loop */}
       <InstallPrompt />
 
-      {/* Sticky Top Navbar */}
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        user={user}
-        onLogout={handleLogout}
-        logoUrl={logoUrl}
-        isLogoUploaded={isLogoUploaded}
-        logoUploading={logoUploading}
-        onLogoUpload={handleLogoUpload}
-      />
+      {/* Sticky Top Navbar - Hidden on Login Page */}
+      {activeTab !== "login" && (
+        <Navbar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          user={user}
+          onLogout={handleLogout}
+          logoUrl={logoUrl}
+          isLogoUploaded={isLogoUploaded}
+          logoUploading={logoUploading}
+          onLogoUpload={handleLogoUpload}
+        />
+      )}
 
       {/* Main Content Area */}
       <main className="flex-1 w-full p-0 m-0">
@@ -372,7 +374,7 @@ export default function App() {
             {activeTab === "review_center" && <ReviewCenterSection />}
             {activeTab === "application_tracking" && <ApplicationTracking logoUrl={logoUrl} setActiveTab={setActiveTab} />}
             {activeTab === "login" && (
-              <LoginSection onLoginSuccess={handleLoginSuccess} />
+              <LoginSection onLoginSuccess={handleLoginSuccess} logoUrl={logoUrl} />
             )}
             {activeTab === "dashboard" && user && (
               <DashboardSection user={user} />
@@ -382,7 +384,7 @@ export default function App() {
       </main>
 
       {/* Sticky Bottom/Footer Section */}
-      {!(activeTab === "admission" && isAdmissionFormOpen) && activeTab !== "teachers" && activeTab !== "review_center" && activeTab !== "gaming_corner" && activeTab !== "committee" && activeTab !== "committee_member_detail" && activeTab !== "dashboard" && activeTab !== "sodosso_form" && activeTab !== "staff" && activeTab !== "students" && activeTab !== "honored" && activeTab !== "routine" && activeTab !== "application_tracking" && activeTab !== "hafizgon" && activeTab !== "government_websites" && user?.role !== "admin" && (
+      {!(activeTab === "admission" && isAdmissionFormOpen) && activeTab !== "teachers" && activeTab !== "review_center" && activeTab !== "gaming_corner" && activeTab !== "committee" && activeTab !== "committee_member_detail" && activeTab !== "dashboard" && activeTab !== "sodosso_form" && activeTab !== "staff" && activeTab !== "students" && activeTab !== "honored" && activeTab !== "routine" && activeTab !== "application_tracking" && activeTab !== "hafizgon" && activeTab !== "government_websites" && activeTab !== "login" && user?.role !== "admin" && (
         <FooterStreamBuilder
           stream={settingsCollectionQuery}
           builder={(settingsList) => {

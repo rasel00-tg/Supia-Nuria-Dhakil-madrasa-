@@ -131,8 +131,8 @@ export default function Navbar({
     <header id="main-header" className="sticky top-0 z-50 w-full bg-emerald-850 text-white shadow-md border-b-4 border-amber-500 select-none font-alinur">
       <div className="w-full px-2 py-3 flex items-center justify-between min-h-[56px] gap-3">
         
-        {/* Madrasa Logo & Title for Admin, or Scrolling Ticker for Guests/Students */}
-        {user?.role === "admin" ? (
+        {/* Madrasa Logo & Title for Admin/Login, or Scrolling Ticker for Guests/Students */}
+        {user?.role === "admin" || activeTab === "login" ? (
           <div className="flex-1 flex items-center gap-3">
             <img 
               src={logoUrl || "/photo/logo.png"} 
