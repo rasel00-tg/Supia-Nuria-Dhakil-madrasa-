@@ -168,7 +168,7 @@ export default function RoutineSection() {
     <div 
       id="routine-section" 
       className="space-y-8 py-8 w-full px-4 max-w-5xl mx-auto font-alinur"
-      style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+      style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
     >
       <StreamBuilder<any>
         stream={query(collection(db, "routine_config"))}
@@ -182,11 +182,11 @@ export default function RoutineSection() {
             <>
               {activeView === "cards" ? (
                 <div className="space-y-12 py-6 animate-fade-in print:hidden">
-                  {/* Header with Custom Ador Noirit Font */}
+                  {/* Header with Custom Alinur Tatsama Font */}
                   <div className="text-center w-full space-y-3">
                     <h2 
                       className="text-3xl sm:text-4xl font-extrabold text-indigo-950 tracking-tight"
-                      style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                      style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                     >
                       একাডেমিক রুটিন ও সময়সূচী
                     </h2>
@@ -220,7 +220,7 @@ export default function RoutineSection() {
                       <div className="space-y-2 mt-8">
                         <h3 
                           className="text-2xl sm:text-3xl font-black tracking-tight"
-                          style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                          style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                         >
                           ক্লাস রুটিন
                         </h3>
@@ -254,7 +254,7 @@ export default function RoutineSection() {
                       <div className="space-y-2 mt-8">
                         <h3 
                           className="text-2xl sm:text-3xl font-black tracking-tight"
-                          style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                          style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                         >
                           পরীক্ষা রুটিন
                         </h3>
@@ -274,7 +274,7 @@ export default function RoutineSection() {
                         </div>
                         <h3 
                           className="text-lg font-extrabold text-indigo-950"
-                          style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                          style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                         >
                           রুটিন কার্ড আইকন সেটআপ (ওয়ান-টাইম অ্যাকশন)
                         </h3>
@@ -371,7 +371,7 @@ export default function RoutineSection() {
                         onClick={handleUploadAndLock}
                         disabled={isUploading}
                         className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-100 transition-all cursor-pointer flex items-center justify-center gap-2 text-sm"
-                        style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                        style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                       >
                         {isUploading ? "আইকন আপলোড করা হচ্ছে..." : "আইকন আপলোড এবং লক করুন"}
                       </button>
@@ -384,7 +384,7 @@ export default function RoutineSection() {
                     <button
                       onClick={() => setActiveView("cards")}
                       className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold bg-white hover:bg-indigo-50/40 text-indigo-950 border border-indigo-100 rounded-xl shadow-xs transition-all cursor-pointer group"
-                      style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                      style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                     >
                       <ArrowLeft className="h-4 w-4 text-indigo-600 group-hover:-translate-x-0.5 transition-transform" />
                       <span>রুটিন ড্যাশবোর্ডে ফিরে যান</span>
@@ -401,7 +401,7 @@ export default function RoutineSection() {
                   <div className="text-center w-full space-y-3 print:hidden">
                     <h2 
                       className="text-3xl sm:text-4xl font-extrabold text-indigo-950 tracking-tight"
-                      style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                      style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                     >
                       {activeView === "class" ? "ক্লাস রুটিন দেখতে ঘর সিলেক্ট করুন" : "পরীক্ষা রুটিন দেখতে ঘর সিলেক্ট করুন"}
                     </h2>
@@ -415,7 +415,7 @@ export default function RoutineSection() {
             <div className="space-y-1">
               <h3 
                 className="text-lg font-bold text-indigo-905 flex items-center gap-2"
-                style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
               >
                 <Calendar className="h-5 w-5 text-indigo-600" />
                 <span>১. ক্লাস রুটিন</span>
@@ -432,7 +432,7 @@ export default function RoutineSection() {
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
                 className="w-full bg-white border border-indigo-200 hover:border-indigo-400 rounded-xl px-4 py-2.5 text-sm font-bold text-indigo-950 outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer shadow-xs"
-                style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
               >
                 {classOptions.map((cls) => (
                   <option key={cls} value={cls} className="font-bold text-slate-800">
@@ -493,7 +493,7 @@ export default function RoutineSection() {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-indigo-100 pb-4">
                   <h3 
                     className="text-2xl font-black text-indigo-950"
-                    style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                    style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                   >
                     {selectedClass}
                   </h3>
@@ -505,7 +505,7 @@ export default function RoutineSection() {
                         id="routine-download-btn"
                         onClick={() => downloadRoutinePDF(filtered, latestEditedAt)}
                         className="flex-1 sm:flex-initial flex items-center justify-center space-x-1.5 bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-2.5 px-5 rounded-xl text-xs shadow-md transition-all cursor-pointer"
-                        style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                        style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                       >
                         <Download className="h-4 w-4" />
                         <span>রুটিন পিডিএফ ডাউনলোড</span>
@@ -518,7 +518,7 @@ export default function RoutineSection() {
                 {filtered.length === 0 ? (
                   <div 
                     className="py-16 text-center text-gray-500 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 px-6"
-                    style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                    style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                   >
                     <BookOpen className="h-10 w-10 text-slate-300 mx-auto mb-3" />
                     <p className="font-bold text-sm">এই ক্লাসের জন্য কোনো ক্লাস রুটিন তথ্য পাওয়া যায়নি।</p>
@@ -533,31 +533,31 @@ export default function RoutineSection() {
                             <tr className="bg-indigo-950 text-white border-b border-indigo-900 print:bg-slate-100 print:text-black">
                               <th 
                                 className="p-4 text-xs font-bold uppercase tracking-wider text-center w-16"
-                                style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                               >
                                 ক্রমিক
                               </th>
                               <th 
                                 className="p-4 text-xs font-bold uppercase tracking-wider"
-                                style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                               >
                                 বিষয়
                               </th>
                               <th 
                                 className="p-4 text-xs font-bold uppercase tracking-wider"
-                                style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                               >
                                 সময়
                               </th>
                               <th 
                                 className="p-4 text-xs font-bold uppercase tracking-wider"
-                                style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                               >
                                 দিন
                               </th>
                               <th 
                                 className="p-4 text-xs font-bold uppercase tracking-wider"
-                                style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                               >
                                 দ্বায়িত্বপ্রাপ্ত শিক্ষক
                               </th>
@@ -574,7 +574,7 @@ export default function RoutineSection() {
                                 </td>
                                 <td 
                                   className="p-4 text-xs font-bold text-indigo-950"
-                                  style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                  style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                                 >
                                   <div className="flex items-center space-x-2">
                                     <BookOpen className="h-4 w-4 text-indigo-600 mr-1.5 flex-shrink-0 print:hidden" />
@@ -583,7 +583,7 @@ export default function RoutineSection() {
                                 </td>
                                 <td 
                                   className="p-4 text-xs text-slate-700 font-medium"
-                                  style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                  style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                                 >
                                   <div className="flex items-center space-x-1">
                                     <Clock className="h-3.5 w-3.5 text-indigo-400 mr-1.5 flex-shrink-0 print:hidden" />
@@ -592,7 +592,7 @@ export default function RoutineSection() {
                                 </td>
                                 <td 
                                   className="p-4 text-xs text-slate-700 font-bold"
-                                  style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                  style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                                 >
                                   <div className="flex items-center space-x-1">
                                     <Calendar className="h-3.5 w-3.5 text-indigo-400 mr-1.5 flex-shrink-0 print:hidden" />
@@ -601,7 +601,7 @@ export default function RoutineSection() {
                                 </td>
                                 <td 
                                   className="p-4 text-xs text-slate-700 font-bold"
-                                  style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                  style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                                 >
                                   <div className="flex items-center space-x-2">
                                     <GraduationCap className="h-4 w-4 text-indigo-600 mr-1.5 flex-shrink-0 print:hidden" />
@@ -619,7 +619,7 @@ export default function RoutineSection() {
                     {latestEditedAt && (
                       <div 
                         className="p-3 bg-indigo-50/50 border border-indigo-150 rounded-xl text-indigo-900 text-xs font-bold flex items-center gap-2 max-w-fit animate-fade-in"
-                        style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                        style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                       >
                         <Clock className="h-4 w-4 text-indigo-600 animate-pulse" />
                         <span>শেষবার আপডেট: {getBengaliFormattedDate(latestEditedAt)}</span>
@@ -639,7 +639,7 @@ export default function RoutineSection() {
                     <div className="space-y-1">
                       <h3 
                         className="text-lg font-bold text-indigo-950 flex items-center gap-2"
-                        style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                        style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                       >
                         <Calendar className="h-5 w-5 text-indigo-600" />
                         <span>২. পরীক্ষা রুটিন</span>
@@ -656,7 +656,7 @@ export default function RoutineSection() {
                         value={selectedExamClass}
                         onChange={(e) => setSelectedExamClass(e.target.value)}
                         className="w-full bg-white border border-indigo-200 hover:border-indigo-400 rounded-xl px-4 py-2.5 text-sm font-bold text-indigo-950 outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer shadow-xs"
-                        style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                        style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                       >
                         {classOptions.map((cls) => (
                           <option key={cls} value={cls} className="font-bold text-slate-800">
@@ -672,7 +672,7 @@ export default function RoutineSection() {
                 {!activeExamRoutine ? (
                   <div 
                     className="py-16 text-center text-gray-500 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 px-6"
-                    style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                    style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                   >
                     <BookOpen className="h-10 w-10 text-slate-300 mx-auto mb-3" />
                     <p className="font-bold text-sm">এই ক্লাসের জন্য কোনো পরীক্ষা রুটিন তথ্য পাওয়া যায়নি।</p>
@@ -685,7 +685,7 @@ export default function RoutineSection() {
                       <div className="space-y-1">
                         <h3 
                           className="text-2.5xl font-black text-indigo-950"
-                          style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                          style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                         >
                           {selectedExamClass} - {activeExamRoutine.examName}
                         </h3>
@@ -697,7 +697,7 @@ export default function RoutineSection() {
                           id="exam-routine-download-btn"
                           onClick={() => downloadExamRoutinePDF(activeExamRoutine.examName || "পরীক্ষা")}
                           className="flex-1 sm:flex-initial flex items-center justify-center space-x-1.5 bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-2.5 px-5 rounded-xl text-xs shadow-md transition-all cursor-pointer animate-fade-in"
-                          style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                          style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                         >
                           <Download className="h-4 w-4" />
                           <span>পরীক্ষা রুটিন পিডিএফ ডাউনলোড</span>
@@ -713,31 +713,31 @@ export default function RoutineSection() {
                             <tr className="bg-indigo-950 text-white border-b border-indigo-900">
                               <th 
                                 className="p-4 text-xs font-bold uppercase tracking-wider text-center"
-                                style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                               >
                                 তারিখ
                               </th>
                               <th 
                                 className="p-4 text-xs font-bold uppercase tracking-wider text-center"
-                                style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                               >
                                 বিষয়
                               </th>
                               <th 
                                 className="p-4 text-xs font-bold uppercase tracking-wider text-center"
-                                style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                               >
                                 সময়
                               </th>
                               <th 
                                 className="p-4 text-xs font-bold uppercase tracking-wider text-center"
-                                style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                               >
                                 নাম্বার
                               </th>
                               <th 
                                 className="p-4 text-xs font-bold uppercase tracking-wider text-center"
-                                style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                               >
                                 বিষয় কোড
                               </th>
@@ -751,31 +751,31 @@ export default function RoutineSection() {
                               >
                                 <td 
                                   className="p-4 text-xs font-bold text-slate-700"
-                                  style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                  style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                                 >
                                   {sub.date}
                                 </td>
                                 <td 
                                   className="p-4 text-xs font-bold text-indigo-950"
-                                  style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                  style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                                 >
                                   {sub.subject}
                                 </td>
                                 <td 
                                   className="p-4 text-xs text-slate-700 font-medium"
-                                  style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                  style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                                 >
                                   {sub.time}
                                 </td>
                                 <td 
                                   className="p-4 text-xs text-slate-700 font-bold"
-                                  style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                  style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                                 >
                                   {sub.totalMarks}
                                 </td>
                                 <td 
                                   className="p-4 text-xs text-slate-700 font-bold"
-                                  style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                  style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                                 >
                                   {sub.subjectCode}
                                 </td>
@@ -790,13 +790,13 @@ export default function RoutineSection() {
                     <div className="bg-slate-50 border border-slate-150 p-6 rounded-2xl space-y-3">
                       <h4 
                         className="text-sm font-black text-indigo-950"
-                        style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                        style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                       >
                         পরীক্ষার্থীদের জন্য সাধারণ নির্দেশনা:
                       </h4>
                       <ul 
                         className="space-y-2 text-xs text-slate-700"
-                        style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                        style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                       >
                         {Array.isArray(activeExamRoutine.guidelines) && activeExamRoutine.guidelines.map((gl, i) => (
                           <li key={i} className="flex gap-2">
@@ -813,7 +813,7 @@ export default function RoutineSection() {
                         <div className="border-t border-slate-400 w-full mb-2"></div>
                         <p 
                           className="text-xs font-bold text-slate-800"
-                          style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                          style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                         >
                           প্রধান শিক্ষকের স্বাক্ষর
                         </p>
@@ -824,7 +824,7 @@ export default function RoutineSection() {
                     {activeExamRoutine.isEdited && activeExamRoutine.editedAt && (
                       <div 
                         className="p-3 bg-indigo-50/50 border border-indigo-150 rounded-xl text-indigo-900 text-xs font-bold flex items-center gap-2 max-w-fit animate-fade-in"
-                        style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                        style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                       >
                         <Clock className="h-4 w-4 text-indigo-600 animate-pulse" />
                         <span>শেষবার আপডেট: {getBengaliFormattedDate(activeExamRoutine.editedAt)}</span>
@@ -843,7 +843,7 @@ export default function RoutineSection() {
                   style={{ 
                     width: "800px", 
                     minHeight: "1120px", 
-                    fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif',
+                    fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif',
                     backgroundColor: "#ffffff",
                     border: "1px solid #e2e8f0",
                     color: "#0f172a"
@@ -930,7 +930,7 @@ export default function RoutineSection() {
                     style={{ 
                       width: "800px", 
                       minHeight: "1120px", 
-                      fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif',
+                      fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif',
                       backgroundColor: "#ffffff",
                       border: "1px solid #e2e8f0",
                       color: "#0f172a"

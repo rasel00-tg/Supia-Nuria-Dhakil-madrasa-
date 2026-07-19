@@ -108,7 +108,7 @@ export default function GlobalLoadingPopup() {
               </motion.div>
             </div>
 
-            {/* Required Ador Noirit Typography and Message */}
+            {/* Required Alinur Tatsama Typography and Message */}
             <h3 className="font-alinur text-emerald-950 text-lg sm:text-xl font-bold leading-relaxed tracking-wide px-2 drop-shadow-xs whitespace-nowrap">
               ধৈর্য ইমানের অঙ্গ।
             </h3>

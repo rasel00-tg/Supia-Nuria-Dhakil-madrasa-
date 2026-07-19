@@ -81,7 +81,7 @@ export default function HafizgonUpdateForm() {
   };
 
   return (
-    <div id="hafizgon-update-container" className="space-y-8 font-alinur" style={{ fontFamily: 'Ador Noirit' }}>
+    <div id="hafizgon-update-container" className="space-y-8 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>
       
       {/* Description Box */}
       <div className="bg-emerald-50 border-l-4 border-amber-500 p-4 rounded-r-xl shadow-sm">

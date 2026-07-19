@@ -88,7 +88,7 @@ export default function ImageCropper({ image, onCropComplete, onCancel, aspectRa
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[1000] bg-black flex flex-col font-alinur"
-      style={{ fontFamily: 'Ador Noirit' }}
+      style={{ fontFamily: 'Alinur Tatsama' }}
     >
       <div className="flex justify-between items-center p-4 bg-black/50 backdrop-blur-md z-10 text-white border-b border-white/10">
         <div className="flex items-center gap-3">

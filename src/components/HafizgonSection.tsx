@@ -31,7 +31,7 @@ export default function HafizgonSection() {
     <div 
       id="hafizgon-section-container" 
       className="min-h-screen bg-gradient-to-b from-[#5c0607] via-[#91200b] to-[#c77014] bg-fixed py-12 px-4 sm:px-6 md:px-8 flex justify-center items-start" 
-      style={{ fontFamily: 'Ador Noirit' }}
+      style={{ fontFamily: 'Alinur Tatsama' }}
     >
       {/* Outer Paper Vessel representing the premium traditional stamp sheet */}
       <div className="w-full max-w-6xl bg-[#faf8f5] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] relative py-8 px-6 sm:px-12 md:px-16 rounded-2xl my-2 border-4 border-amber-500/20 overflow-visible">

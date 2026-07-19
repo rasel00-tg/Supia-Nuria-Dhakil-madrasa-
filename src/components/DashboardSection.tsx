@@ -987,7 +987,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
     <div id="dashboard-section" className="space-y-8 py-6 w-full px-2">
       {/* ------------------- STUDENT DASHBOARD ------------------- */}
       {user.role === "student" && (
-        <div id="student-dashboard" className="space-y-6 pb-24 font-alinur" style={{ fontFamily: 'Ador Noirit' }}>
+        <div id="student-dashboard" className="space-y-6 pb-24 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>
           <StreamBuilder<any>
             stream={query(collection(db, "students"))}
             builder={(students: any[], loading: boolean, error: any) => {
@@ -1059,13 +1059,13 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                         >
                           <Clock className="h-4 w-4 text-amber-400" />
                         </motion.div>
-                        <p className="text-emerald-300 font-bold text-sm tracking-wide opacity-90" style={{ fontFamily: 'Ador Noirit' }}>{formattedDate}</p>
+                        <p className="text-emerald-300 font-bold text-sm tracking-wide opacity-90" style={{ fontFamily: 'Alinur Tatsama' }}>{formattedDate}</p>
                       </div>
                       <motion.h2 
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="text-3xl font-black text-white mt-1 leading-tight" 
-                        style={{ fontFamily: 'Ador Noirit' }}
+                        style={{ fontFamily: 'Alinur Tatsama' }}
                       >
                         {studentName}
                       </motion.h2>
@@ -1074,7 +1074,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
                         className="text-emerald-100/80 font-bold text-lg mt-1" 
-                        style={{ fontFamily: 'Ador Noirit' }}
+                        style={{ fontFamily: 'Alinur Tatsama' }}
                       >
                         {studentClass}
                       </motion.p>
@@ -1144,7 +1144,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           </div>
                         </div>
 
-                        <p className="text-sm text-emerald-800 font-black px-4 py-1.5 bg-emerald-50 rounded-full border border-emerald-100 inline-flex items-center gap-2" style={{ fontFamily: 'Ador Noirit' }}>
+                        <p className="text-sm text-emerald-800 font-black px-4 py-1.5 bg-emerald-50 rounded-full border border-emerald-100 inline-flex items-center gap-2" style={{ fontFamily: 'Alinur Tatsama' }}>
                           <GraduationCap className="h-4 w-4" />
                           <span>রোল নম্বর: {toBengaliDigits(studentRoll)}</span>
                         </p>
@@ -1152,7 +1152,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                         <button
                           onClick={() => setShowStudentDetailsModal(true)}
                           className="mt-6 w-full py-3.5 bg-gradient-to-br from-emerald-600 to-emerald-800 hover:from-emerald-700 hover:to-emerald-900 text-white font-bold rounded-2xl transition-all shadow-lg shadow-emerald-700/20 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
-                          style={{ fontFamily: 'Ador Noirit' }}
+                          style={{ fontFamily: 'Alinur Tatsama' }}
                         >
                           <UserPlus className="h-5 w-5 text-amber-300" />
                           <span>বিস্তারিত (Details)</span>
@@ -1183,7 +1183,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           animate={{ opacity: 1, scale: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.9, y: 20 }}
                           className="relative bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border border-emerald-100"
-                          style={{ fontFamily: 'Ador Noirit' }}
+                          style={{ fontFamily: 'Alinur Tatsama' }}
                         >
                           {/* Header Decor */}
                           <div className="h-2 bg-gradient-to-r from-emerald-600 via-teal-500 to-amber-500" />
@@ -1194,7 +1194,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                 <div className="p-2 bg-emerald-50 rounded-xl text-emerald-700">
                                   <Users className="w-6 h-6" />
                                 </div>
-                                <h3 className="text-xl font-black text-emerald-950" style={{ fontFamily: 'Ador Noirit' }}>বিস্তারিত তথ্য (Details)</h3>
+                                <h3 className="text-xl font-black text-emerald-950" style={{ fontFamily: 'Alinur Tatsama' }}>বিস্তারিত তথ্য (Details)</h3>
                               </div>
                               <button 
                                 onClick={() => setShowStudentDetailsModal(false)}
@@ -1214,9 +1214,9 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                 <div key={idx} className="p-4 bg-emerald-50/40 rounded-2xl border border-emerald-100/50 group hover:bg-emerald-50 transition-colors">
                                   <div className="flex items-center gap-3 mb-1">
                                     <item.icon className="w-4 h-4 text-emerald-600" />
-                                    <p className="text-xs font-bold text-emerald-700" style={{ fontFamily: 'Ador Noirit' }}>{item.label}</p>
+                                    <p className="text-xs font-bold text-emerald-700" style={{ fontFamily: 'Alinur Tatsama' }}>{item.label}</p>
                                   </div>
-                                  <p className="text-sm font-black text-slate-900 ml-7" style={{ fontFamily: 'Ador Noirit' }}>{item.value}</p>
+                                  <p className="text-sm font-black text-slate-900 ml-7" style={{ fontFamily: 'Alinur Tatsama' }}>{item.value}</p>
                                 </div>
                               ))}
                             </div>
@@ -1224,7 +1224,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                             <button
                               onClick={() => setShowStudentDetailsModal(false)}
                               className="w-full mt-8 py-3.5 bg-emerald-800 hover:bg-emerald-900 text-amber-400 font-bold rounded-2xl shadow-lg shadow-emerald-900/20 transition-all active:scale-98 cursor-pointer"
-                              style={{ fontFamily: 'Ador Noirit' }}
+                              style={{ fontFamily: 'Alinur Tatsama' }}
                             >
                               বন্ধ করুন
                             </button>
@@ -1251,7 +1251,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           animate={{ opacity: 1, scale: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.9, y: 30 }}
                           className="relative bg-white w-full max-w-lg rounded-[32px] overflow-hidden shadow-2xl border border-white/50 max-h-[85vh] flex flex-col"
-                          style={{ fontFamily: 'Ador Noirit' }}
+                          style={{ fontFamily: 'Alinur Tatsama' }}
                         >
                           <div className="bg-emerald-900 p-6 text-white shrink-0 relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-8 bg-white/5 rounded-full -mr-4 -mt-4 blur-2xl"></div>
@@ -1336,7 +1336,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           animate={{ opacity: 1, scale: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.9, y: 20 }}
                           className="relative bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl border border-slate-100 text-center"
-                          style={{ fontFamily: 'Ador Noirit' }}
+                          style={{ fontFamily: 'Alinur Tatsama' }}
                         >
                           <div className="bg-red-50 h-20 w-20 rounded-full flex items-center justify-center mx-auto mb-6 text-red-600 border border-red-100">
                             <LogOut className="h-10 w-10" />
@@ -1375,7 +1375,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -15 }}
                         className="space-y-6"
-                        style={{ fontFamily: 'Ador Noirit' }}
+                        style={{ fontFamily: 'Alinur Tatsama' }}
                       >
                         {/* ড্যাশবোর্ড ট্র্যাকিং মডিউল (Academic Tracking Modules) */}
                         <div className="grid grid-cols-1 gap-4">
@@ -1400,8 +1400,8 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                     <div className={`h-10 w-10 rounded-2xl flex items-center justify-center mb-2 ${isPresentToday ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}>
                                       <CalendarCheck className="h-6 w-6" />
                                     </div>
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1" style={{ fontFamily: 'Ador Noirit' }}>আজকের হাজিরা</span>
-                                    <span className={`text-lg font-black ${isPresentToday ? "text-emerald-700" : "text-amber-700"}`} style={{ fontFamily: 'Ador Noirit' }}>
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1" style={{ fontFamily: 'Alinur Tatsama' }}>আজকের হাজিরা</span>
+                                    <span className={`text-lg font-black ${isPresentToday ? "text-emerald-700" : "text-amber-700"}`} style={{ fontFamily: 'Alinur Tatsama' }}>
                                       {isPresentToday ? "উপস্থিত (P)" : "তথ্য নেই"}
                                     </span>
                                   </motion.div>
@@ -1415,9 +1415,9 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                     <div className="h-10 w-10 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-2">
                                       <TrendingUp className="h-6 w-6" />
                                     </div>
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1" style={{ fontFamily: 'Ador Noirit' }}>{currentMonthName} মাসের হাজিরা</span>
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1" style={{ fontFamily: 'Alinur Tatsama' }}>{currentMonthName} মাসের হাজিরা</span>
                                     <div className="flex flex-col items-center">
-                                      <span className="text-xl font-black text-indigo-900" style={{ fontFamily: 'Ador Noirit' }}>{toBengaliDigits(percentage)}%</span>
+                                      <span className="text-xl font-black text-indigo-900" style={{ fontFamily: 'Alinur Tatsama' }}>{toBengaliDigits(percentage)}%</span>
                                       <div className="w-16 h-1 bg-slate-100 rounded-full mt-1 overflow-hidden">
                                         <motion.div 
                                           initial={{ width: 0 }}
@@ -1450,14 +1450,14 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                       <Award className="h-7 w-7" />
                                     </div>
                                     <div>
-                                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5" style={{ fontFamily: 'Ador Noirit' }}>সর্বশেষ রেজাল্ট স্ট্যাটাস</p>
-                                      <h4 className="text-lg font-black text-emerald-950" style={{ fontFamily: 'Ador Noirit' }}>{latestResult.examType || "বার্ষিক পরীক্ষা"} - {toBengaliDigits(latestResult.year || "২০২৬")}</h4>
+                                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5" style={{ fontFamily: 'Alinur Tatsama' }}>সর্বশেষ রেজাল্ট স্ট্যাটাস</p>
+                                      <h4 className="text-lg font-black text-emerald-950" style={{ fontFamily: 'Alinur Tatsama' }}>{latestResult.examType || "বার্ষিক পরীক্ষা"} - {toBengaliDigits(latestResult.year || "২০২৬")}</h4>
                                     </div>
                                   </div>
                                   
                                   <div className="text-right relative z-10">
-                                    <span className="block text-2xl font-black text-emerald-700 leading-none" style={{ fontFamily: 'Ador Noirit' }}>{toBengaliDigits(latestResult.gpa)}</span>
-                                    <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 mt-1 inline-block" style={{ fontFamily: 'Ador Noirit' }}>গ্রেড: {latestResult.grade}</span>
+                                    <span className="block text-2xl font-black text-emerald-700 leading-none" style={{ fontFamily: 'Alinur Tatsama' }}>{toBengaliDigits(latestResult.gpa)}</span>
+                                    <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 mt-1 inline-block" style={{ fontFamily: 'Alinur Tatsama' }}>গ্রেড: {latestResult.grade}</span>
                                   </div>
                                 </motion.div>
                               );
@@ -1475,7 +1475,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                         initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -15 }}
-                        style={{ fontFamily: 'Ador Noirit' }}
+                        style={{ fontFamily: 'Alinur Tatsama' }}
                       >
                         {/* Real-time Homework stream builder */}
                         <StreamBuilder<any>
@@ -1483,7 +1483,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           builder={(homeworkList: any[], loadingHw: boolean, errorHw: any) => {
                             if (loadingHw) {
                               return (
-                                <div className="text-center py-12" style={{ fontFamily: 'Ador Noirit' }}>
+                                <div className="text-center py-12" style={{ fontFamily: 'Alinur Tatsama' }}>
                                   <Loader2 className="h-8 w-8 text-emerald-800 animate-spin mx-auto" />
                                   <p className="text-sm text-gray-500 mt-2">হোমওয়ার্ক লোড হচ্ছে...</p>
                                 </div>
@@ -1505,12 +1505,12 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                             const subjects = Object.keys(groupedHomework).sort();
 
                             return (
-                              <div className="space-y-6" style={{ fontFamily: 'Ador Noirit' }}>
+                              <div className="space-y-6" style={{ fontFamily: 'Alinur Tatsama' }}>
                                 <div className="flex items-center gap-3 px-1">
                                   <div className="h-10 w-10 bg-emerald-800 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-900/20">
                                     <BookOpen className="h-6 w-6" />
                                   </div>
-                                  <h3 className="text-2xl font-black text-emerald-950" style={{ fontFamily: 'Ador Noirit' }}>📚 আজকের হোমওয়ার্ক</h3>
+                                  <h3 className="text-2xl font-black text-emerald-950" style={{ fontFamily: 'Alinur Tatsama' }}>📚 আজকের হোমওয়ার্ক</h3>
                                 </div>
 
                                 {subjects.length === 0 ? (
@@ -1518,8 +1518,8 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                     <div className="bg-emerald-50 h-20 w-20 rounded-full flex items-center justify-center mx-auto border border-emerald-100">
                                       <ClipboardList className="h-10 w-10 text-emerald-700" />
                                     </div>
-                                    <h4 className="font-bold text-xl text-slate-800" style={{ fontFamily: 'Ador Noirit' }}>কোনো হোমওয়ার্ক পাওয়া যায়নি</h4>
-                                    <p className="text-sm text-slate-500 max-w-xs mx-auto" style={{ fontFamily: 'Ador Noirit' }}>
+                                    <h4 className="font-bold text-xl text-slate-800" style={{ fontFamily: 'Alinur Tatsama' }}>কোনো হোমওয়ার্ক পাওয়া যায়নি</h4>
+                                    <p className="text-sm text-slate-500 max-w-xs mx-auto" style={{ fontFamily: 'Alinur Tatsama' }}>
                                       আপনার শ্রেণী ({studentClass}) এর জন্য এই মুহূর্তে কোনো সচল হোমওয়ার্ক দেওয়া নেই।
                                     </p>
                                   </div>
@@ -1544,9 +1544,9 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                           <div className="h-12 w-12 bg-emerald-50 text-emerald-700 rounded-xl flex items-center justify-center border border-emerald-100 group-hover:bg-emerald-600 group-hover:text-white transition-all">
                                             <TrendingUp className="h-6 w-6" />
                                           </div>
-                                          <h4 className="font-black text-lg text-emerald-950 group-hover:text-emerald-800" style={{ fontFamily: 'Ador Noirit' }}>{subject}</h4>
+                                          <h4 className="font-black text-lg text-emerald-950 group-hover:text-emerald-800" style={{ fontFamily: 'Alinur Tatsama' }}>{subject}</h4>
                                         </div>
-                                        <div className="bg-amber-50 text-amber-700 px-4 py-1.5 rounded-full border border-amber-100 font-black text-sm" style={{ fontFamily: 'Ador Noirit' }}>
+                                        <div className="bg-amber-50 text-amber-700 px-4 py-1.5 rounded-full border border-amber-100 font-black text-sm" style={{ fontFamily: 'Alinur Tatsama' }}>
                                           {toBengaliDigits(groupedHomework[subject].length)}টি হোমওয়ার্ক
                                         </div>
                                       </motion.button>
@@ -1567,14 +1567,14 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -15 }}
                         className="space-y-6"
-                        style={{ fontFamily: 'Ador Noirit' }}
+                        style={{ fontFamily: 'Alinur Tatsama' }}
                       >
                         <div className="bg-gradient-to-r from-emerald-800 to-teal-700 text-white rounded-2xl p-5 shadow-sm">
-                          <h3 className="font-bold text-lg flex items-center gap-2" style={{ fontFamily: 'Ador Noirit' }}>
+                          <h3 className="font-bold text-lg flex items-center gap-2" style={{ fontFamily: 'Alinur Tatsama' }}>
                             <Compass className="h-5 w-5 text-amber-300" />
                             <span>শিক্ষার্থী ফিচার ও রিসোর্স সেন্টার</span>
                           </h3>
-                          <p className="text-xs text-emerald-100 mt-1" style={{ fontFamily: 'Ador Noirit' }}>মাদ্রাসার শিক্ষার্থীদের জন্য সকল গুরুত্বপূর্ণ টুলস ও লিংক এক জায়গায়।</p>
+                          <p className="text-xs text-emerald-100 mt-1" style={{ fontFamily: 'Alinur Tatsama' }}>মাদ্রাসার শিক্ষার্থীদের জন্য সকল গুরুত্বপূর্ণ টুলস ও লিংক এক জায়গায়।</p>
                         </div>
 
                         {/* Features List */}
@@ -1584,8 +1584,8 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                               <Megaphone className="h-6 w-6 text-emerald-800 group-hover:text-white transition-colors" />
                             </div>
                             <div>
-                              <h4 className="font-black text-base text-emerald-950" style={{ fontFamily: 'Ador Noirit' }}>মাদ্রাসার নোটিশবোর্ড</h4>
-                              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed" style={{ fontFamily: 'Ador Noirit' }}>মাদ্রাসার সকল জরুরী নোটিশ ও নির্দেশনাবলী।</p>
+                              <h4 className="font-black text-base text-emerald-950" style={{ fontFamily: 'Alinur Tatsama' }}>মাদ্রাসার নোটিশবোর্ড</h4>
+                              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed" style={{ fontFamily: 'Alinur Tatsama' }}>মাদ্রাসার সকল জরুরী নোটিশ ও নির্দেশনাবলী।</p>
                             </div>
                           </div>
 
@@ -1594,8 +1594,8 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                               <Globe className="h-6 w-6 text-emerald-800 group-hover:text-white transition-colors" />
                             </div>
                             <div>
-                              <h4 className="font-black text-base text-emerald-950" style={{ fontFamily: 'Ador Noirit' }}>সরকারি গুরুত্বপূর্ণ ওয়েবসাইট</h4>
-                              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed" style={{ fontFamily: 'Ador Noirit' }}>শিক্ষা বোর্ড ও অন্যান্য দরকারী ওয়েব পোর্টালসমূহ।</p>
+                              <h4 className="font-black text-base text-emerald-950" style={{ fontFamily: 'Alinur Tatsama' }}>সরকারি গুরুত্বপূর্ণ ওয়েবসাইট</h4>
+                              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed" style={{ fontFamily: 'Alinur Tatsama' }}>শিক্ষা বোর্ড ও অন্যান্য দরকারী ওয়েব পোর্টালসমূহ।</p>
                             </div>
                           </div>
 
@@ -1604,8 +1604,8 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                               <BookOpen className="h-6 w-6 text-emerald-800 group-hover:text-white transition-colors" />
                             </div>
                             <div>
-                              <h4 className="font-black text-base text-emerald-950" style={{ fontFamily: 'Ador Noirit' }}>হিফজ ও হাফেজ তথ্যপঞ্জি</h4>
-                              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed" style={{ fontFamily: 'Ador Noirit' }}>হিফজ বিভাগের শিক্ষার্থী ও সফল হাফেজদের বায়োডাটা।</p>
+                              <h4 className="font-black text-base text-emerald-950" style={{ fontFamily: 'Alinur Tatsama' }}>হিফজ ও হাফেজ তথ্যপঞ্জি</h4>
+                              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed" style={{ fontFamily: 'Alinur Tatsama' }}>হিফজ বিভাগের শিক্ষার্থী ও সফল হাফেজদের বায়োডাটা।</p>
                             </div>
                           </div>
 
@@ -1614,8 +1614,8 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                               <GraduationCap className="h-6 w-6 text-emerald-800 group-hover:text-white transition-colors" />
                             </div>
                             <div>
-                              <h4 className="font-black text-base text-emerald-950" style={{ fontFamily: 'Ador Noirit' }}>ভর্তি ও ট্র্যাকিং সিস্টেম</h4>
-                              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed" style={{ fontFamily: 'Ador Noirit' }}>অনলাইনে ভর্তি আবেদন ও আবেদনের স্থিতি ট্র্যাক করুন।</p>
+                              <h4 className="font-black text-base text-emerald-950" style={{ fontFamily: 'Alinur Tatsama' }}>ভর্তি ও ট্র্যাকিং সিস্টেম</h4>
+                              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed" style={{ fontFamily: 'Alinur Tatsama' }}>অনলাইনে ভর্তি আবেদন ও আবেদনের স্থিতি ট্র্যাক করুন।</p>
                             </div>
                           </div>
                         </div>
@@ -1629,31 +1629,31 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -15 }}
                         className="space-y-6"
-                        style={{ fontFamily: 'Ador Noirit' }}
+                        style={{ fontFamily: 'Alinur Tatsama' }}
                       >
                         <div className="bg-gradient-to-r from-emerald-800 to-teal-700 text-white rounded-2xl p-5 shadow-sm">
-                          <h3 className="font-bold text-lg flex items-center gap-2" style={{ fontFamily: 'Ador Noirit' }}>
+                          <h3 className="font-bold text-lg flex items-center gap-2" style={{ fontFamily: 'Alinur Tatsama' }}>
                             <HelpCircle className="h-5 w-5 text-amber-300" />
                             <span>সহযোগিতা ও সাপোর্ট ডেস্ক</span>
                           </h3>
-                          <p className="text-xs text-emerald-100 mt-1" style={{ fontFamily: 'Ador Noirit' }}>আপনার যেকোনো শিক্ষা-সংক্রান্ত জিজ্ঞাসা বা প্রযুক্তিগত সমস্যার জন্য আমাদের জানান।</p>
+                          <p className="text-xs text-emerald-100 mt-1" style={{ fontFamily: 'Alinur Tatsama' }}>আপনার যেকোনো শিক্ষা-সংক্রান্ত জিজ্ঞাসা বা প্রযুক্তিগত সমস্যার জন্য আমাদের জানান।</p>
                         </div>
 
                         <div className="grid gap-6 md:grid-cols-3">
                           {/* Left: Contact Info */}
                           <div className="md:col-span-1 bg-white border border-slate-200/85 rounded-2xl p-5 shadow-xs space-y-4">
-                            <h4 className="font-bold text-base text-slate-800 border-b border-slate-100 pb-2" style={{ fontFamily: 'Ador Noirit' }}>জরুরী যোগাযোগ</h4>
+                            <h4 className="font-bold text-base text-slate-800 border-b border-slate-100 pb-2" style={{ fontFamily: 'Alinur Tatsama' }}>জরুরী যোগাযোগ</h4>
                             <div className="space-y-3 text-xs text-slate-600">
-                              <p className="flex items-center gap-2" style={{ fontFamily: 'Ador Noirit' }}>
-                                <span className="bg-emerald-50 p-1.5 rounded-lg text-emerald-800 font-bold" style={{ fontFamily: 'Ador Noirit' }}>ফোন:</span>
+                              <p className="flex items-center gap-2" style={{ fontFamily: 'Alinur Tatsama' }}>
+                                <span className="bg-emerald-50 p-1.5 rounded-lg text-emerald-800 font-bold" style={{ fontFamily: 'Alinur Tatsama' }}>ফোন:</span>
                                 <span className="font-mono">০১৭০০০-০০০০০০</span>
                               </p>
-                              <p className="flex items-center gap-2" style={{ fontFamily: 'Ador Noirit' }}>
-                                <span className="bg-emerald-50 p-1.5 rounded-lg text-emerald-800 font-bold" style={{ fontFamily: 'Ador Noirit' }}>ইমেইল:</span>
+                              <p className="flex items-center gap-2" style={{ fontFamily: 'Alinur Tatsama' }}>
+                                <span className="bg-emerald-50 p-1.5 rounded-lg text-emerald-800 font-bold" style={{ fontFamily: 'Alinur Tatsama' }}>ইমেইল:</span>
                                 <span>support@madrasah.com</span>
                               </p>
-                              <p className="flex items-center gap-2" style={{ fontFamily: 'Ador Noirit' }}>
-                                <span className="bg-emerald-50 p-1.5 rounded-lg text-emerald-800 font-bold" style={{ fontFamily: 'Ador Noirit' }}>অফিস:</span>
+                              <p className="flex items-center gap-2" style={{ fontFamily: 'Alinur Tatsama' }}>
+                                <span className="bg-emerald-50 p-1.5 rounded-lg text-emerald-800 font-bold" style={{ fontFamily: 'Alinur Tatsama' }}>অফিস:</span>
                                 <span>সকাল ৯:০০ - বিকাল ৪:০০</span>
                               </p>
                             </div>
@@ -1661,18 +1661,18 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
 
                           {/* Right: Message Form */}
                           <div className="md:col-span-2 bg-white border border-slate-200/85 rounded-2xl p-5 shadow-xs">
-                            <h4 className="font-bold text-base text-slate-800 border-b border-slate-100 pb-2 mb-4" style={{ fontFamily: 'Ador Noirit' }}>বার্তা পাঠান</h4>
+                            <h4 className="font-bold text-base text-slate-800 border-b border-slate-100 pb-2 mb-4" style={{ fontFamily: 'Alinur Tatsama' }}>বার্তা পাঠান</h4>
                             
                             {supportSuccess ? (
                               <div className="bg-emerald-50 text-emerald-800 p-4 rounded-xl border border-emerald-100 text-center space-y-2">
                                 <CheckCircle className="h-8 w-8 text-emerald-600 mx-auto" />
-                                <h5 className="font-bold" style={{ fontFamily: 'Ador Noirit' }}>বার্তা সফলভাবে পাঠানো হয়েছে!</h5>
-                                <p className="text-xs text-emerald-700/85" style={{ fontFamily: 'Ador Noirit' }}>খুব শীঘ্রই মাদ্রাসার সাপোর্ট টিম আপনার সাথে যোগাযোগ করবে, ইনশাআল্লাহ।</p>
+                                <h5 className="font-bold" style={{ fontFamily: 'Alinur Tatsama' }}>বার্তা সফলভাবে পাঠানো হয়েছে!</h5>
+                                <p className="text-xs text-emerald-700/85" style={{ fontFamily: 'Alinur Tatsama' }}>খুব শীঘ্রই মাদ্রাসার সাপোর্ট টিম আপনার সাথে যোগাযোগ করবে, ইনশাআল্লাহ।</p>
                               </div>
                             ) : (
                               <form onSubmit={handleSupportSubmit} className="space-y-4">
                                 <div className="space-y-1">
-                                  <label className="text-xs font-bold text-gray-700 block" style={{ fontFamily: 'Ador Noirit' }}>বার্তার বিষয়</label>
+                                  <label className="text-xs font-bold text-gray-700 block" style={{ fontFamily: 'Alinur Tatsama' }}>বার্তার বিষয়</label>
                                   <input 
                                     type="text" 
                                     value={supportSubject}
@@ -1680,11 +1680,11 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                     placeholder="বার্তার বিষয় লিখুন" 
                                     required
                                     className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-emerald-950 bg-slate-50/50"
-                                    style={{ fontFamily: 'Ador Noirit' }}
+                                    style={{ fontFamily: 'Alinur Tatsama' }}
                                   />
                                 </div>
                                 <div className="space-y-1">
-                                  <label className="text-xs font-bold text-gray-700 block" style={{ fontFamily: 'Ador Noirit' }}>বার্তা বিবরণ</label>
+                                  <label className="text-xs font-bold text-gray-700 block" style={{ fontFamily: 'Alinur Tatsama' }}>বার্তা বিবরণ</label>
                                   <textarea 
                                     value={supportMessage}
                                     onChange={(e) => setSupportMessage(e.target.value)}
@@ -1692,14 +1692,14 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                     required
                                     rows={3}
                                     className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-emerald-950 bg-slate-50/50"
-                                    style={{ fontFamily: 'Ador Noirit' }}
+                                    style={{ fontFamily: 'Alinur Tatsama' }}
                                   ></textarea>
                                 </div>
                                 <button
                                   type="submit"
                                   disabled={isSubmittingSupport}
                                   className="w-full py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-xs disabled:opacity-50"
-                                  style={{ fontFamily: 'Ador Noirit' }}
+                                  style={{ fontFamily: 'Alinur Tatsama' }}
                                 >
                                   {isSubmittingSupport ? (
                                     <>
@@ -1724,7 +1724,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                   </div>
                   
                   {/* ২. ফিক্সড বটম নেভিগেশন মেনু সংযোজন (Fixed Bottom Navigation Menu) */}
-                  <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-lg border-t border-slate-100/50 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] pb-safe pt-3 px-6 flex justify-around items-center max-w-lg mx-auto sm:rounded-t-[32px] border-x border-slate-100/50" style={{ fontFamily: 'Ador Noirit' }}>
+                  <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-lg border-t border-slate-100/50 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] pb-safe pt-3 px-6 flex justify-around items-center max-w-lg mx-auto sm:rounded-t-[32px] border-x border-slate-100/50" style={{ fontFamily: 'Alinur Tatsama' }}>
                     <button
                       type="button"
                       onClick={() => setStudentActiveTab("home")}
@@ -1733,10 +1733,10 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           ? "text-emerald-800 font-black bg-emerald-50" 
                           : "text-slate-500 hover:text-emerald-800"
                       }`}
-                      style={{ fontFamily: 'Ador Noirit' }}
+                      style={{ fontFamily: 'Alinur Tatsama' }}
                     >
                       <Home className="h-5 w-5" />
-                      <span className="text-[10px] tracking-wide" style={{ fontFamily: 'Ador Noirit' }}>হোম</span>
+                      <span className="text-[10px] tracking-wide" style={{ fontFamily: 'Alinur Tatsama' }}>হোম</span>
                     </button>
 
                     <button
@@ -1747,10 +1747,10 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           ? "text-emerald-800 font-black bg-emerald-50" 
                           : "text-slate-500 hover:text-emerald-800"
                       }`}
-                      style={{ fontFamily: 'Ador Noirit' }}
+                      style={{ fontFamily: 'Alinur Tatsama' }}
                     >
                       <ClipboardList className="h-5 w-5" />
-                      <span className="text-[10px] tracking-wide" style={{ fontFamily: 'Ador Noirit' }}>হোমওয়ার্ক</span>
+                      <span className="text-[10px] tracking-wide" style={{ fontFamily: 'Alinur Tatsama' }}>হোমওয়ার্ক</span>
                     </button>
 
                     <button
@@ -1761,10 +1761,10 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           ? "text-emerald-800 font-black bg-emerald-50" 
                           : "text-slate-500 hover:text-emerald-800"
                       }`}
-                      style={{ fontFamily: 'Ador Noirit' }}
+                      style={{ fontFamily: 'Alinur Tatsama' }}
                     >
                       <Compass className="h-5 w-5" />
-                      <span className="text-[10px] tracking-wide" style={{ fontFamily: 'Ador Noirit' }}>ফিচার</span>
+                      <span className="text-[10px] tracking-wide" style={{ fontFamily: 'Alinur Tatsama' }}>ফিচার</span>
                     </button>
 
                     <button
@@ -1775,10 +1775,10 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           ? "text-emerald-800 font-black bg-emerald-50" 
                           : "text-slate-500 hover:text-emerald-800"
                       }`}
-                      style={{ fontFamily: 'Ador Noirit' }}
+                      style={{ fontFamily: 'Alinur Tatsama' }}
                     >
                       <HelpCircle className="h-5 w-5" />
-                      <span className="text-[10px] tracking-wide" style={{ fontFamily: 'Ador Noirit' }}>সাপোর্ট</span>
+                      <span className="text-[10px] tracking-wide" style={{ fontFamily: 'Alinur Tatsama' }}>সাপোর্ট</span>
                     </button>
                   </div>
                 </div>
@@ -2406,7 +2406,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
 
           {/* 1. Admissions Tracking List with Real-Time StreamBuilder */}
           {activeAdminSubTab === "admissions" && (
-            <div style={{ fontFamily: 'Ador Noirit' }} className="font-alinur space-y-6">
+            <div style={{ fontFamily: 'Alinur Tatsama' }} className="font-alinur space-y-6">
               {React.createElement(StreamBuilder, {
                 stream: collection(db, "admissions"),
                 builder: (admissionsList: any[], loading: any, error: any) => {
@@ -2613,7 +2613,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                         {/* ৩টি ডাইনামিক স্ট্যাটিস্টিকস ও কাউন্টার কার্ড */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                           {/* Card 1: Today's Admissions */}
-                          <div className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-2xl p-6 shadow-xs relative overflow-hidden group hover:shadow-md transition-all duration-300" style={{ fontFamily: 'Ador Noirit' }}>
+                          <div className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-2xl p-6 shadow-xs relative overflow-hidden group hover:shadow-md transition-all duration-300" style={{ fontFamily: 'Alinur Tatsama' }}>
                             <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-6 -mt-6 group-hover:scale-110 transition-transform duration-500"></div>
                             <div className="flex items-center gap-4">
                               <div className="p-3 bg-emerald-600/10 text-emerald-800 rounded-xl">
@@ -2637,7 +2637,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           </div>
 
                           {/* Card 2: Current Month's Admissions */}
-                          <div className="bg-gradient-to-br from-amber-50 to-white border border-amber-100 rounded-2xl p-6 shadow-xs relative overflow-hidden group hover:shadow-md transition-all duration-300" style={{ fontFamily: 'Ador Noirit' }}>
+                          <div className="bg-gradient-to-br from-amber-50 to-white border border-amber-100 rounded-2xl p-6 shadow-xs relative overflow-hidden group hover:shadow-md transition-all duration-300" style={{ fontFamily: 'Alinur Tatsama' }}>
                             <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full -mr-6 -mt-6 group-hover:scale-110 transition-transform duration-500"></div>
                             <div className="flex items-center gap-4">
                               <div className="p-3 bg-amber-600/10 text-amber-800 rounded-xl">
@@ -2661,7 +2661,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           </div>
 
                           {/* Card 3: Total Admissions */}
-                          <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-200/60 rounded-2xl p-6 shadow-xs relative overflow-hidden group hover:shadow-md transition-all duration-300" style={{ fontFamily: 'Ador Noirit' }}>
+                          <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-200/60 rounded-2xl p-6 shadow-xs relative overflow-hidden group hover:shadow-md transition-all duration-300" style={{ fontFamily: 'Alinur Tatsama' }}>
                             <div className="absolute top-0 right-0 w-24 h-24 bg-slate-500/5 rounded-full -mr-6 -mt-6 group-hover:scale-110 transition-transform duration-500"></div>
                             <div className="flex items-center gap-4">
                               <div className="p-3 bg-slate-600/10 text-slate-800 rounded-xl">
@@ -3007,9 +3007,9 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                             />
                           </div>
 
-                          {/* "Select Roll" Field with Ador Noirit custom font style */}
-                          <div className="space-y-1" style={{ fontFamily: 'Ador Noirit' }}>
-                            <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5 font-alinur" style={{ fontFamily: 'Ador Noirit' }}>
+                          {/* "Select Roll" Field with Alinur Tatsama custom font style */}
+                          <div className="space-y-1" style={{ fontFamily: 'Alinur Tatsama' }}>
+                            <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>
                               <GraduationCap className="h-4 w-4 text-emerald-700" />
                               <span>রোল সিলেক্ট (Select Roll) *</span>
                             </label>
@@ -3020,9 +3020,9 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                               onChange={(e) => setSelectedRoll(e.target.value)}
                               placeholder="রোল নম্বর লিখুন (যেমন: ০১)"
                               className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all font-alinur text-emerald-950 font-bold"
-                              style={{ fontFamily: 'Ador Noirit' }}
+                              style={{ fontFamily: 'Alinur Tatsama' }}
                             />
-                            <p className="text-[10px] text-emerald-700 font-bold" style={{ fontFamily: 'Ador Noirit' }}>
+                            <p className="text-[10px] text-emerald-700 font-bold" style={{ fontFamily: 'Alinur Tatsama' }}>
                               রোল নম্বরটি ইউনিক হওয়া আবশ্যক। একই শ্রেণীতে অন্য কারো এই রোল থাকলে অনুমোদন ব্লক হবে।
                             </p>
                           </div>
@@ -3037,9 +3037,9 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                             type="submit"
                             disabled={isConfigSaving}
                             className="w-full bg-emerald-800 hover:bg-emerald-950 text-amber-400 hover:text-amber-300 font-bold py-3.5 rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 text-sm disabled:bg-emerald-700 cursor-pointer active:scale-98 font-alinur"
-                            style={{ fontFamily: 'Ador Noirit' }}
+                            style={{ fontFamily: 'Alinur Tatsama' }}
                           >
-                            <span style={{ fontFamily: 'Ador Noirit' }}>
+                            <span style={{ fontFamily: 'Alinur Tatsama' }}>
                               {isConfigSaving ? "অ্যাকাউন্ট তৈরি হচ্ছে..." : "অ্যাকাউন্ট তৈরি ও আবেদন গ্রহণ করুন"}
                             </span>
                           </button>
@@ -3076,7 +3076,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95, y: 20 }}
                       className="relative bg-white w-full max-w-md rounded-2xl p-6 md:p-8 shadow-2xl border border-red-100 overflow-hidden text-left"
-                      style={{ fontFamily: 'Ador Noirit' }}
+                      style={{ fontFamily: 'Alinur Tatsama' }}
                     >
                       {/* Top Accent Strip */}
                       <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-600 to-amber-500"></div>
@@ -3107,7 +3107,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                             onChange={(e) => setRejectionReason(e.target.value)}
                             placeholder="যেমন: প্রয়োজনীয় কাগজপত্র অসম্পূর্ণ অথবা অভিভাবকের তথ্যে গড়মিল থাকার কারণে আবেদনটি বাতিল হয়েছে।"
                             className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all text-slate-900 font-semibold"
-                            style={{ fontFamily: 'Ador Noirit' }}
+                            style={{ fontFamily: 'Alinur Tatsama' }}
                           />
                         </div>
 
@@ -3186,7 +3186,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95, y: 20 }}
                       className="relative bg-white w-full max-w-md rounded-2xl p-6 md:p-8 shadow-2xl border border-red-100 overflow-hidden text-center"
-                      style={{ fontFamily: 'Ador Noirit' }}
+                      style={{ fontFamily: 'Alinur Tatsama' }}
                     >
                       {/* Top Accent Strip */}
                       <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-600 to-amber-500"></div>
@@ -3195,11 +3195,11 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                         <div className="p-4 bg-red-50 text-red-600 rounded-full">
                           <AlertCircle className="w-10 h-10" />
                         </div>
-                        <h3 className="text-xl font-black text-slate-900 font-alinur" style={{ fontFamily: 'Ador Noirit' }}>রোল নম্বর ডুপ্লিকেট সতর্কতা</h3>
+                        <h3 className="text-xl font-black text-slate-900 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>রোল নম্বর ডুপ্লিকেট সতর্কতা</h3>
                       </div>
 
                       <div className="space-y-4">
-                        <p className="text-base font-bold text-slate-700 leading-relaxed font-alinur" style={{ fontFamily: 'Ador Noirit' }}>
+                        <p className="text-base font-bold text-slate-700 leading-relaxed font-alinur" style={{ fontFamily: 'Alinur Tatsama' }}>
                           এই রোলটি ({duplicateStudentName}) শিক্ষার্থীর। অনুগ্রহ করে অন্য রোল সিলেক্ট করুন।
                         </p>
 
@@ -3208,7 +3208,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                             type="button"
                             onClick={() => setShowDuplicateModal(false)}
                             className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-red-600/10 cursor-pointer font-alinur"
-                            style={{ fontFamily: 'Ador Noirit' }}
+                            style={{ fontFamily: 'Alinur Tatsama' }}
                           >
                             অন্য রোল সিলেক্ট করুন
                           </button>
@@ -3347,7 +3347,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
 
           {/* 6. Routines List Management with dedicated class routine sub-menu & form validation */}
           {activeAdminSubTab === "routines" && (
-            <div className="space-y-6 font-alinur" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>
+            <div className="space-y-6 font-alinur" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>
               {/* Local Sub-Menu bar */}
               <div className="flex border-b border-gray-200 pb-1 gap-2">
                 <button
@@ -3357,7 +3357,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                       ? "border-indigo-600 text-indigo-700 font-black"
                       : "border-transparent text-gray-500 hover:text-indigo-600"
                   }`}
-                  style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                  style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                 >
                   <Calendar className="h-4 w-4 text-indigo-600" />
                   <span>ক্লাস রুটিন</span>
@@ -3369,7 +3369,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                       ? "border-indigo-600 text-indigo-700 font-black"
                       : "border-transparent text-gray-500 hover:text-indigo-600"
                   }`}
-                  style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                  style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                 >
                   <Calendar className="h-4 w-4 text-indigo-600" />
                   <span>পরীক্ষা রুটিন</span>
@@ -3388,7 +3388,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           setRowValidationErrors([]);
                         }}
                         className="bg-indigo-700 hover:bg-indigo-850 text-white font-bold py-2.5 px-6 rounded-xl text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer"
-                        style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                        style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                       >
                         <Calendar className="h-4.5 w-4.5" />
                         <span>ক্লাস রুটিন যোগ করুন</span>
@@ -3405,7 +3405,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                       <div className="flex items-center justify-between border-b border-indigo-50 pb-3">
                         <h4 
                           className="text-base font-black text-indigo-950 flex items-center gap-2"
-                          style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                          style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                         >
                           <Calendar className="h-5 w-5 text-indigo-600" />
                           <span>{editingRoutineId ? "ক্লাস রুটিন আপডেট ও সংশোধন করুন" : "নতুন ক্লাস রুটিন তৈরি করুন"}</span>
@@ -3413,7 +3413,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                         <button
                           onClick={handleCancelEditRoutine}
                           className="text-xs font-bold text-red-600 hover:text-red-800 flex items-center gap-1 cursor-pointer"
-                          style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                          style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                         >
                           <X className="h-4 w-4" />
                           <span>ফর্ম বন্ধ করুন</span>
@@ -3441,7 +3441,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                 if (e.target.value) setRoutineClassError("");
                               }}
                               className={`w-full bg-slate-50 border ${routineClassError ? "border-red-400 focus:ring-red-500" : "border-indigo-100 focus:ring-indigo-500"} rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
-                              style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                              style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                             >
                               <option value="">-- ক্লাস সিলেক্ট করুন --</option>
                               <option value="শিশু শ্রেণি">শিশু শ্রেণি</option>
@@ -3474,7 +3474,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                 if (e.target.value) setRoutineDayError("");
                               }}
                               className={`w-full bg-slate-50 border ${routineDayError ? "border-red-400 focus:ring-red-500" : "border-indigo-100 focus:ring-indigo-500"} rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
-                              style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                              style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                             >
                               <option value="">-- দিন সিলেক্ট করুন --</option>
                               <option value="শনিবার">শনিবার</option>
@@ -3522,7 +3522,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                     className={`w-full bg-white border ${
                                       rowValidationErrors[index]?.subject ? "border-red-400 focus:ring-red-500" : "border-slate-200 focus:ring-indigo-500"
                                     } rounded-lg px-2.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
-                                    style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                    style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                                   />
                                 </div>
 
@@ -3537,7 +3537,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                     className={`w-full bg-white border ${
                                       rowValidationErrors[index]?.time ? "border-red-400 focus:ring-red-500" : "border-slate-200 focus:ring-indigo-500"
                                     } rounded-lg px-2.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
-                                    style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                    style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                                   />
                                 </div>
 
@@ -3552,7 +3552,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                     className={`w-full bg-white border ${
                                       rowValidationErrors[index]?.teacherName ? "border-red-400 focus:ring-red-500" : "border-slate-200 focus:ring-indigo-500"
                                     } rounded-lg px-2.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
-                                    style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                    style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                                   />
                                 </div>
 
@@ -3566,7 +3566,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                       onChange={(e) => handleUpdateSubjectRowField(index, "room", e.target.value)}
                                       placeholder="যেমন: ১০১"
                                       className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                      style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                      style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                                     />
                                   </div>
 
@@ -3592,14 +3592,14 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                             type="button"
                             onClick={handleCancelEditRoutine}
                             className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 px-5 rounded-xl text-xs transition-all cursor-pointer"
-                            style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                            style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                           >
                             বাতিল করুন
                           </button>
                           <button
                             type="submit"
                             className="bg-indigo-700 hover:bg-indigo-850 text-white font-bold py-2.5 px-6 rounded-xl text-xs shadow-sm transition-all cursor-pointer"
-                            style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                            style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                           >
                             {editingRoutineId ? "আপডেট করুন" : "রুটিন প্রকাশ করুন"}
                           </button>
@@ -3613,7 +3613,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                     <div className="bg-slate-50 px-5 py-4 border-b border-gray-100 flex justify-between items-center">
                       <h4 
                         className="text-xs font-bold text-slate-700"
-                        style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                        style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                       >
                         মোট ক্লাস রুটিন শিডিউল তালিকা ({routines.filter(r => r.type === "class").length} টি)
                       </h4>
@@ -3622,13 +3622,13 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                     <table className="w-full text-left border-collapse text-xs">
                       <thead>
                         <tr className="bg-slate-50/50 text-slate-700 font-bold border-b border-gray-100">
-                          <th className="p-4" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>শ্রেণী</th>
-                          <th className="p-4" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>বিষয়</th>
-                          <th className="p-4" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>সময় ও ঘণ্টা</th>
-                          <th className="p-4" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>দিন</th>
-                          <th className="p-4" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>শিক্ষক</th>
-                          <th className="p-4" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>কক্ষ</th>
-                          <th className="p-4 text-center" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>অ্যাকশন</th>
+                          <th className="p-4" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>শ্রেণী</th>
+                          <th className="p-4" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>বিষয়</th>
+                          <th className="p-4" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>সময় ও ঘণ্টা</th>
+                          <th className="p-4" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>দিন</th>
+                          <th className="p-4" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>শিক্ষক</th>
+                          <th className="p-4" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>কক্ষ</th>
+                          <th className="p-4 text-center" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>অ্যাকশন</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
@@ -3636,12 +3636,12 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           .filter((item) => item.type === "class")
                           .map((item) => (
                             <tr key={item.id} className="hover:bg-slate-50/50">
-                              <td className="p-4 font-bold text-slate-800" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.className}</td>
-                              <td className="p-4 text-slate-800" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.subject}</td>
+                              <td className="p-4 font-bold text-slate-800" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.className}</td>
+                              <td className="p-4 text-slate-800" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.subject}</td>
                               <td className="p-4 font-mono font-bold text-slate-600">{item.time}</td>
-                              <td className="p-4 font-bold text-slate-700" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.dayOrDate}</td>
-                              <td className="p-4 font-bold text-slate-700" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.teacherName || "অনির্দিষ্ট"}</td>
-                              <td className="p-4 font-bold text-slate-500" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.room}</td>
+                              <td className="p-4 font-bold text-slate-700" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.dayOrDate}</td>
+                              <td className="p-4 font-bold text-slate-700" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.teacherName || "অনির্দিষ্ট"}</td>
+                              <td className="p-4 font-bold text-slate-500" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.room}</td>
                               <td className="p-4 text-center">
                                 <div className="flex justify-center space-x-2">
                                   <button
@@ -3664,7 +3664,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           ))}
                         {routines.filter((item) => item.type === "class").length === 0 && (
                           <tr>
-                            <td colSpan={7} className="p-8 text-center text-gray-400 font-bold" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>
+                            <td colSpan={7} className="p-8 text-center text-gray-400 font-bold" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>
                               কোনো ক্লাস রুটিন তথ্য পাওয়া যায়নি।
                             </td>
                           </tr>
@@ -3688,7 +3688,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           setRowExamValidationErrors([]);
                         }}
                         className="bg-indigo-700 hover:bg-indigo-850 text-white font-bold py-2.5 px-6 rounded-xl text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer"
-                        style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                        style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                       >
                         <Calendar className="h-4.5 w-4.5" />
                         <span>পরীক্ষা রুটিন যোগ করুন</span>
@@ -3705,7 +3705,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                       <div className="flex items-center justify-between border-b border-indigo-50 pb-3">
                         <h4 
                           className="text-base font-black text-indigo-950 flex items-center gap-2"
-                          style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                          style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                         >
                           <Calendar className="h-5 w-5 text-indigo-600" />
                           <span>{editingExamId ? "পরীক্ষা রুটিন আপডেট ও সংশোধন করুন" : "নতুন পরীক্ষা রুটিন তৈরি করুন"}</span>
@@ -3713,7 +3713,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                         <button
                           onClick={handleCancelEditExam}
                           className="text-xs font-bold text-red-600 hover:text-red-800 flex items-center gap-1 cursor-pointer"
-                          style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                          style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                         >
                           <X className="h-4 w-4" />
                           <span>ফর্ম বন্ধ করুন</span>
@@ -3741,7 +3741,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                 if (e.target.value) setExamClassError("");
                               }}
                               className={`w-full bg-slate-50 border ${examClassError ? "border-red-400 focus:ring-red-500" : "border-indigo-100 focus:ring-indigo-500"} rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
-                              style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                              style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                             >
                               <option value="">-- ক্লাস সিলেক্ট করুন --</option>
                               <option value="শিশু শ্রেণি">শিশু শ্রেণি</option>
@@ -3776,7 +3776,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                               }}
                               placeholder="যেমন: বার্ষিক পরীক্ষা ২০২৬, অর্ধবার্ষিক পরীক্ষা"
                               className={`w-full bg-slate-50 border ${examNameError ? "border-red-400 focus:ring-red-500" : "border-indigo-100 focus:ring-indigo-500"} rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
-                              style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                              style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                             />
                             {examNameError && (
                               <p className="text-red-500 text-[10px] font-bold mt-1">{examNameError}</p>
@@ -3814,7 +3814,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                     className={`w-full bg-white border ${
                                       rowExamValidationErrors[index]?.date ? "border-red-400 focus:ring-red-500" : "border-slate-200 focus:ring-indigo-500"
                                     } rounded-lg px-2.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
-                                    style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                    style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                                   />
                                 </div>
 
@@ -3829,7 +3829,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                     className={`w-full bg-white border ${
                                       rowExamValidationErrors[index]?.subject ? "border-red-400 focus:ring-red-500" : "border-slate-200 focus:ring-indigo-500"
                                     } rounded-lg px-2.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
-                                    style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                    style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                                   />
                                 </div>
 
@@ -3844,7 +3844,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                     className={`w-full bg-white border ${
                                       rowExamValidationErrors[index]?.time ? "border-red-400 focus:ring-red-500" : "border-slate-200 focus:ring-indigo-500"
                                     } rounded-lg px-2.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
-                                    style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                    style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                                   />
                                 </div>
 
@@ -3859,7 +3859,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                     className={`w-full bg-white border ${
                                       rowExamValidationErrors[index]?.totalMarks ? "border-red-400 focus:ring-red-500" : "border-slate-200 focus:ring-indigo-500"
                                     } rounded-lg px-2.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
-                                    style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                    style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                                   />
                                 </div>
 
@@ -3875,7 +3875,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                       className={`w-full bg-white border ${
                                         rowExamValidationErrors[index]?.subjectCode ? "border-red-400 focus:ring-red-500" : "border-slate-200 focus:ring-indigo-500"
                                       } rounded-lg px-2.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2`}
-                                      style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                      style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                                     />
                                   </div>
 
@@ -3900,7 +3900,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           <div className="flex justify-between items-center">
                             <h5 
                               className="text-xs font-black text-indigo-950"
-                              style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                              style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                             >
                               পরীক্ষার্থীদের সাধারণ নির্দেশনা (সর্বোচ্চ ৫টি)
                             </h5>
@@ -3909,7 +3909,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                 type="button"
                                 onClick={() => setExamGuidelinesInput([...examGuidelinesInput, ""])}
                                 className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-1 px-2.5 rounded-lg text-[10px] flex items-center gap-1 cursor-pointer transition-colors"
-                                style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                               >
                                 <span>+ নির্দেশনা যোগ করুন</span>
                               </button>
@@ -3930,7 +3930,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                                   onChange={(e) => handleUpdateExamGuideline(i, e.target.value)}
                                   placeholder="এখানে শিক্ষার্থীদের জন্য নির্দেশনা যোগ করুন"
                                   className="flex-1 bg-slate-50 border border-indigo-100 rounded-lg px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                  style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                                  style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                                 />
                                 {examGuidelinesInput.length > 1 && (
                                   <button
@@ -3953,14 +3953,14 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                             type="button"
                             onClick={handleCancelEditExam}
                             className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 px-5 rounded-xl text-xs transition-all cursor-pointer"
-                            style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                            style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                           >
                             বাতিল করুন
                           </button>
                           <button
                             type="submit"
                             className="bg-indigo-700 hover:bg-indigo-850 text-white font-bold py-2.5 px-6 rounded-xl text-xs shadow-sm transition-all cursor-pointer"
-                            style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                            style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                           >
                             {editingExamId ? "আপডেট করুন" : "পরীক্ষা রুটিন প্রকাশ করুন"}
                           </button>
@@ -3974,7 +3974,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                     <div className="bg-slate-50 px-5 py-4 border-b border-gray-100 flex justify-between items-center">
                       <h4 
                         className="text-xs font-bold text-slate-700"
-                        style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}
+                        style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}
                       >
                         মোট পরীক্ষা রুটিন শিডিউল তালিকা ({routines.filter(r => r.type === "exam").length} টি)
                       </h4>
@@ -3983,10 +3983,10 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                     <table className="w-full text-left border-collapse text-xs">
                       <thead>
                         <tr className="bg-slate-50/50 text-slate-700 font-bold border-b border-gray-100">
-                          <th className="p-4" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>শ্রেণী</th>
-                          <th className="p-4" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>পরীক্ষার নাম</th>
-                          <th className="p-4 text-center" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>মোট বিষয়</th>
-                          <th className="p-4 text-center" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>অ্যাকশন</th>
+                          <th className="p-4" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>শ্রেণী</th>
+                          <th className="p-4" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>পরীক্ষার নাম</th>
+                          <th className="p-4 text-center" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>মোট বিষয়</th>
+                          <th className="p-4 text-center" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>অ্যাকশন</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
@@ -3994,8 +3994,8 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           .filter((item) => item.type === "exam")
                           .map((item) => (
                             <tr key={item.id} className="hover:bg-slate-50/50">
-                              <td className="p-4 font-bold text-slate-800" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.className}</td>
-                              <td className="p-4 text-indigo-900 font-black" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.examName}</td>
+                              <td className="p-4 font-bold text-slate-800" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.className}</td>
+                              <td className="p-4 text-indigo-900 font-black" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>{item.examName}</td>
                               <td className="p-4 text-center font-bold text-slate-600">{(item.subjects || []).length} টি বিষয়</td>
                               <td className="p-4 text-center">
                                 <div className="flex justify-center space-x-2">
@@ -4019,7 +4019,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                           ))}
                         {routines.filter((item) => item.type === "exam").length === 0 && (
                           <tr>
-                            <td colSpan={4} className="p-8 text-center text-gray-400 font-bold" style={{ fontFamily: '"Ador Noirit", "Hind Siliguri", "Anek Bangla", sans-serif' }}>
+                            <td colSpan={4} className="p-8 text-center text-gray-400 font-bold" style={{ fontFamily: '"Alinur Tatsama", "Hind Siliguri", "Anek Bangla", sans-serif' }}>
                               কোনো পরীক্ষা রুটিন তথ্য পাওয়া যায়নি।
                             </td>
                           </tr>
