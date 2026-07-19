@@ -1,0 +1,40 @@
+{
+  "entities": {
+    "Admin": {
+      "title": "Admin",
+      "description": "User with administrative privileges",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "loginId": { "type": "string" },
+        "phone": { "type": "string" },
+        "password": { "type": "string" },
+        "role": { "type": "string", "enum": ["mother_admin", "super_admin", "assistant_admin"] },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "expiryTimestamp": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "loginId", "phone", "role", "status"]
+    },
+    "AdminSystem": {
+      "title": "AdminSystem",
+      "description": "System configuration for administration",
+      "type": "object",
+      "properties": {
+        "isSetupComplete": { "type": "boolean" }
+      },
+      "required": ["isSetupComplete"]
+    }
+  },
+  "firestore": {
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Collection of administrators"
+    },
+    "/admin_system/config": {
+      "schema": "AdminSystem",
+      "description": "Global administration settings"
+    }
+  }
+}

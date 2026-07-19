@@ -8,6 +8,7 @@ import SodossoFormUpdateForm from "./SodossoFormUpdateForm";
 import KormochariUpdateForm from "./KormochariUpdateForm";
 import HafizgonUpdateForm from "./HafizgonUpdateForm";
 import TeacherManagement from "./TeacherManagement";
+import AdminControlSection from "./AdminControlSection";
 import { motion, AnimatePresence } from "motion/react";
 
 const toBengaliDigits = (numStr: string | number): string => {
@@ -30,7 +31,7 @@ const compareRolls = (roll1: string | number, roll2: string | number): boolean =
 };
 
 interface DashboardSectionProps {
-  user: { email: string; role: "student" | "teacher" | "admin"; name: string };
+  user: { email: string; role: "student" | "teacher" | "admin"; name: string; adminRole?: string };
 }
 
 export default function DashboardSection({ user }: DashboardSectionProps) {
@@ -1873,6 +1874,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
               { id: "honored", label: "স্মরণীয় ব্যক্তিত্ব", icon: Heart },
               { id: "routines", label: "রুটিন শিডিউল", icon: Calendar },
               { id: "hafizgon", label: "হিফজ বিভাগ", icon: BookOpen },
+              ...(user.adminRole === "mother_admin" || user.adminRole === "super_admin" ? [{ id: "admin_control", label: "এডমিন কন্ট্রোল", icon: Lock }] : []),
             ].map((tab) => {
               const Icon = tab.icon;
               return (
@@ -2198,9 +2200,10 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                 {activeAdminSubTab === "sodosso_form_settings" && "সদস্য ফরম কন্টেন্ট এডিট ও কাস্টমাইজেশন"}
                 {activeAdminSubTab === "contact_update" && "প্রাতিষ্ঠানিক যোগাযোগ ও ঠিকানা আপডেট"}
                 {activeAdminSubTab === "hafizgon" && "হিফজ বিভাগ - হাফেজদের তথ্য ও প্রোফাইল ডাটাবেস"}
+                {activeAdminSubTab === "admin_control" && "এডমিন কন্ট্রোল প্যানেল ও সিকিউরিটি লজিক"}
               </h3>
             </div>
-            {activeAdminSubTab !== "dashboard" && activeAdminSubTab !== "admissions" && activeAdminSubTab !== "messages" && activeAdminSubTab !== "settings" && activeAdminSubTab !== "hero_background" && activeAdminSubTab !== "running_notices" && activeAdminSubTab !== "public_notices" && activeAdminSubTab !== "pathdan_update" && activeAdminSubTab !== "sodosso_form_settings" && activeAdminSubTab !== "contact_update" && activeAdminSubTab !== "routines" && activeAdminSubTab !== "hafizgon" && activeAdminSubTab !== "teachers" && (
+            {activeAdminSubTab !== "dashboard" && activeAdminSubTab !== "admissions" && activeAdminSubTab !== "messages" && activeAdminSubTab !== "settings" && activeAdminSubTab !== "hero_background" && activeAdminSubTab !== "running_notices" && activeAdminSubTab !== "public_notices" && activeAdminSubTab !== "pathdan_update" && activeAdminSubTab !== "sodosso_form_settings" && activeAdminSubTab !== "contact_update" && activeAdminSubTab !== "routines" && activeAdminSubTab !== "hafizgon" && activeAdminSubTab !== "teachers" && activeAdminSubTab !== "admin_control" && (
               <button
                 id="admin-add-new-btn"
                 onClick={handleOpenAddForm}
@@ -5059,6 +5062,11 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
           {/* 14. Hafizgon Update Form */}
           {activeAdminSubTab === "hafizgon" && (
             <HafizgonUpdateForm />
+          )}
+
+          {/* 15. Admin Control Section */}
+          {activeAdminSubTab === "admin_control" && (
+            <AdminControlSection user={user} />
           )}
         </div>
       )}

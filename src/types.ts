@@ -195,3 +195,20 @@ export interface Hafiz {
   createdAt?: any;
 }
 
+export interface Admin {
+  id: string;
+  name: string;
+  email: string;
+  loginId: string;
+  phone: string;
+  password?: string;
+  role: 'mother_admin' | 'super_admin' | 'assistant_admin';
+  status: 'active' | 'suspended';
+  expiryTimestamp?: string; // ISO string for assistant_admin
+  createdAt?: any;
+}
+
+export interface AdminSystem {
+  isSetupComplete: boolean;
+}
+
