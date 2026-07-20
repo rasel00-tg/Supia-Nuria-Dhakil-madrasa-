@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, setDoc, getDocs, getDoc, serverTimestamp, where, limit } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType, uploadFileToImgBB, StreamBuilder } from "../lib/firebase";
 import { Teacher, SuccessStory, CommitteeMember, HonoredPerson, AdmissionForm, Routine, ContactMessage } from "../types";
-import { Trash2, Edit3, Plus, Check, X, CreditCard, Mail, UserPlus, Users, GraduationCap, Calendar, Award, MessageSquare, Heart, CheckCircle2, XCircle, Settings, Megaphone, ChevronDown, LayoutDashboard, Globe, Lock, ArrowLeft, CheckCircle, AlertCircle, CalendarCheck, CalendarRange, ClipboardList, Loader2, BookOpen, Home, Compass, HelpCircle, Send, Clock, LogOut, Activity, TrendingUp } from "lucide-react";
+import { Trash2, Edit3, Plus, Check, X, CreditCard, Mail, UserPlus, Users, GraduationCap, Calendar, Award, MessageSquare, Heart, CheckCircle2, XCircle, Settings, Megaphone, ChevronDown, LayoutDashboard, Globe, Lock, ArrowLeft, CheckCircle, AlertCircle, AlertTriangle, CalendarCheck, CalendarRange, ClipboardList, Loader2, BookOpen, Home, Compass, HelpCircle, Send, Clock, LogOut, Activity, TrendingUp } from "lucide-react";
 import PathdanUpdateForm from "./PathdanUpdateForm";
 import SodossoFormUpdateForm from "./SodossoFormUpdateForm";
 import KormochariUpdateForm from "./KormochariUpdateForm";
@@ -486,6 +486,651 @@ const StudentDashboardInner = ({
   );
 };
 
+const TeacherDashboardInner = ({ 
+  user, 
+  setShowLogoutConfirm,
+  toBengaliDigits 
+}: any) => {
+  const [teacherData, setTeacherData] = useState<Teacher | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [attendanceStatus, setAttendanceStatus] = useState<any>(null);
+  const [monthlyAttendance, setMonthlyAttendance] = useState<any[]>([]);
+  const [isSubmittingAttendance, setIsSubmittingAttendance] = useState(false);
+  const [showNoticeModal, setShowNoticeModal] = useState(false);
+  const [selectedNotice, setSelectedNotice] = useState<any>(null);
+
+  const today = useMemo(() => new Date(), []);
+  const todayStr = useMemo(() => today.toISOString().split('T')[0], [today]);
+  const dayName = useMemo(() => {
+    try {
+      return today.toLocaleDateString('bn-BD', { weekday: 'long' }) || "আজ";
+    } catch (e) {
+      return "আজ";
+    }
+  }, [today]);
+  const formattedDate = useMemo(() => {
+    try {
+      return today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    } catch (e) {
+      return today.toDateString();
+    }
+  }, [today]);
+  const isFriday = today.getDay() === 5;
+  const currentMonth = today.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
+  // 1. Fetch Teacher Profile
+  useEffect(() => {
+    if (!user?.email) {
+      setLoadingProfile(false);
+      return;
+    }
+    const q = query(collection(db, "teachers"), where("email", "==", user.email), limit(1));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        setTeacherData({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Teacher);
+      }
+      setLoadingProfile(false);
+    }, (error) => {
+      console.error("Profile fetch error:", error);
+      setLoadingProfile(false);
+    });
+    return () => unsubscribe();
+  }, [user?.email]);
+
+  // 2. Fetch Today's Attendance Status
+  useEffect(() => {
+    if (!teacherData?.id) return;
+    const q = query(
+      collection(db, "teacher_attendance"), 
+      where("teacherId", "==", teacherData.id),
+      where("date", "==", todayStr)
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        setAttendanceStatus(snapshot.docs[0].data());
+      } else {
+        setAttendanceStatus(null);
+      }
+    });
+    return () => unsubscribe();
+  }, [teacherData?.id, todayStr]);
+
+  // 3. Fetch Monthly Attendance for Chart
+  useEffect(() => {
+    if (!teacherData?.id) return;
+    const q = query(
+      collection(db, "teacher_attendance"),
+      where("teacherId", "==", teacherData.id),
+      where("month", "==", currentMonth),
+      where("status", "==", "Present")
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setMonthlyAttendance(snapshot.docs.map(d => d.data()));
+    });
+    return () => unsubscribe();
+  }, [teacherData?.id, currentMonth]);
+
+  const handleConfirmAttendance = async () => {
+    if (isFriday || (attendanceStatus && attendanceStatus.status !== "Absent") || isSubmittingAttendance || !teacherData) return;
+    setIsSubmittingAttendance(true);
+    try {
+      await addDoc(collection(db, "teacher_attendance"), {
+        teacherId: teacherData.id,
+        teacherName: teacherData.name,
+        teacherPhoto: teacherData.photoUrl,
+        teacherDesignation: teacherData.designation,
+        date: todayStr,
+        status: "Pending",
+        timestamp: serverTimestamp(),
+        month: currentMonth
+      });
+    } catch (error) {
+      console.error("Attendance error:", error);
+    } finally {
+      setIsSubmittingAttendance(false);
+    }
+  };
+
+  if (loadingProfile) return (
+    <div className="h-[80vh] flex flex-col items-center justify-center bg-[#f8fafc] rounded-[40px] m-4 space-y-4">
+      <div className="relative">
+        <div className="h-20 w-20 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin"></div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <GraduationCap className="h-8 w-8 text-emerald-600" />
+        </div>
+      </div>
+      <div className="text-center">
+        <p className="text-emerald-900 font-black text-lg animate-pulse" style={{ fontFamily: 'Noto Serif Bengali' }}>অ্যাকাউন্ট লোড হচ্ছে...</p>
+        <p className="text-slate-400 text-xs font-bold mt-1">অনুগ্রহ করে কিছুক্ষণ অপেক্ষা করুন</p>
+      </div>
+    </div>
+  );
+
+  if (!teacherData) return (
+    <div className="h-[80vh] flex flex-col items-center justify-center bg-[#f8fafc] rounded-[40px] m-4 p-8 text-center border-2 border-dashed border-slate-200">
+      <div className="h-20 w-20 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 mb-6">
+        <AlertTriangle className="h-10 w-10" />
+      </div>
+      <h2 className="text-2xl font-black text-slate-800 mb-2" style={{ fontFamily: 'Noto Serif Bengali' }}>শিক্ষক প্রোফাইল পাওয়া যায়নি</h2>
+      <p className="text-slate-500 text-sm mb-8 leading-relaxed max-w-xs">আপনার ইমেইল দিয়ে কোনো শিক্ষক প্রোফাইল নিবন্ধন করা হয়নি। দয়া করে এডমিনের সাথে যোগাযোগ করুন।</p>
+      <button 
+        onClick={() => setShowLogoutConfirm(true)}
+        className="bg-emerald-800 text-white px-8 py-3 rounded-2xl font-bold flex items-center gap-2 shadow-lg shadow-emerald-900/20 active:scale-95 transition-all"
+      >
+        <LogOut className="h-5 w-5" />
+        লগ আউট করুন
+      </button>
+    </div>
+  );
+
+  const attendanceCount = monthlyAttendance?.length || 0;
+  // Assuming 26 working days max for chart
+  const attendancePercentage = Math.min(100, Math.max(0, Math.round((attendanceCount / 26) * 100))) || 0;
+
+  return (
+    <div className="relative -mt-8 -mx-2 bg-[#f8fafc] pb-28 min-h-screen">
+      {/* Premium Green Header Card */}
+      <div className="bg-emerald-900 pt-16 pb-32 px-6 rounded-b-[40px] shadow-lg relative z-0">
+        <motion.button
+          whileHover={{ scale: 1.1, rotate: 90 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setShowLogoutConfirm(true)}
+          className="absolute top-8 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white/90 backdrop-blur-sm border border-white/10 transition-all cursor-pointer z-20"
+        >
+          <LogOut className="h-5 w-5" />
+        </motion.button>
+
+        <div className="max-w-md mx-auto text-center">
+           <h2 className="text-3xl font-black text-white mt-1 leading-tight" style={{ fontFamily: 'Alinur Tatsama' }}>
+            শিক্ষক একাউন্ট
+          </h2>
+          <div className="flex items-center justify-center gap-2 mt-2">
+            <Clock className="h-4 w-4 text-amber-400" />
+            <p className="text-emerald-300 font-bold text-sm tracking-wide opacity-90">{formattedDate}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Teacher Profile Card - Overlapping */}
+      <div className="px-6 -mt-20 relative z-10 max-w-lg mx-auto">
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="bg-white rounded-[32px] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-white flex flex-col items-center"
+        >
+          <div className="relative group">
+            <div className="absolute inset-0 bg-emerald-500 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
+            <div className="h-28 w-28 rounded-full border-4 border-white shadow-xl overflow-hidden relative z-10 bg-slate-100">
+              <img 
+                key={teacherData?.photoUrl || "placeholder"}
+                src={teacherData?.photoUrl || "https://ui-avatars.com/api/?name=" + encodeURIComponent(teacherData?.name || "Teacher") + "&background=059669&color=fff"} 
+                alt="Profile" 
+                className="h-full w-full object-cover"
+                referrerPolicy="no-referrer"
+                onError={(e: any) => {
+                  e.target.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(teacherData?.name || "Teacher") + "&background=059669&color=fff";
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="mt-4 text-center font-alinur">
+            <h3 className="text-2xl font-black text-emerald-950">{teacherData?.name || "নাম পাওয়া যায়নি"}</h3>
+            <p className="text-emerald-600 font-bold">{teacherData?.designation || "পদবি পাওয়া যায়নি"}</p>
+          </div>
+
+          <div className="mt-6 flex justify-center w-full border-t border-slate-50 pt-6 font-alinur">
+            <div className="text-center">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">ফোন নাম্বার</span>
+              <span className="text-sm font-black text-emerald-900">{teacherData?.phone ? toBengaliDigits(teacherData.phone) : "N/A"}</span>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Attendance Section */}
+      <div className="px-6 mt-8 max-w-lg mx-auto font-alinur">
+        <div className="bg-white rounded-[28px] p-6 shadow-[0_20px_50px_rgba(5,150,105,0.12)] border-2 border-emerald-100/50 flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden group ring-1 ring-emerald-500/5">
+          {/* Animated Background Glow */}
+          <div className="absolute -top-24 -right-24 w-56 h-56 bg-emerald-100/30 rounded-full blur-3xl opacity-50 group-hover:bg-amber-100/30 transition-colors duration-700"></div>
+          <div className="absolute -bottom-24 -left-24 w-56 h-56 bg-emerald-100/30 rounded-full blur-3xl opacity-50 group-hover:bg-emerald-200/30 transition-colors duration-700"></div>
+
+          <div className="flex-1 w-full relative z-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-10 w-10 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-600/30">
+                <CalendarCheck className="h-6 w-6" />
+              </div>
+              <div>
+                <h4 className="font-black text-lg text-emerald-950 leading-tight">উপস্থিতি নিশ্চিত</h4>
+                <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Attendance Status</p>
+              </div>
+            </div>
+
+            {isFriday ? (
+              <div className="bg-slate-50 text-slate-500 py-4 rounded-2xl text-center border border-slate-200 font-bold">
+                আজ শুক্রবার - সাপ্তাহিক ছুটি
+              </div>
+            ) : attendanceStatus ? (
+              <div className={`py-4 rounded-2xl text-center border font-bold flex flex-col gap-1 transition-all ${
+                attendanceStatus.status === "Pending" 
+                  ? "bg-amber-50 text-amber-700 border-amber-200" 
+                  : attendanceStatus.status === "Present"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-rose-50 text-rose-700 border-rose-200"
+              }`}>
+                <span>
+                  {attendanceStatus.status === "Pending" 
+                    ? "আপনার উপস্থিতি পেন্ডিং রয়েছে!" 
+                    : attendanceStatus.status === "Present"
+                    ? "আপনার উপস্থিতি নিশ্চিত করা হয়েছে!"
+                    : "আজ আপনার উপস্থিতি অনুপস্থিত হিসেবে রেকর্ড হয়েছে!"}
+                </span>
+                <span className="text-xs opacity-70">আজ: {dayName}</span>
+              </div>
+            ) : (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleConfirmAttendance}
+                disabled={isSubmittingAttendance}
+                className="w-full bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-black py-4 rounded-2xl shadow-xl shadow-emerald-900/20 flex items-center justify-center gap-3 active:scale-95 transition-all"
+              >
+                {isSubmittingAttendance ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <>
+                    <Activity className="h-5 w-5 animate-pulse text-amber-300" />
+                    <span>উপস্থিতি নিশ্চিত করুন (আজ: {dayName})</span>
+                  </>
+                )}
+              </motion.button>
+            )}
+          </div>
+
+          {/* Monthly Attendance Chart (Simple Circle) */}
+          <div className="flex flex-col items-center shrink-0">
+            <div className="relative h-24 w-24">
+              <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
+                <circle cx="18" cy="18" r="16" fill="none" stroke="#f1f5f9" strokeWidth="3" />
+                <motion.circle 
+                  cx="18" cy="18" r="16" fill="none" stroke="#059669" strokeWidth="3"
+                  strokeDasharray="100, 100"
+                  strokeDashoffset={100 - attendancePercentage}
+                  strokeLinecap="round"
+                  initial={{ strokeDashoffset: 100 }}
+                  animate={{ strokeDashoffset: 100 - attendancePercentage }}
+                  transition={{ duration: 1.5, ease: "easeOut" }}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-xl font-black text-emerald-900 leading-none">{toBengaliDigits(attendancePercentage)}%</span>
+                <span className="text-[8px] font-bold text-slate-400 uppercase">উপস্থিতি</span>
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-tighter">চলমান মাসের রিপোর্ট</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Teacher Notice Section */}
+      <div className="px-6 mt-8 max-w-lg mx-auto font-alinur">
+        <div className="bg-white rounded-[28px] p-6 shadow-sm border border-slate-100">
+           <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 bg-amber-50 rounded-lg flex items-center justify-center text-amber-600">
+                <Megaphone className="h-5 w-5" />
+              </div>
+              <h4 className="font-black text-lg text-emerald-950">শিক্ষকদের জন্য নোটিশ</h4>
+            </div>
+          </div>
+          
+          <StreamBuilder
+            stream={query(collection(db, "teacher_notices"), orderBy("timestamp", "desc"), limit(2))}
+            builder={(notices: any[]) => {
+              if (notices.length === 0) return <p className="text-center text-sm text-slate-400 py-4">কোনো নোটিশ নেই</p>;
+              return (
+                <div className="space-y-3">
+                  {notices.map((notice) => (
+                    <div key={notice.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-start gap-3 group">
+                       <div className="h-2 w-2 bg-emerald-500 rounded-full mt-2 shrink-0 group-hover:scale-125 transition-transform"></div>
+                       <div className="flex-1 min-w-0">
+                          <h5 className="font-bold text-emerald-900 text-sm truncate">{notice.title}</h5>
+                          <p className="text-xs text-slate-600 mt-1 line-clamp-2">{notice.description}</p>
+                          <button 
+                            onClick={() => {
+                              setSelectedNotice(notice);
+                              setShowNoticeModal(true);
+                            }}
+                            className="text-[10px] font-black text-emerald-600 mt-2 hover:text-emerald-800 transition-colors"
+                          >
+                            বিস্তারিত দেখুন
+                          </button>
+                       </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Fixed Bottom Menu Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-6 pt-2 bg-white/90 backdrop-blur-xl border-t border-slate-100 flex items-center justify-around shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+         {[
+          { id: "students", label: "শিক্ষার্থী কন্ট্রোল", icon: Users },
+          { id: "routine", label: "রুটিন ও রেজাল্ট", icon: ClipboardList },
+          { id: "others", label: "অন্যান্য", icon: Compass },
+          { id: "profile", label: "প্রোফাইল", icon: UserPlus }
+         ].map((tab) => (
+           <button key={tab.id} className="flex flex-col items-center gap-1 group">
+             <div className="p-2 rounded-xl group-hover:bg-emerald-50 group-active:scale-90 transition-all text-slate-400 group-hover:text-emerald-600">
+               <tab.icon className="h-6 w-6" />
+             </div>
+             <span className="text-[10px] font-bold text-slate-500 group-hover:text-emerald-800 transition-colors">{tab.label}</span>
+           </button>
+         ))}
+      </div>
+
+      {/* Notice Detail Modal */}
+      <AnimatePresence>
+        {showNoticeModal && selectedNotice && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white rounded-[32px] p-8 max-w-md w-full shadow-2xl relative overflow-hidden font-alinur"
+            >
+              <button 
+                onClick={() => setShowNoticeModal(false)}
+                className="absolute top-4 right-4 p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"
+              >
+                <X className="h-5 w-5 text-slate-600" />
+              </button>
+              <div className="text-center mb-6">
+                <div className="h-16 w-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Megaphone className="h-8 w-8" />
+                </div>
+                <h3 className="text-xl font-black text-emerald-950">{selectedNotice.title}</h3>
+              </div>
+              <div className="bg-slate-50 p-6 rounded-2xl max-h-[50vh] overflow-y-auto">
+                <p className="text-sm text-slate-700 leading-relaxed text-justify">
+                  {selectedNotice.description}
+                </p>
+              </div>
+              <div className="mt-6 flex justify-center">
+                <button 
+                   onClick={() => setShowNoticeModal(false)}
+                   className="bg-emerald-800 text-white px-8 py-2.5 rounded-full font-bold text-sm shadow-lg shadow-emerald-900/20"
+                >
+                  বন্ধ করুন
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const AdminAttendanceSection = ({ toBengaliDigits }: any) => {
+  const [activeSubView, setActiveSubView] = useState<"pending" | "history">("pending");
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const pendingQuery = useMemo(() => query(
+    collection(db, "teacher_attendance"),
+    where("date", "==", todayStr),
+    where("status", "==", "Pending")
+  ), [todayStr]);
+
+  const allTodayQuery = useMemo(() => query(
+    collection(db, "teacher_attendance"),
+    where("date", "==", todayStr)
+  ), [todayStr]);
+
+  const handleUpdateStatus = async (id: string, status: "Present" | "Absent") => {
+    try {
+      await updateDoc(doc(db, "teacher_attendance", id), { status });
+    } catch (error) {
+      console.error("Error updating status:", error);
+    }
+  };
+
+  return (
+    <div className="space-y-6 font-alinur">
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-2">
+        <button 
+          onClick={() => setActiveSubView("pending")}
+          className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${activeSubView === "pending" ? "bg-emerald-800 text-white shadow-lg shadow-emerald-900/20" : "bg-slate-50 text-slate-500 hover:bg-slate-100"}`}
+        >
+          <CalendarCheck className="h-4 w-4" />
+          আজকের হাজিরা রিকোয়েস্ট
+        </button>
+        <button 
+          onClick={() => setActiveSubView("history")}
+          className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${activeSubView === "history" ? "bg-emerald-800 text-white shadow-lg shadow-emerald-900/20" : "bg-slate-50 text-slate-500 hover:bg-slate-100"}`}
+        >
+          <CalendarRange className="h-4 w-4" />
+          হাজিরা হিস্ট্রি ও রিপোর্ট
+        </button>
+      </div>
+
+      {activeSubView === "pending" ? (
+        <div className="space-y-6">
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+            <h4 className="font-black text-lg text-emerald-950 mb-4 flex items-center gap-2">
+              <Clock className="h-5 w-5 text-amber-500" />
+              পেন্ডিং হাজিরা লিস্ট
+            </h4>
+            <StreamBuilder
+              stream={pendingQuery}
+              builder={(list: any[]) => {
+                if (list.length === 0) return (
+                  <div className="text-center py-12 space-y-3">
+                    <div className="h-16 w-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto text-emerald-600">
+                      <CheckCircle2 className="h-8 w-8" />
+                    </div>
+                    <p className="text-sm text-slate-400 font-bold">কোনো পেন্ডিং রিকোয়েস্ট নেই</p>
+                  </div>
+                );
+                return (
+                  <div className="grid gap-4">
+                    {list.map((item) => (
+                      <div key={item.id} className="flex flex-col sm:flex-row items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 gap-4 group hover:bg-white hover:shadow-md transition-all">
+                        <div className="flex items-center gap-3">
+                          <img src={item.teacherPhoto} className="h-12 w-12 rounded-full object-cover border-2 border-white shadow-sm" referrerPolicy="no-referrer" />
+                          <div>
+                            <h5 className="font-bold text-emerald-900">{item.teacherName}</h5>
+                            <p className="text-[10px] text-slate-500 font-bold">{item.teacherDesignation}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <button 
+                            onClick={() => handleUpdateStatus(item.id, "Present")}
+                            className="flex-1 sm:flex-none bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-xs font-black hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/10"
+                          >
+                            <CheckCircle2 className="h-4 w-4" />
+                            উপস্থিত
+                          </button>
+                          <button 
+                            onClick={() => handleUpdateStatus(item.id, "Absent")}
+                            className="flex-1 sm:flex-none bg-rose-500 text-white px-5 py-2.5 rounded-xl text-xs font-black hover:bg-rose-600 transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-rose-500/10"
+                          >
+                            <XCircle className="h-4 w-4" />
+                            অনুপস্থিত
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }}
+            />
+          </div>
+
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+             <h4 className="font-black text-lg text-emerald-950 mb-6 flex items-center gap-2">
+              <Users className="h-5 w-5 text-indigo-500" />
+              আজকের হাজিরার সারসংক্ষেপ
+            </h4>
+            <StreamBuilder
+              stream={query(collection(db, "teachers"))}
+              builder={(teachers: any[]) => (
+                <StreamBuilder
+                  stream={allTodayQuery}
+                  builder={(todayAttendance: any[]) => {
+                    const requestedIds = todayAttendance.map(a => a.teacherId);
+                    const notRequested = teachers.filter(t => !requestedIds.includes(t.id));
+                    const requested = teachers.filter(t => requestedIds.includes(t.id));
+
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between border-b border-emerald-100 pb-2">
+                            <h5 className="text-xs font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2">
+                              <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                              রিকোয়েস্ট দিয়েছে ({toBengaliDigits(requested.length)})
+                            </h5>
+                          </div>
+                          <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                            {requested.length === 0 ? (
+                               <p className="text-[10px] text-slate-400 text-center py-4">এখনও কেউ রিকোয়েস্ট দেয়নি</p>
+                            ) : requested.map(t => {
+                               const att = todayAttendance.find(a => a.teacherId === t.id);
+                               return (
+                                <div key={t.id} className="flex items-center justify-between p-3 bg-emerald-50/30 rounded-xl transition-all border border-emerald-50">
+                                  <span className="text-xs font-bold text-emerald-950">{t.name}</span>
+                                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border ${
+                                    att?.status === "Present" ? "bg-emerald-100 text-emerald-700 border-emerald-200" :
+                                    att?.status === "Absent" ? "bg-rose-100 text-rose-700 border-rose-200" :
+                                    "bg-amber-100 text-amber-700 border-amber-200"
+                                  }`}>
+                                    {att?.status === "Present" ? "উপস্থিত" : att?.status === "Absent" ? "অনুপস্থিত" : "পেন্ডিং"}
+                                  </span>
+                                </div>
+                               );
+                            })}
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                           <div className="flex items-center justify-between border-b border-rose-100 pb-2">
+                            <h5 className="text-xs font-black text-rose-600 uppercase tracking-widest flex items-center gap-2">
+                              <span className="h-2 w-2 bg-rose-500 rounded-full animate-pulse"></span>
+                              রিকোয়েস্ট দেয়নি ({toBengaliDigits(notRequested.length)})
+                            </h5>
+                          </div>
+                           <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                            {notRequested.length === 0 ? (
+                               <p className="text-[10px] text-slate-400 text-center py-4">সবাই রিকোয়েস্ট পাঠিয়েছে</p>
+                            ) : notRequested.map(t => (
+                              <div key={t.id} className="flex items-center justify-between p-3 bg-rose-50/30 rounded-xl transition-all border border-rose-50">
+                                <span className="text-xs font-bold text-slate-700">{t.name}</span>
+                                <span className="text-[9px] font-black bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full border border-rose-100">Not Sent</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }}
+                />
+              )}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 overflow-hidden">
+           <div className="flex items-center justify-between mb-8">
+            <h4 className="font-black text-lg text-emerald-950 flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-emerald-600" />
+              শিক্ষক হাজিরা হিস্ট্রি ও রিপোর্ট
+            </h4>
+            <div className="bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+               <span className="text-[10px] font-black text-emerald-700 uppercase">বিগত ১ বছর</span>
+            </div>
+          </div>
+          <StreamBuilder
+            stream={query(collection(db, "teachers"))}
+            builder={(teachers: any[]) => (
+              <StreamBuilder
+                stream={query(collection(db, "teacher_attendance"), where("status", "==", "Present"))}
+                builder={(allPresents: any[]) => {
+                    const reports = (teachers || []).map(t => {
+                    const teacherPresents = (allPresents || []).filter(p => p.teacherId === t.id);
+                    // Standard working days in a year roughly 280-300
+                    const totalWorkingDays = 300; 
+                    const count = teacherPresents.length || 0;
+                    const percentage = Math.round((count / totalWorkingDays) * 100) || 0;
+                    return { ...t, percentage, count };
+                  }).sort((a, b) => b.percentage - a.percentage);
+
+                  return (
+                    <div className="overflow-x-auto -mx-6 px-6">
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="border-b border-slate-50">
+                            <th className="pb-4 font-black text-slate-400 text-[10px] uppercase tracking-widest">শিক্ষক প্রোফাইল</th>
+                            <th className="pb-4 font-black text-slate-400 text-[10px] uppercase tracking-widest text-center">মোট উপস্থিতি</th>
+                            <th className="pb-4 font-black text-slate-400 text-[10px] uppercase tracking-widest text-right">পারসেন্টেজ (%)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                          {reports.map((r) => (
+                            <tr key={r.id} className="hover:bg-emerald-50/30 transition-all group">
+                              <td className="py-4">
+                                <div className="flex items-center gap-3">
+                                   <div className="relative">
+                                      <img 
+                                        src={r.photoUrl || "https://ui-avatars.com/api/?name=" + encodeURIComponent(r.name || "Teacher")} 
+                                        className="h-10 w-10 rounded-full object-cover border-2 border-white shadow-sm bg-slate-100" 
+                                        referrerPolicy="no-referrer" 
+                                        onError={(e: any) => e.target.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(r.name || "Teacher")}
+                                      />
+                                      {(r.percentage || 0) >= 90 && (
+                                        <div className="absolute -top-1 -right-1 bg-amber-400 rounded-full p-0.5 border border-white">
+                                          <Award className="h-2 w-2 text-white" />
+                                        </div>
+                                      )}
+                                   </div>
+                                   <div>
+                                      <span className="font-black text-emerald-950 text-sm block">{r.name || "অজানা শিক্ষক"}</span>
+                                      <span className="text-[10px] text-slate-400 font-bold">{r.designation || "পদবিহীন"}</span>
+                                   </div>
+                                </div>
+                              </td>
+                              <td className="py-4 text-center">
+                                 <span className="font-black text-emerald-800 text-sm bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100">
+                                   {toBengaliDigits(r.count || 0)} দিন
+                                 </span>
+                              </td>
+                              <td className="py-4 text-right">
+                                <div className="flex flex-col items-end gap-1">
+                                  <span className={`text-base font-black ${(r.percentage || 0) < 50 ? "text-rose-600" : "text-emerald-700"}`}>
+                                    {toBengaliDigits(r.percentage || 0)}%
+                                  </span>
+                                  {(r.percentage || 0) < 50 && (
+                                    <span className="text-[8px] font-black bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded animate-pulse">Low Attendance</span>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                }}
+              />
+            )}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function DashboardSection({ user }: DashboardSectionProps) {
   const [activeAdminSubTab, setActiveAdminSubTab] = useState<string>("dashboard");
   const [selectedClass, setSelectedClass] = useState<string>("All");
@@ -516,6 +1161,8 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
   const [isMenuBarDropdownOpen, setIsMenuBarDropdownOpen] = useState(false);
   const [isHomepageDropdownOpen, setIsHomepageDropdownOpen] = useState(false);
   const [newNoticeText, setNewNoticeText] = useState("");
+  const [teacherNoticeTitle, setTeacherNoticeTitle] = useState("");
+  const [teacherNoticeDescription, setTeacherNoticeDescription] = useState("");
   const [isNoticeUploading, setIsNoticeUploading] = useState(false);
 
   // Public Notice state
@@ -618,6 +1265,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
   const messagesQuery = useMemo(() => query(collection(db, "messages"), orderBy("date", "desc")), []);
   const admissionsOrderedQuery = useMemo(() => query(collection(db, "admissions"), orderBy("date", "desc")), []);
   const routinesQuery = useMemo(() => query(collection(db, "routines")), []);
+  const teacherNoticesQuery = useMemo(() => query(collection(db, "teacher_notices"), orderBy("timestamp", "desc")), []);
   const noticesQuery = useMemo(() => query(collection(db, "notices"), orderBy("timestamp", "desc")), []);
   const brandingDocQuery = useMemo(() => query(collection(db, "settings")), []); // Fallback for settings branding
   const homeSettingsQuery = useMemo(() => query(collection(db, "settings")), []);
@@ -1406,6 +2054,37 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
     }
   };
 
+  const handleAddTeacherNotice = async () => {
+    if (!teacherNoticeTitle.trim() || !teacherNoticeDescription.trim()) return;
+    setIsNoticeUploading(true);
+    try {
+      const noticesSnapshot = await getDocs(
+        query(collection(db, "teacher_notices"), orderBy("timestamp", "asc"))
+      );
+      
+      // If we already have 2 notices, delete the oldest one (first one in ASC order)
+      if (noticesSnapshot.size >= 2) {
+        const oldestDoc = noticesSnapshot.docs[0];
+        await deleteDoc(doc(db, "teacher_notices", oldestDoc.id));
+      }
+
+      await addDoc(collection(db, "teacher_notices"), {
+        title: teacherNoticeTitle,
+        description: teacherNoticeDescription,
+        timestamp: serverTimestamp(),
+      });
+
+      setTeacherNoticeTitle("");
+      setTeacherNoticeDescription("");
+      alert("শিক্ষক নোটিশটি সফলভাবে আপলোড করা হয়েছে!");
+    } catch (err) {
+      console.error("Error adding teacher notice:", err);
+      alert("নোটিশ যোগ করতে সমস্যা হয়েছে।");
+    } finally {
+      setIsNoticeUploading(false);
+    }
+  };
+
   const renderAdmissionVerifyField = (adm: any, labelBn: string, labelEn: string, fieldKey: string, value: string) => {
     const verifiedFields = adm.verifiedFields || {};
     const isVerified = !!verifiedFields[fieldKey];
@@ -1537,73 +2216,11 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
 
       {/* ------------------- TEACHER DASHBOARD ------------------- */}
       {user.role === "teacher" && (
-        <div id="teacher-dashboard" className="space-y-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className="text-xl font-bold text-emerald-950 font-serif">রুটিন ম্যানেজমেন্ট</h3>
-              <p className="text-xs text-gray-500">মাদ্রাসার শিক্ষার্থীদের ক্লাস ও পরীক্ষার রুটিন আপডেট করুন</p>
-            </div>
-            <button
-              id="teacher-add-routine-btn"
-              onClick={handleOpenAddForm}
-              className="flex items-center space-x-1.5 bg-emerald-800 hover:bg-emerald-950 text-amber-400 font-bold py-2.5 px-4 rounded-lg text-xs shadow-sm transition-all"
-            >
-              <Plus className="h-4 w-4" />
-              <span>নতুন রুটিন যোগ করুন</span>
-            </button>
-          </div>
-
-          {/* Teacher's Routines list */}
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-            <table className="w-full text-left border-collapse text-sm">
-              <thead>
-                <tr className="bg-emerald-50 text-emerald-950 font-bold border-b border-gray-100">
-                  <th className="p-4">টাইপ</th>
-                  <th className="p-4">শ্রেণী</th>
-                  <th className="p-4">বিষয়</th>
-                  <th className="p-4">সময় ও ঘণ্টা</th>
-                  <th className="p-4">দিন / তারিখ</th>
-                  <th className="p-4">কক্ষ</th>
-                  <th className="p-4 text-center">অ্যাকশন</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {routines.map((item) => (
-                  <tr key={item.id} className="hover:bg-emerald-50/10">
-                    <td className="p-4">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${
-                        item.type === "class" ? "bg-blue-50 text-blue-700" : "bg-purple-50 text-purple-700"
-                      }`}>
-                        {item.type === "class" ? "ক্লাস" : "পরীক্ষা"}
-                      </span>
-                    </td>
-                    <td className="p-4 font-bold">{item.className}</td>
-                    <td className="p-4">{item.subject}</td>
-                    <td className="p-4 font-mono">{item.time}</td>
-                    <td className="p-4">{item.dayOrDate}</td>
-                    <td className="p-4 font-bold">{item.room}</td>
-                    <td className="p-4 text-center">
-                      <div className="flex justify-center space-x-2">
-                        <button
-                          onClick={() => handleEdit(item, "routines")}
-                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(item.id, "routines")}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <TeacherDashboardInner 
+          user={user} 
+          setShowLogoutConfirm={setShowLogoutConfirm}
+          toBengaliDigits={toBengaliDigits}
+        />
       )}
 
       {/* ------------------- ADMIN DASHBOARD ------------------- */}
@@ -1615,6 +2232,7 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
               { id: "dashboard", label: "ড্যাশবোর্ড", icon: LayoutDashboard },
               { id: "admissions", label: "অনলাইন আবেদন ট্র্যাকিং", icon: UserPlus },
               { id: "teachers", label: "শিক্ষক তালিকা", icon: GraduationCap },
+              { id: "teacher_attendance", label: "শিক্ষক হাজিরা", icon: CalendarCheck },
               { id: "stories", label: "শিক্ষার্থীদের সাফল্য", icon: Award },
               { id: "committee", label: "গভর্নিং বডি", icon: Users },
               { id: "honored", label: "স্মরণীয় ব্যক্তিত্ব", icon: Heart },
@@ -1699,6 +2317,22 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
                   >
                     <div className="h-1.5 w-1.5 rounded-full bg-emerald-800"></div>
                     <span>নোটিশ পাবলিক</span>
+                  </button>
+
+                  <button
+                    id="admin-subtab-teacher-notice"
+                    onClick={() => {
+                      setActiveAdminSubTab("teacher_notices");
+                      setIsNoticeDropdownOpen(false);
+                    }}
+                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold ${
+                      activeAdminSubTab === "teacher_notices"
+                        ? "bg-emerald-50 text-emerald-850"
+                        : "text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="h-1.5 w-1.5 rounded-full bg-rose-500"></div>
+                    <span>শিক্ষক নোটিশ</span>
                   </button>
                 </div>
               )}
@@ -2973,6 +3607,10 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
           {/* 2. Teachers List Management */}
           {activeAdminSubTab === "teachers" && (
             <TeacherManagement />
+          )}
+
+          {activeAdminSubTab === "teacher_attendance" && (
+            <AdminAttendanceSection toBengaliDigits={toBengaliDigits} />
           )}
 
           {/* 3. Success Stories List Management */}
@@ -4660,6 +5298,107 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
           )}
 
           {/* 10. Pathdan Overview Update Form */}
+          {/* 9c. Teacher Notices */}
+          {activeAdminSubTab === "teacher_notices" && (
+            <div className="space-y-6">
+              {/* Add New Teacher Notice Form */}
+              <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm space-y-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="h-10 w-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600">
+                    <Megaphone className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-bold text-emerald-950 font-serif">নতুন শিক্ষক নোটিশ যোগ করুন</h4>
+                    <p className="text-xs text-gray-500">শিক্ষক ড্যাশবোর্ডে সর্বোচ্চ ২টি নোটিশ সক্রিয় থাকবে। ৩য় নোটিশ যুক্ত করলে পুরাতনটি মুছে যাবে।</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={teacherNoticeTitle}
+                    onChange={(e) => setTeacherNoticeTitle(e.target.value)}
+                    placeholder="নোটিশের শিরোনাম (যেমন: মিটিং নোটিশ)"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-500 outline-none transition-all font-sans"
+                  />
+                  <textarea
+                    rows={3}
+                    value={teacherNoticeDescription}
+                    onChange={(e) => setTeacherNoticeDescription(e.target.value)}
+                    placeholder="নোটিশের বিস্তারিত বিবরণ..."
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-500 outline-none transition-all text-emerald-950 font-sans"
+                  />
+                </div>
+                
+                <button
+                  onClick={handleAddTeacherNotice}
+                  disabled={!teacherNoticeTitle.trim() || !teacherNoticeDescription.trim() || isNoticeUploading}
+                  className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-6 py-3 rounded-xl text-xs shadow-lg shadow-rose-600/20 select-none transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
+                >
+                  {isNoticeUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  <span>শিক্ষক নোটিশ আপলোড করুন</span>
+                </button>
+              </div>
+
+              {/* Teacher Notices List */}
+              <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm space-y-4">
+                <h4 className="text-base font-bold text-emerald-950 font-serif">বর্তমানে সক্রিয় শিক্ষক নোটিশ সমূহ</h4>
+                <div className="space-y-3">
+                  <StreamBuilder<any>
+                    stream={teacherNoticesQuery}
+                    builder={(notices, loading, error) => {
+                      if (loading) return <p className="text-xs text-emerald-800 animate-pulse">লোড হচ্ছে...</p>;
+                      if (error) return <p className="text-xs text-red-500">লোড করতে সমস্যা হয়েছে</p>;
+                      if (!notices || notices.length === 0) {
+                        return (
+                          <div className="text-center py-10 text-gray-400 border border-dashed rounded-xl bg-gray-50/30">
+                            কোনো সক্রিয় শিক্ষক নোটিশ পাওয়া যায়নি।
+                          </div>
+                        );
+                      }
+                      return (
+                        <div className="grid gap-4">
+                          {notices.map((notice, index) => (
+                            <div key={notice.id} className="p-5 rounded-2xl border border-gray-100 flex items-start justify-between gap-4 bg-gray-50/50 hover:bg-white hover:shadow-md transition-all group">
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-[10px] font-black bg-rose-100 text-rose-700 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                                    নোটিশ {toBengaliDigits(index + 1)}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {notice.timestamp ? new Date(notice.timestamp.seconds * 1000).toLocaleString("bn-BD") : "এখনই"}
+                                  </span>
+                                </div>
+                                <h5 className="font-bold text-emerald-950 text-sm">{notice.title}</h5>
+                                <p className="text-xs text-slate-600 leading-relaxed font-sans">{notice.description}</p>
+                              </div>
+                              <button
+                                onClick={async () => {
+                                  if (window.confirm("আপনি কি নিশ্চিতভাবে এই শিক্ষক নোটিশটি মুছতে চান?")) {
+                                    try {
+                                      await deleteDoc(doc(db, "teacher_notices", notice.id));
+                                    } catch (err) {
+                                      console.error("Error deleting notice:", err);
+                                    }
+                                  }
+                                }}
+                                className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                                title="মুছে ফেলুন"
+                              >
+                                <Trash2 className="h-5 w-5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeAdminSubTab === "pathdan_update" && (
             <PathdanUpdateForm />
           )}

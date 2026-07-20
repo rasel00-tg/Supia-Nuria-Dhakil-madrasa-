@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Lock, Mail, Eye, EyeOff, ShieldCheck, Info, X } from "lucide-react";
+import { Lock, Mail, Eye, EyeOff, ShieldCheck, Info, X, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { motion, AnimatePresence } from "motion/react";
@@ -184,7 +184,7 @@ export default function LoginSection({ onLoginSuccess, logoUrl }: LoginSectionPr
   };
 
   return (
-    <div id="login-section" className="h-full w-full relative overflow-hidden flex flex-col items-center justify-center p-4 bg-[#0a0a0a] font-['Noto_Serif_Bengali']">
+    <div id="login-section" className="min-h-screen w-full relative overflow-hidden flex flex-col items-center justify-center p-4 bg-[#0a0a0a] font-['Noto_Serif_Bengali']">
       {/* Dynamic Background Glows */}
       <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] bg-emerald-500/20 rounded-full blur-[140px] animate-pulse"></div>
       <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-orange-500/10 rounded-full blur-[140px] animate-pulse" style={{ animationDelay: '2s' }}></div>
@@ -212,20 +212,36 @@ export default function LoginSection({ onLoginSuccess, logoUrl }: LoginSectionPr
       >
         {/* Subtle Edge Highlight */}
         <div className="absolute inset-0 rounded-[2.5rem] border border-white/10 pointer-events-none"></div>
-        {/* Feedback Toasts Overlay */}
+        {/* Centered Feedback Modals */}
         <AnimatePresence>
           {loginFeedback && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className={`absolute top-0 left-0 right-0 z-50 py-3 px-4 text-center text-sm font-black shadow-xl ${
-                loginFeedback.includes("সফল") ? "bg-emerald-500 text-white" : 
-                loginFeedback.includes("অপেক্ষা") ? "bg-amber-500 text-white" : "bg-rose-500 text-white"
-              }`}
-            >
-              {loginFeedback}
-            </motion.div>
+            <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="bg-white/10 backdrop-blur-2xl border border-white/20 p-8 rounded-[2.5rem] flex flex-col items-center gap-6 shadow-2xl max-w-[300px] w-full text-center"
+              >
+                <div className="relative">
+                  <div className={`absolute inset-0 blur-2xl rounded-full opacity-30 ${
+                    loginFeedback.includes("সফল") ? "bg-emerald-500" : 
+                    loginFeedback.includes("অপেক্ষা") ? "bg-amber-500" : "bg-rose-500"
+                  }`}></div>
+                  {loginFeedback.includes("অপেক্ষা") && (
+                    <Loader2 className="h-14 w-14 text-amber-400 animate-spin relative z-10" />
+                  )}
+                  {loginFeedback.includes("সফল") && (
+                    <CheckCircle2 className="h-14 w-14 text-emerald-400 relative z-10" />
+                  )}
+                  {loginFeedback.includes("ভূল") && (
+                    <AlertCircle className="h-14 w-14 text-rose-400 relative z-10" />
+                  )}
+                </div>
+                <p className="text-white font-black text-lg leading-relaxed drop-shadow-lg">
+                  {loginFeedback}
+                </p>
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
 
@@ -275,7 +291,7 @@ export default function LoginSection({ onLoginSuccess, logoUrl }: LoginSectionPr
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 relative z-10">
           {/* Bordered Box Input: Email/Phone */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-white uppercase tracking-widest ml-1 block">
+            <label className="text-[10px] font-bold text-white/90 uppercase tracking-widest ml-1 block">
               ইউজার নাম্বার/ইমেইল
             </label>
             <div className="relative group">
@@ -293,7 +309,7 @@ export default function LoginSection({ onLoginSuccess, logoUrl }: LoginSectionPr
 
           {/* Bordered Box Input: Password */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-white uppercase tracking-widest ml-1 block">
+            <label className="text-[10px] font-bold text-white/90 uppercase tracking-widest ml-1 block">
               পাসওয়ার্ড দিন
             </label>
             <div className="relative group">
