@@ -1,4 +1,4 @@
-import { useState, ChangeEvent } from "react";
+import { useState, ChangeEvent, useEffect } from "react";
 import { Menu, X, BookOpen, GraduationCap, Calendar, Search, FileText, Lock, Clock, Calendar as CalendarIcon, ChevronDown, ChevronUp, Users, Info, Building, Image, MessageSquare, Phone, Globe } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { db, StreamBuilder } from "../lib/firebase";
@@ -127,7 +127,15 @@ export default function Navbar({
     },
   ];
 
+  useEffect(() => {
+    const handleToggle = () => setIsOpen(prev => !prev);
+    window.addEventListener('toggle-sidebar', handleToggle);
+    return () => window.removeEventListener('toggle-sidebar', handleToggle);
+  }, []);
+
   return (
+    <>
+    {activeTab !== "login" && (activeTab !== "dashboard" || user?.role !== "teacher") && (
     <header id="main-header" className="sticky top-0 z-50 w-full bg-emerald-850 text-white shadow-md border-b-4 border-amber-500 select-none font-alinur">
       <div className="w-full px-2 py-3 flex items-center justify-between min-h-[56px] gap-3">
         
@@ -205,6 +213,8 @@ export default function Navbar({
           </button>
         </div>
       </div>
+    </header>
+    )}
 
       {/* Modern Slide-over Sidebar Drawer */}
       <AnimatePresence>
@@ -386,6 +396,6 @@ export default function Navbar({
           </>
         )}
       </AnimatePresence>
-    </header>
+    </>
   );
 }

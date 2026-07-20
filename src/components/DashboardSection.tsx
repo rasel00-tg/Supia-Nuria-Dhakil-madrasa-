@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, setDoc, getDocs, getDoc, serverTimestamp, where, limit } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType, uploadFileToImgBB, StreamBuilder } from "../lib/firebase";
 import { Teacher, SuccessStory, CommitteeMember, HonoredPerson, AdmissionForm, Routine, ContactMessage } from "../types";
-import { Trash2, Edit3, Plus, Check, X, CreditCard, Mail, UserPlus, Users, GraduationCap, Calendar, Award, MessageSquare, Heart, CheckCircle2, XCircle, Settings, Megaphone, ChevronDown, LayoutDashboard, Globe, Lock, ArrowLeft, CheckCircle, AlertCircle, AlertTriangle, CalendarCheck, CalendarRange, ClipboardList, Loader2, BookOpen, Home, Compass, HelpCircle, Send, Clock, LogOut, Activity, TrendingUp } from "lucide-react";
+import { Trash2, Edit3, Plus, Check, X, CreditCard, Mail, UserPlus, Users, GraduationCap, Calendar, Award, MessageSquare, Heart, CheckCircle2, XCircle, Settings, Megaphone, ChevronDown, LayoutDashboard, Globe, Lock, ArrowLeft, CheckCircle, AlertCircle, AlertTriangle, CalendarCheck, CalendarRange, ClipboardList, Loader2, BookOpen, Home, Compass, HelpCircle, Send, Clock, LogOut, Activity, TrendingUp, History, Search, Menu } from "lucide-react";
 import PathdanUpdateForm from "./PathdanUpdateForm";
 import SodossoFormUpdateForm from "./SodossoFormUpdateForm";
 import KormochariUpdateForm from "./KormochariUpdateForm";
@@ -32,6 +32,8 @@ const compareRolls = (roll1: string | number, roll2: string | number): boolean =
 
 interface DashboardSectionProps {
   user: { email: string; role: "student" | "teacher" | "admin"; name: string; adminRole?: string };
+  setUser: (user: any) => void;
+  setActiveTab: (tab: string) => void;
 }
 
 // Sub-component to stabilize student-specific queries and prevent re-subscription loops
@@ -498,6 +500,9 @@ const TeacherDashboardInner = ({
   const [isSubmittingAttendance, setIsSubmittingAttendance] = useState(false);
   const [showNoticeModal, setShowNoticeModal] = useState(false);
   const [selectedNotice, setSelectedNotice] = useState<any>(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyFilterDate, setHistoryFilterDate] = useState("");
+  const [activeTeacherTab, setActiveTeacherTab] = useState("home");
 
   const today = useMemo(() => new Date(), []);
   const todayStr = useMemo(() => today.toISOString().split('T')[0], [today]);
@@ -630,42 +635,70 @@ const TeacherDashboardInner = ({
   return (
     <div className="relative -mt-8 -mx-2 bg-[#f8fafc] pb-28 min-h-screen">
       {/* Premium Green Header Card */}
-      <div className="bg-emerald-900 pt-16 pb-32 px-6 rounded-b-[40px] shadow-lg relative z-0">
-        <motion.button
-          whileHover={{ scale: 1.1, rotate: 90 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setShowLogoutConfirm(true)}
-          className="absolute top-8 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white/90 backdrop-blur-sm border border-white/10 transition-all cursor-pointer z-20"
-        >
-          <LogOut className="h-5 w-5" />
-        </motion.button>
+      <div className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-orange-800 pt-10 pb-36 px-6 rounded-b-[50px] shadow-2xl relative z-0 overflow-hidden">
+        {/* Abstract Background Shapes */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-20 -mt-20"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl -ml-20 -mb-20"></div>
 
-        <div className="max-w-md mx-auto text-center">
-           <h2 className="text-3xl font-black text-white mt-1 leading-tight" style={{ fontFamily: 'Alinur Tatsama' }}>
-            শিক্ষক একাউন্ট
+        <div className="max-w-md mx-auto text-center relative z-10">
+           <h2 className="text-3xl font-black text-white mt-1 leading-tight tracking-tight" style={{ fontFamily: 'Alinur Tatsama' }}>
+            শিক্ষক ড্যাশবোর্ড
           </h2>
-          <div className="flex items-center justify-center gap-2 mt-2">
-            <Clock className="h-4 w-4 text-amber-400" />
-            <p className="text-emerald-300 font-bold text-sm tracking-wide opacity-90">{formattedDate}</p>
+          <div className="flex items-center justify-center gap-2 mt-3">
+            <div className="bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
+              <Clock className="h-4 w-4 text-amber-400" />
+              <p className="text-emerald-50 font-bold text-xs tracking-wide">{formattedDate}</p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Teacher Profile Card - Overlapping */}
-      <div className="px-6 -mt-20 relative z-10 max-w-lg mx-auto">
+      {activeTeacherTab === "home" && (
+        <>
+          <div className="px-4 -mt-28 relative z-10 max-w-lg mx-auto">
         <motion.div 
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="bg-white rounded-[32px] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-white flex flex-col items-center"
+          className="bg-gradient-to-b from-white to-emerald-50/30 rounded-[40px] p-5 shadow-[0_25px_60px_rgba(5,150,105,0.12)] border border-white/80 flex flex-col items-center relative overflow-hidden group"
         >
+          {/* Top Floating Buttons inside Profile Card */}
+          <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-30">
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => window.dispatchEvent(new CustomEvent('toggle-sidebar'))}
+              className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 border border-emerald-100 shadow-sm hover:bg-emerald-600 hover:text-white transition-all cursor-pointer"
+            >
+              <Menu className="h-5 w-5" />
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setShowLogoutConfirm(true)}
+              className="h-10 w-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500 border border-rose-100 shadow-sm hover:bg-rose-500 hover:text-white transition-all cursor-pointer"
+            >
+              <LogOut className="h-5 w-5" />
+            </motion.button>
+          </div>
+          {/* Decorative Glow */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1 bg-gradient-to-r from-transparent via-orange-400 to-transparent opacity-50"></div>
+
           <div className="relative group">
-            <div className="absolute inset-0 bg-emerald-500 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
-            <div className="h-28 w-28 rounded-full border-4 border-white shadow-xl overflow-hidden relative z-10 bg-slate-100">
+            {/* Square Glowing Ring Animation */}
+            <motion.div 
+              animate={{ rotate: [0, 90, 180, 270, 360] }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="absolute -inset-3 bg-gradient-to-tr from-emerald-500 via-orange-400 to-emerald-600 rounded-[32px] blur-[3px] opacity-40 group-hover:opacity-80 transition-opacity"
+            ></motion.div>
+            
+            <div className="h-28 w-28 rounded-[28px] border-4 border-white shadow-2xl overflow-hidden relative z-10 bg-slate-100 ring-4 ring-emerald-500/10">
               <img 
                 key={teacherData?.photoUrl || "placeholder"}
                 src={teacherData?.photoUrl || "https://ui-avatars.com/api/?name=" + encodeURIComponent(teacherData?.name || "Teacher") + "&background=059669&color=fff"} 
                 alt="Profile" 
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700"
                 referrerPolicy="no-referrer"
                 onError={(e: any) => {
                   e.target.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(teacherData?.name || "Teacher") + "&background=059669&color=fff";
@@ -674,139 +707,254 @@ const TeacherDashboardInner = ({
             </div>
           </div>
 
-          <div className="mt-4 text-center font-alinur">
-            <h3 className="text-2xl font-black text-emerald-950">{teacherData?.name || "নাম পাওয়া যায়নি"}</h3>
-            <p className="text-emerald-600 font-bold">{teacherData?.designation || "পদবি পাওয়া যায়নি"}</p>
+          <div className="mt-3 text-center">
+            <h3 className="text-2xl font-black text-emerald-950 tracking-tight" style={{ fontFamily: 'Noto Serif Bengali' }}>{teacherData?.name || "নাম পাওয়া যায়নি"}</h3>
+            <div className="flex items-center justify-center gap-2 mt-0.5">
+              <span className="h-1.5 w-1.5 bg-orange-500 rounded-full animate-pulse"></span>
+              <p className="text-emerald-600 font-black text-xs uppercase tracking-widest">{teacherData?.designation || "পদবি পাওয়া যায়নি"}</p>
+            </div>
           </div>
 
-          <div className="mt-6 flex justify-center w-full border-t border-slate-50 pt-6 font-alinur">
-            <div className="text-center">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">ফোন নাম্বার</span>
-              <span className="text-sm font-black text-emerald-900">{teacherData?.phone ? toBengaliDigits(teacherData.phone) : "N/A"}</span>
+          <div className="mt-3 flex justify-center w-full border-t border-emerald-100/50 pt-3">
+            <div className="bg-emerald-50/50 px-5 py-2.5 rounded-2xl border border-emerald-100/30 flex items-center gap-3 group/phone">
+              <div className="h-8 w-8 bg-white rounded-xl flex items-center justify-center text-emerald-600 shadow-sm group-hover/phone:bg-emerald-600 group-hover/phone:text-white transition-all">
+                <Activity className="h-4 w-4" />
+              </div>
+              <div className="text-left">
+                <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest block leading-none mb-0.5">মোবাইল নাম্বার</span>
+                <span className="text-sm font-black text-emerald-900 tracking-wider leading-none">{teacherData?.phone || "N/A"}</span>
+              </div>
             </div>
           </div>
         </motion.div>
       </div>
 
       {/* Attendance Section */}
-      <div className="px-6 mt-8 max-w-lg mx-auto font-alinur">
-        <div className="bg-white rounded-[28px] p-6 shadow-[0_20px_50px_rgba(5,150,105,0.12)] border-2 border-emerald-100/50 flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden group ring-1 ring-emerald-500/5">
+      <div className="px-2 mt-8 max-w-lg mx-auto font-alinur">
+        <div className="bg-gradient-to-br from-[#1e1b4b] via-[#312e81] to-[#4338ca] rounded-[32px] p-6 shadow-[0_30px_70px_rgba(49,46,129,0.3)] border-2 border-indigo-400/20 flex flex-col items-center gap-6 relative overflow-hidden group ring-1 ring-white/10 text-white">
           {/* Animated Background Glow */}
-          <div className="absolute -top-24 -right-24 w-56 h-56 bg-emerald-100/30 rounded-full blur-3xl opacity-50 group-hover:bg-amber-100/30 transition-colors duration-700"></div>
-          <div className="absolute -bottom-24 -left-24 w-56 h-56 bg-emerald-100/30 rounded-full blur-3xl opacity-50 group-hover:bg-emerald-200/30 transition-colors duration-700"></div>
+          <div className="absolute -top-32 -right-32 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl opacity-60 group-hover:bg-purple-500/20 transition-colors duration-1000"></div>
+          <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-fuchsia-500/20 rounded-full blur-3xl opacity-60 group-hover:bg-indigo-400/20 transition-colors duration-1000"></div>
 
-          <div className="flex-1 w-full relative z-10">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-10 w-10 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-600/30">
-                <CalendarCheck className="h-6 w-6" />
+          <div className="w-full relative z-10">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 bg-gradient-to-br from-amber-400 to-orange-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-orange-600/30 ring-4 ring-white/10">
+                  <CalendarCheck className="h-6 w-6" />
+                </div>
+                <div>
+                  <h4 className="font-black text-lg text-white leading-tight bg-gradient-to-r from-emerald-500 to-emerald-700 px-4 py-1.5 rounded-full shadow-lg shadow-emerald-950/20 border border-white/10">উপস্থিতি নিশ্চিত</h4>
+                  <p className="text-[10px] text-amber-300 font-black uppercase tracking-widest opacity-80 mt-1">Daily Attendance Tracker</p>
+                </div>
               </div>
-              <div>
-                <h4 className="font-black text-lg text-emerald-950 leading-tight">উপস্থিতি নিশ্চিত</h4>
-                <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Attendance Status</p>
-              </div>
+
+              {/* Status Badge in Header */}
+              {attendanceStatus && (
+                <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-2 border shadow-sm ${
+                  attendanceStatus.status === "Pending" ? "bg-amber-500/20 text-amber-200 border-amber-400/30" :
+                  attendanceStatus.status === "Present" ? "bg-emerald-500/20 text-emerald-200 border-emerald-400/30" :
+                  "bg-rose-500/20 text-rose-200 border-rose-400/30"
+                }`}>
+                  <span className={`h-2 w-2 rounded-full animate-pulse ${
+                    attendanceStatus.status === "Pending" ? "bg-amber-500" :
+                    attendanceStatus.status === "Present" ? "bg-emerald-500" : "bg-rose-500"
+                  }`}></span>
+                  {attendanceStatus.status === "Pending" ? "অপেক্ষমান" : 
+                   attendanceStatus.status === "Present" ? "নিশ্চিত" : "অনুপস্থিত"}
+                </div>
+              )}
             </div>
 
             {isFriday ? (
-              <div className="bg-slate-50 text-slate-500 py-4 rounded-2xl text-center border border-slate-200 font-bold">
+              <div className="bg-white/5 backdrop-blur-sm text-white/60 py-6 rounded-[24px] text-center border-2 border-dashed border-white/10 font-black flex flex-col items-center gap-2">
+                <div className="h-10 w-10 bg-white/10 rounded-full flex items-center justify-center mb-1">
+                  <Calendar className="h-5 w-5 opacity-50" />
+                </div>
                 আজ শুক্রবার - সাপ্তাহিক ছুটি
               </div>
             ) : attendanceStatus ? (
-              <div className={`py-4 rounded-2xl text-center border font-bold flex flex-col gap-1 transition-all ${
+              <div className={`p-6 rounded-[24px] border-2 transition-all relative overflow-hidden group/status ${
                 attendanceStatus.status === "Pending" 
-                  ? "bg-amber-50 text-amber-700 border-amber-200" 
+                  ? "bg-amber-500/10 text-white border-amber-400/20 shadow-[0_10px_30px_rgba(245,158,11,0.1)]" 
                   : attendanceStatus.status === "Present"
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : "bg-rose-50 text-rose-700 border-rose-200"
+                  ? "bg-emerald-500/10 text-white border-emerald-400/20 shadow-[0_10px_30_rgba(16,185,129,0.1)]"
+                  : "bg-rose-500/10 text-white border-rose-400/20 shadow-[0_10px_30px_rgba(244,63,94,0.1)]"
               }`}>
-                <span>
-                  {attendanceStatus.status === "Pending" 
-                    ? "আপনার উপস্থিতি পেন্ডিং রয়েছে!" 
-                    : attendanceStatus.status === "Present"
-                    ? "আপনার উপস্থিতি নিশ্চিত করা হয়েছে!"
-                    : "আজ আপনার উপস্থিতি অনুপস্থিত হিসেবে রেকর্ড হয়েছে!"}
-                </span>
-                <span className="text-xs opacity-70">আজ: {dayName}</span>
+                <div className="flex items-center gap-5 relative z-10">
+                  <motion.div 
+                    initial={{ scale: 0.5, rotate: -45 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    className={`h-14 w-14 rounded-2xl flex items-center justify-center shadow-lg shrink-0 ${
+                      attendanceStatus.status === "Pending" ? "bg-amber-500 text-white" :
+                      attendanceStatus.status === "Present" ? "bg-emerald-600 text-white" : "bg-rose-500 text-white"
+                    }`}
+                  >
+                    {attendanceStatus.status === "Pending" ? <Clock className="h-7 w-7" /> :
+                     attendanceStatus.status === "Present" ? (
+                       <motion.div
+                         animate={{ scale: [1, 1.2, 1] }}
+                         transition={{ duration: 1.5, repeat: Infinity }}
+                       >
+                         <CheckCircle2 className="h-7 w-7" />
+                       </motion.div>
+                     ) : (
+                       <motion.div
+                         animate={{ x: [-2, 2, -2] }}
+                         transition={{ duration: 0.5, repeat: Infinity }}
+                       >
+                         <XCircle className="h-7 w-7" />
+                       </motion.div>
+                     )}
+                  </motion.div>
+                  
+                  <div className="flex-1">
+                    <p className="text-lg font-black leading-tight mb-1 text-white" style={{ fontFamily: 'Noto Serif Bengali' }}>
+                      {attendanceStatus.status === "Pending" 
+                        ? "উপস্থিতি পেন্ডিং রয়েছে!" 
+                        : attendanceStatus.status === "Present"
+                        ? "উপস্থিতি নিশ্চিত করা হয়েছে!"
+                        : "আজ আপনি অনুপস্থিত!"}
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-bold opacity-70 flex items-center gap-1 text-white">
+                        <Clock className="h-3 w-3" /> আজ: {dayName}
+                      </span>
+                      <span className="h-1 w-1 bg-white/20 rounded-full"></span>
+                      <span className="text-xs font-black text-amber-300 bg-white/10 px-2 py-0.5 rounded-lg border border-white/10 flex items-center gap-1">
+                        <Calendar className="h-3 w-3" /> উপস্থিত: {toBengaliDigits(attendanceCount)} দিন
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : (
               <motion.button
-                whileHover={{ scale: 1.02 }}
+                whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleConfirmAttendance}
                 disabled={isSubmittingAttendance}
-                className="w-full bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-black py-4 rounded-2xl shadow-xl shadow-emerald-900/20 flex items-center justify-center gap-3 active:scale-95 transition-all"
+                className="w-full bg-gradient-to-r from-emerald-600 via-emerald-700 to-emerald-900 text-white font-black py-5 rounded-[24px] shadow-2xl shadow-emerald-900/30 flex items-center justify-center gap-4 active:scale-95 transition-all relative overflow-hidden group/btn"
               >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000"></div>
                 {isSubmittingAttendance ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <Loader2 className="h-6 w-6 animate-spin" />
                 ) : (
                   <>
-                    <Activity className="h-5 w-5 animate-pulse text-amber-300" />
-                    <span>উপস্থিতি নিশ্চিত করুন (আজ: {dayName})</span>
+                    <Activity className="h-6 w-6 animate-pulse text-amber-300" />
+                    <span className="text-lg">উপস্থিতি নিশ্চিত করুন</span>
+                    <div className="bg-white/10 px-3 py-1 rounded-lg text-xs border border-white/10">{dayName}</div>
                   </>
                 )}
               </motion.button>
             )}
+            
+            <button 
+              onClick={() => setShowHistoryModal(true)}
+              className="mt-4 w-full bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-2xl border border-white/10 transition-all flex items-center justify-center gap-2 group/hist"
+            >
+              <History className="h-4 w-4 group-hover:rotate-[-30deg] transition-transform text-amber-400" />
+              <span>উপস্থিতি বিবরণী দেখুন</span>
+            </button>
           </div>
 
-          {/* Monthly Attendance Chart (Simple Circle) */}
-          <div className="flex flex-col items-center shrink-0">
-            <div className="relative h-24 w-24">
-              <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
-                <circle cx="18" cy="18" r="16" fill="none" stroke="#f1f5f9" strokeWidth="3" />
+          <div className="w-full h-[1px] bg-white/10 my-2 relative z-10"></div>
+
+          {/* Monthly Attendance Chart - Row Alignment */}
+          <div className="w-full flex items-center justify-between gap-6 relative z-10 px-2 text-white">
+            <div className="flex-1">
+              <h5 className="font-black text-amber-200 text-sm mb-1">চলমান মাসের রিপোর্ট</h5>
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-emerald-400" />
+                <p className="text-xs text-white/70 font-bold">মোট উপস্থিতি: <span className="text-white font-black">{toBengaliDigits(attendanceCount)} দিন</span></p>
+              </div>
+            </div>
+            
+            <div className="relative h-20 w-20 flex items-center justify-center shrink-0">
+              <svg className="h-full w-full -rotate-90 drop-shadow-sm" viewBox="0 0 36 36">
+                <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="4" />
                 <motion.circle 
-                  cx="18" cy="18" r="16" fill="none" stroke="#059669" strokeWidth="3"
+                  cx="18" cy="18" r="16" fill="none" stroke="url(#attendanceGradient)" strokeWidth="4"
                   strokeDasharray="100, 100"
                   strokeDashoffset={100 - attendancePercentage}
                   strokeLinecap="round"
                   initial={{ strokeDashoffset: 100 }}
                   animate={{ strokeDashoffset: 100 - attendancePercentage }}
-                  transition={{ duration: 1.5, ease: "easeOut" }}
+                  transition={{ duration: 2, ease: "circOut" }}
                 />
+                <defs>
+                  <linearGradient id="attendanceGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#fbbf24" />
+                    <stop offset="100%" stopColor="#f59e0b" />
+                  </linearGradient>
+                </defs>
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xl font-black text-emerald-900 leading-none">{toBengaliDigits(attendancePercentage)}%</span>
-                <span className="text-[8px] font-bold text-slate-400 uppercase">উপস্থিতি</span>
+                <span className="text-xl font-black text-white leading-none">{toBengaliDigits(attendancePercentage)}<span className="text-[10px] ml-0.5">%</span></span>
               </div>
             </div>
-            <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-tighter">চলমান মাসের রিপোর্ট</p>
           </div>
         </div>
       </div>
 
-      {/* Teacher Notice Section */}
-      <div className="px-6 mt-8 max-w-lg mx-auto font-alinur">
-        <div className="bg-white rounded-[28px] p-6 shadow-sm border border-slate-100">
-           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 bg-amber-50 rounded-lg flex items-center justify-center text-amber-600">
-                <Megaphone className="h-5 w-5" />
+      {/* Teacher Notice Section - Full Width Fitting */}
+      <div className="mt-10 px-0 sm:px-2 max-w-lg mx-auto font-alinur">
+        <div className="bg-white sm:rounded-[32px] p-6 sm:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.05)] border-y sm:border border-slate-100 relative overflow-hidden">
+           {/* Subtle Pattern Background */}
+           <div className="absolute top-0 right-0 p-4 opacity-[0.03] pointer-events-none">
+             <Megaphone className="h-32 w-32 -rotate-12" />
+           </div>
+
+           <div className="flex items-center justify-between mb-8 relative z-10">
+            <div className="flex items-center gap-3">
+              <div className="h-11 w-11 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600 shadow-sm border border-orange-100">
+                <Megaphone className="h-6 w-6" />
               </div>
-              <h4 className="font-black text-lg text-emerald-950">শিক্ষকদের জন্য নোটিশ</h4>
+              <div>
+                <h4 className="font-black text-xl text-emerald-950">শিক্ষকদের জন্য নোটিশ</h4>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Official Notifications</p>
+              </div>
             </div>
+            <div className="h-1 w-12 bg-emerald-100 rounded-full"></div>
           </div>
           
           <StreamBuilder
             stream={query(collection(db, "teacher_notices"), orderBy("timestamp", "desc"), limit(2))}
             builder={(notices: any[]) => {
-              if (notices.length === 0) return <p className="text-center text-sm text-slate-400 py-4">কোনো নোটিশ নেই</p>;
+              if (notices.length === 0) return (
+                <div className="text-center py-12 flex flex-col items-center gap-3 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+                  <MessageSquare className="h-10 w-10 text-slate-200" />
+                  <p className="text-sm text-slate-400 font-bold">আপাতত কোনো নোটিশ নেই</p>
+                </div>
+              );
               return (
-                <div className="space-y-3">
+                <div className="grid gap-5 relative z-10">
                   {notices.map((notice) => (
-                    <div key={notice.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-start gap-3 group">
-                       <div className="h-2 w-2 bg-emerald-500 rounded-full mt-2 shrink-0 group-hover:scale-125 transition-transform"></div>
-                       <div className="flex-1 min-w-0">
-                          <h5 className="font-bold text-emerald-900 text-sm truncate">{notice.title}</h5>
-                          <p className="text-xs text-slate-600 mt-1 line-clamp-2">{notice.description}</p>
-                          <button 
-                            onClick={() => {
-                              setSelectedNotice(notice);
-                              setShowNoticeModal(true);
-                            }}
-                            className="text-[10px] font-black text-emerald-600 mt-2 hover:text-emerald-800 transition-colors"
-                          >
-                            বিস্তারিত দেখুন
-                          </button>
+                    <motion.div 
+                      key={notice.id} 
+                      whileHover={{ y: -4 }}
+                      onClick={() => {
+                        setSelectedNotice(notice);
+                        setShowNoticeModal(true);
+                      }}
+                      className="p-6 bg-gradient-to-br from-slate-50/50 to-white rounded-[24px] border border-slate-100 flex items-start gap-4 group cursor-pointer hover:shadow-xl hover:shadow-emerald-900/5 transition-all"
+                    >
+                       <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-50 shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-500">
+                          <Award className="h-6 w-6" />
                        </div>
-                    </div>
+                       <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest">New Update</span>
+                            <span className="h-1 w-1 bg-slate-300 rounded-full"></span>
+                            <span className="text-[10px] text-slate-400 font-bold">{notice.timestamp ? new Date(notice.timestamp.seconds * 1000).toLocaleDateString('bn-BD') : "আজ"}</span>
+                          </div>
+                          <h5 className="font-black text-emerald-950 text-base mb-1 truncate group-hover:text-emerald-700 transition-colors">{notice.title}</h5>
+                          <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">{notice.description}</p>
+                          <div className="flex items-center gap-2 mt-4 text-[10px] font-black text-emerald-600 group-hover:translate-x-1 transition-transform">
+                            <span>বিস্তারিত পড়ুন</span>
+                            <ChevronDown className="h-3 w-3 -rotate-90" />
+                          </div>
+                       </div>
+                    </motion.div>
                   ))}
                 </div>
               );
@@ -815,22 +963,194 @@ const TeacherDashboardInner = ({
         </div>
       </div>
 
-      {/* Fixed Bottom Menu Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-6 pt-2 bg-white/90 backdrop-blur-xl border-t border-slate-100 flex items-center justify-around shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+        </>
+      )}
+
+      {activeTeacherTab === "students" && (
+        <div className="px-6 py-24 text-center animate-fade-in">
+           <Users className="h-20 w-20 mx-auto text-emerald-100 mb-6" />
+           <h3 className="text-2xl font-black text-emerald-950">শিক্ষার্থী সেকশন</h3>
+           <p className="text-slate-500 font-bold">এই বিভাগটি শীঘ্রই আপডেট করা হবে।</p>
+        </div>
+      )}
+
+      {activeTeacherTab === "routine" && (
+        <div className="px-6 py-24 text-center animate-fade-in">
+           <ClipboardList className="h-20 w-20 mx-auto text-emerald-100 mb-6" />
+           <h3 className="text-2xl font-black text-emerald-950">রুটিন ও রেজাল্ট</h3>
+           <p className="text-slate-500 font-bold">এই বিভাগটি শীঘ্রই আপডেট করা হবে।</p>
+        </div>
+      )}
+
+      {activeTeacherTab === "others" && (
+        <div className="px-6 py-24 text-center animate-fade-in">
+           <Compass className="h-20 w-20 mx-auto text-emerald-100 mb-6" />
+           <h3 className="text-2xl font-black text-emerald-950">অন্যান্য</h3>
+           <p className="text-slate-500 font-bold">এই বিভাগটি শীঘ্রই আপডেট করা হবে।</p>
+        </div>
+      )}
+
+      {/* Fixed Bottom Menu Bar - Slim Glassmorphism */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 px-6 pb-4 pt-3 bg-emerald-950/90 backdrop-blur-2xl border-t border-white/10 flex items-center justify-around shadow-[0_-15px_40px_rgba(0,0,0,0.3)] rounded-t-[30px]">
          {[
-          { id: "students", label: "শিক্ষার্থী কন্ট্রোল", icon: Users },
+          { id: "home", label: "হোম", icon: Home },
+          { id: "students", label: "শিক্ষার্থী", icon: Users },
           { id: "routine", label: "রুটিন ও রেজাল্ট", icon: ClipboardList },
-          { id: "others", label: "অন্যান্য", icon: Compass },
-          { id: "profile", label: "প্রোফাইল", icon: UserPlus }
-         ].map((tab) => (
-           <button key={tab.id} className="flex flex-col items-center gap-1 group">
-             <div className="p-2 rounded-xl group-hover:bg-emerald-50 group-active:scale-90 transition-all text-slate-400 group-hover:text-emerald-600">
-               <tab.icon className="h-6 w-6" />
-             </div>
-             <span className="text-[10px] font-bold text-slate-500 group-hover:text-emerald-800 transition-colors">{tab.label}</span>
-           </button>
-         ))}
+          { id: "others", label: "অন্যান্য", icon: Compass }
+         ].map((tab) => {
+           const isActive = activeTeacherTab === tab.id;
+           return (
+             <motion.button 
+               key={tab.id} 
+               whileTap={{ scale: 0.9 }}
+               onClick={() => setActiveTeacherTab(tab.id)}
+               className="flex flex-col items-center gap-0.5 group relative"
+             >
+               {isActive && (
+                 <motion.div 
+                   layoutId="activeTab"
+                   className="absolute -top-1 w-1 h-1 bg-orange-400 rounded-full shadow-[0_0_8px_#fb923c]"
+                 ></motion.div>
+               )}
+               <div className={`p-2 rounded-xl transition-all duration-300 ${
+                 isActive 
+                  ? "bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-lg shadow-orange-500/20 -translate-y-1" 
+                  : "text-emerald-100/40 group-hover:text-emerald-50"
+               }`}>
+                 <tab.icon className="h-5 w-5" />
+               </div>
+               <span className={`text-[9px] font-black tracking-tight transition-all duration-300 ${
+                 isActive ? "text-orange-400" : "text-emerald-100/30"
+               }`}>{tab.label}</span>
+             </motion.button>
+           );
+         })}
       </div>
+
+      {/* Attendance History Modal */}
+      <AnimatePresence>
+        {showHistoryModal && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-md p-0 sm:p-4">
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="bg-white rounded-t-[40px] sm:rounded-[40px] p-8 max-w-lg w-full shadow-2xl relative overflow-hidden font-alinur h-[85vh] sm:h-auto sm:max-h-[80vh] flex flex-col"
+            >
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-slate-200 rounded-full mt-3 sm:hidden"></div>
+              
+              <div className="flex items-center justify-between mb-8 mt-2 sm:mt-0">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center shadow-inner">
+                    <History className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-emerald-950">উপস্থিতি বিবরণী</h3>
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Personal Attendance Logs</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowHistoryModal(false)}
+                  className="p-2.5 bg-slate-100 rounded-2xl hover:bg-slate-200 transition-colors shadow-sm"
+                >
+                  <X className="h-6 w-6 text-slate-600" />
+                </button>
+              </div>
+
+              {/* Date Filter */}
+              <div className="bg-emerald-50/50 p-4 rounded-3xl border border-emerald-100 mb-6 flex items-center gap-4 group/search focus-within:ring-2 focus-within:ring-emerald-500 transition-all">
+                <div className="h-10 w-10 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm">
+                  <Search className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest block mb-0.5">তারিখ দিয়ে খুঁজুন</span>
+                  <input 
+                    type="date" 
+                    value={historyFilterDate}
+                    onChange={(e) => setHistoryFilterDate(e.target.value)}
+                    className="w-full bg-transparent border-none outline-none text-sm font-black text-emerald-900"
+                  />
+                </div>
+                {historyFilterDate && (
+                  <button 
+                    onClick={() => setHistoryFilterDate("")}
+                    className="text-xs font-black text-rose-500 hover:bg-rose-50 px-2 py-1 rounded-lg"
+                  >
+                    মুছুন
+                  </button>
+                )}
+              </div>
+
+              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                <StreamBuilder<any>
+                  stream={query(
+                    collection(db, "teacher_attendance"),
+                    where("teacherId", "==", teacherData?.id),
+                    orderBy("date", "desc")
+                  )}
+                  builder={(history, loading) => {
+                    if (loading) return <div className="flex justify-center py-20"><Loader2 className="h-10 w-10 animate-spin text-emerald-600 opacity-20" /></div>;
+                    
+                    const filtered = history?.filter(h => !historyFilterDate || h.date === historyFilterDate) || [];
+                    
+                    if (filtered.length === 0) return (
+                      <div className="text-center py-20 opacity-30 flex flex-col items-center">
+                        <CalendarRange className="h-16 w-16 mb-4" />
+                        <p className="font-black text-lg">কোনো তথ্য পাওয়া যায়নি</p>
+                      </div>
+                    );
+
+                    return (
+                      <div className="space-y-4">
+                        {filtered.map((item, idx) => {
+                          const dateObj = new Date(item.date);
+                          const isFri = dateObj.getDay() === 5;
+                          return (
+                            <motion.div 
+                              initial={{ x: -20, opacity: 0 }}
+                              animate={{ x: 0, opacity: 1 }}
+                              transition={{ delay: idx * 0.05 }}
+                              key={item.id || idx} 
+                              className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-emerald-200 transition-all"
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className={`h-12 w-12 rounded-2xl flex items-center justify-center font-black text-lg shadow-sm ${
+                                  item.status === "Present" ? "bg-emerald-50 text-emerald-600" :
+                                  item.status === "Pending" ? "bg-amber-50 text-amber-600" :
+                                  "bg-rose-50 text-rose-600"
+                                }`}>
+                                  {toBengaliDigits(dateObj.getDate())}
+                                </div>
+                                <div>
+                                  <p className="font-black text-emerald-950 text-sm">{dateObj.toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{dateObj.toLocaleDateString('bn-BD', { weekday: 'long' })}</p>
+                                </div>
+                              </div>
+                              <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-2 border ${
+                                item.status === "Present" ? "bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-600/20" :
+                                item.status === "Pending" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                "bg-rose-50 text-rose-700 border-rose-200"
+                              }`}>
+                                {item.status === "Present" ? "উপস্থিত" : item.status === "Pending" ? "অপেক্ষমান" : "অনুপস্থিত"}
+                                {item.status === "Present" && <CheckCircle2 className="h-3 w-3" />}
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    );
+                  }}
+                />
+              </div>
+              
+              <div className="mt-6 pt-6 border-t border-slate-100 flex justify-center">
+                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">End of History</p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Notice Detail Modal */}
       <AnimatePresence>
@@ -1131,8 +1451,9 @@ const AdminAttendanceSection = ({ toBengaliDigits }: any) => {
   );
 };
 
-export default function DashboardSection({ user }: DashboardSectionProps) {
+export default function DashboardSection({ user, setUser, setActiveTab }: DashboardSectionProps) {
   const [activeAdminSubTab, setActiveAdminSubTab] = useState<string>("dashboard");
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [selectedClass, setSelectedClass] = useState<string>("All");
   
   // Student Dashboard state variables
@@ -6144,6 +6465,78 @@ export default function DashboardSection({ user }: DashboardSectionProps) {
           </div>
         </div>
       )}
+
+      {/* Logout Loading Modal */}
+      {isLoggingOut && (
+        <div className="fixed inset-0 bg-emerald-950/90 backdrop-blur-xl flex items-center justify-center p-4 z-[110] font-alinur">
+          <motion.div 
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="flex flex-col items-center gap-6"
+          >
+            <div className="relative">
+              <motion.div 
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                className="h-20 w-20 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full shadow-[0_0_30px_rgba(16,185,129,0.3)]"
+              ></motion.div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <LogOut className="h-8 w-8 text-white animate-pulse" />
+              </div>
+            </div>
+            <div className="text-center space-y-2">
+              <h3 className="text-2xl font-black text-white tracking-widest uppercase">লগআউট হচ্ছে...</h3>
+              <p className="text-emerald-400 text-xs font-bold animate-pulse">অনুগ্রহ করে কিছুক্ষণ অপেক্ষা করুন</p>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Logout Confirmation Modal */}
+      <AnimatePresence>
+        {showLogoutConfirm && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 z-[100] font-alinur">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white border-2 border-emerald-600 rounded-[32px] p-8 max-w-sm w-full text-center shadow-2xl space-y-6"
+            >
+              <div className="flex justify-center">
+                <div className="h-20 w-20 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 shadow-inner">
+                  <LogOut className="h-10 w-10" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-emerald-950">লগআউট কনফার্মেশন</h3>
+                <p className="text-sm text-gray-500 font-bold">আপনি কি নিশ্চিতভাবে লগআউট করতে চান?</p>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="flex-1 px-6 py-3 border-2 border-slate-200 text-slate-600 font-black text-sm rounded-2xl hover:bg-slate-50 transition-all cursor-pointer"
+                >
+                  না
+                </button>
+                <button
+                  onClick={() => {
+                    setShowLogoutConfirm(false);
+                    setIsLoggingOut(true);
+                    setTimeout(() => {
+                      setUser(null);
+                      localStorage.removeItem("sndm_user");
+                      setActiveTab("home");
+                    }, 2000);
+                  }}
+                  className="flex-1 px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white font-black text-sm rounded-2xl shadow-lg shadow-rose-200 transition-all cursor-pointer"
+                >
+                  হ্যাঁ
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Madrasah Logo Upload Success Modal Dialog */}
       {showLogoSuccessPopup && (

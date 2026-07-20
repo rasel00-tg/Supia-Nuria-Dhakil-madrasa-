@@ -45,6 +45,9 @@ export default function App() {
   const [jdcUploading, setJdcUploading] = useState<boolean>(false);
   const [imranUploading, setImranUploading] = useState<boolean>(false);
 
+  // Session Countdown state (1200 seconds = 20 minutes)
+  const [sessionTimeLeft, setSessionTimeLeft] = useState<number>(1200);
+
   // Connectivity States
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [showOfflineModal, setShowOfflineModal] = useState<boolean>(!navigator.onLine);
@@ -268,6 +271,41 @@ export default function App() {
     setActiveTab("home");
   };
 
+  // Auto-logout countdown logic
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    
+    if (user && activeTab !== "dashboard" && activeTab !== "login") {
+      timer = setInterval(() => {
+        setSessionTimeLeft((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            // Handle auto logout
+            setUser(null);
+            localStorage.removeItem("sndm_user");
+            setActiveTab("login");
+            return 1200;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      // Reset timer when user is on dashboard or logged out
+      setSessionTimeLeft(1200);
+    }
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [user, activeTab]);
+
+  // Format time (MM:SS)
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
   // Back button navigation control for "teachers", "sodosso_form", "staff", "committee", "notice_corner" and "committee_member_detail" tabs
   // Emulates PopScope/WillPopScope in a React SPA.
   // When activeTab changes, we push a state into history.
@@ -299,8 +337,55 @@ export default function App() {
       {/* Global Loading Popup Overlay */}
       <GlobalLoadingPopup />
 
-      {/* PWA App Install Prompt Loop */}
-      <InstallPrompt />
+      {/* PWA App Install Prompt Loop - Hidden when logged in */}
+      {!user && <InstallPrompt />}
+
+      {/* Session Reminder Banner */}
+      <AnimatePresence>
+        {user && activeTab !== "dashboard" && activeTab !== "login" && (
+          <motion.div
+            initial={{ y: -70, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -70, opacity: 0 }}
+            className="sticky top-0 z-[100] bg-emerald-950 text-white py-3 px-4 shadow-2xl border-b border-amber-500/40 flex flex-col md:flex-row items-center justify-center gap-3 font-alinur text-center md:text-left backdrop-blur-md bg-opacity-95"
+          >
+            <div className="flex items-center gap-2 text-[11px] md:text-[13px]">
+              <div className="h-2 w-2 bg-rose-500 rounded-full animate-pulse shadow-[0_0_8px_#f43f5e]"></div>
+              <p className="font-bold leading-relaxed">
+                প্রিয় <span className="text-amber-400">{user.name}</span>, আপনি বর্তমানে <span className="text-emerald-400">{user.role === 'teacher' ? 'শিক্ষক' : 'শিক্ষার্থী'}</span> লগইন অবস্থায় আছেন। আপনি ২০ মিনিটের মধ্যে ড্যাশবোর্ডে ফিরে না গেলে একাউন্ট লগআউট হয়ে যাবে।
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5 bg-emerald-900/50 px-3 py-1.5 rounded-full border border-white/10 shadow-inner min-w-[70px] justify-center">
+                <Clock className="h-3 w-3 text-amber-400" />
+                <span className="text-[11px] font-black font-mono tracking-tighter text-amber-400">
+                  {formatTime(sessionTimeLeft)}
+                </span>
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  setActiveTab("dashboard");
+                  setSessionTimeLeft(1200);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="bg-gradient-to-r from-orange-400 to-orange-600 text-white px-5 py-2 rounded-full text-[10px] md:text-[11px] font-black shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 transition-all flex items-center gap-2 group cursor-pointer border border-white/10"
+              >
+                ড্যাশবোর্ডে ফিরে যান
+                <motion.span
+                  animate={{ x: [0, 4, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                >
+                  ➜
+                </motion.span>
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Sticky Top Navbar - Hidden on Login Page */}
       {activeTab !== "login" && (
@@ -377,7 +462,7 @@ export default function App() {
               <LoginSection onLoginSuccess={handleLoginSuccess} logoUrl={logoUrl} />
             )}
             {activeTab === "dashboard" && user && (
-              <DashboardSection user={user} />
+              <DashboardSection user={user} setUser={setUser} setActiveTab={setActiveTab} />
             )}
           </motion.div>
         </AnimatePresence>
