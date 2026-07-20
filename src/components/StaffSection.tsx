@@ -8,7 +8,8 @@ interface StaffSectionProps {
 }
 
 // Helper to convert English numbers to Bengali numerals
-const convertToBengaliDigits = (num: number | string): string => {
+const convertToBengaliDigits = (num: number | string | undefined | null): string => {
+  if (num === undefined || num === null) return "";
   const englishToBengali: Record<string, string> = {
     '0': '০', '1': '১', '2': '২', '3': '৩', '4': '৪',
     '5': '৫', '6': '৬', '7': '৭', '8': '৮', '9': '৯'

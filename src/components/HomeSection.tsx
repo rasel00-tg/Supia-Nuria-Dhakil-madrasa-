@@ -602,10 +602,11 @@ export default function HomeSection({
     }
   };
 
-  const toEnglishDigits = (str: string) => {
-    if (!str) return "";
+  const toEnglishDigits = (str: string | undefined | null) => {
+    if (str === undefined || str === null) return "";
+    const strVal = str.toString();
     const banglaDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
-    return str.replace(/[০-৯]/g, (w) => banglaDigits.indexOf(w).toString());
+    return strVal.replace(/[০-৯]/g, (w) => banglaDigits.indexOf(w).toString());
   };
 
   return (

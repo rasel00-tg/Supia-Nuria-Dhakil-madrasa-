@@ -91,9 +91,9 @@ export default function RoutineSection() {
     }
   };
 
-  const toBengaliDigits = (numStr: string) => {
-    if (!numStr) return "";
-    return numStr.replace(/[0-9]/g, (d) => "০১২৩৪৫৬৭৮৯"[parseInt(d)]);
+  const toBengaliDigits = (numStr: string | number | undefined | null) => {
+    if (numStr === undefined || numStr === null) return "";
+    return numStr.toString().replace(/[0-9]/g, (d) => "০১২৩৪৫৬৭৮৯"[parseInt(d)]);
   };
 
   const getBengaliFormattedDate = (isoString: string) => {

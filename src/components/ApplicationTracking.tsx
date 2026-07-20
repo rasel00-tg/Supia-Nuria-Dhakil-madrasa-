@@ -6,12 +6,14 @@ import { motion, AnimatePresence } from "motion/react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
-const convertBengaliToEnglishDigits = (str: string): string => {
+const convertBengaliToEnglishDigits = (str: string | undefined | null): string => {
+  if (str === undefined || str === null) return "";
   const banglaDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
-  return str.replace(/[০-৯]/g, (match) => banglaDigits.indexOf(match).toString());
+  return str.toString().replace(/[০-৯]/g, (match) => banglaDigits.indexOf(match).toString());
 };
 
-const toBengaliDigits = (numStr: string | number): string => {
+const toBengaliDigits = (numStr: string | number | undefined | null): string => {
+  if (numStr === undefined || numStr === null) return "";
   const banglaDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
   return numStr.toString().replace(/[0-9]/g, (match) => banglaDigits[parseInt(match, 10)]);
 };

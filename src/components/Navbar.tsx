@@ -139,8 +139,8 @@ export default function Navbar({
     <header id="main-header" className="sticky top-0 z-50 w-full bg-emerald-850 text-white shadow-md border-b-4 border-amber-500 select-none font-alinur">
       <div className="w-full px-2 py-3 flex items-center justify-between min-h-[56px] gap-3">
         
-        {/* Madrasa Logo & Title for Admin/Teacher/Login, or Scrolling Ticker for Guests/Students */}
-        {user?.role === "admin" || user?.role === "teacher" || activeTab === "login" ? (
+        {/* Madrasa Logo & Title for Admin/Teacher/Student/Login, or Scrolling Ticker for Guests */}
+        {user?.role === "admin" || user?.role === "teacher" || user?.role === "student" || activeTab === "login" ? (
           <div className="flex-1 flex items-center gap-3">
             <img 
               src={logoUrl || "/photo/logo.png"} 
@@ -154,7 +154,7 @@ export default function Navbar({
             <div>
               <h1 className="text-sm sm:text-base font-bold text-amber-400 font-serif leading-none">সুফিয়া নূরিয়া দাখিল মাদ্রাসা</h1>
               <p className="text-[10px] text-emerald-100 font-sans tracking-wide mt-1">
-                {user?.role === "admin" ? "এডমিন ম্যানেজমেন্ট ড্যাশবোর্ড কন্ট্রোল প্যানেল" : "শিক্ষক পোর্টাল ও ড্যাশবোর্ড সিস্টেম"}
+                {user?.role === "admin" ? "এডমিন ম্যানেজমেন্ট ড্যাশবোর্ড কন্ট্রোল প্যানেল" : user?.role === "student" ? "শিক্ষার্থী পোর্টাল ও ড্যাশবোর্ড" : "শিক্ষক পোর্টাল ও ড্যাশবোর্ড সিস্টেম"}
               </p>
             </div>
           </div>

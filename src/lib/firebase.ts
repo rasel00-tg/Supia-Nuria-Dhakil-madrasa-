@@ -183,52 +183,119 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 interface StreamBuilderProps<T> {
   stream: Query<DocumentData>;
   builder: (data: T[], loading: boolean, error: any) => ReactNode;
+  loadingNode?: ReactNode;
 }
 
-export function StreamBuilder<T>({ stream, builder }: StreamBuilderProps<T>) {
-  const [data, setData] = useState<T[]>([]);
-  const [loading, setLoading] = useState(true);
+// Global cache to store stream documents and avoid blank flashes on navigation or updates
+const streamCache = new Map<string, any>();
+
+function getQueryCacheKey(query: any): string {
+  if (!query) return "";
+  try {
+    const q = query._query || query;
+    const path = q.path?.toString() || "";
+    const filters = q.filters?.map((f: any) => {
+      const field = f.field?.toString() || f.fieldPath?.toString() || "";
+      const op = f.op || f.operator || "";
+      const val = f.value?.toString() || f.value?.localId || JSON.stringify(f.value || "");
+      return `${field}:${op}:${val}`;
+    }).join(",") || "";
+    const orders = q.explicitOrderBy?.map((o: any) => {
+      const field = o.field?.toString() || o.fieldPath?.toString() || "";
+      const dir = o.dir || o.direction || "";
+      return `${field}:${dir}`;
+    }).join(",") || "";
+    const limitVal = q.limit !== undefined ? q.limit : "";
+    return `${path}|filters:${filters}|orders:${orders}|limit:${limitVal}`;
+  } catch (e) {
+    return String(query.path || query.toString?.() || "");
+  }
+}
+
+export function StreamBuilder<T>({ stream, builder, loadingNode }: StreamBuilderProps<T>) {
+  const cacheKey = getQueryCacheKey(stream);
+
+  // Initialize with cached data if available for instant UI rendering without any flickers
+  const [data, setData] = useState<T[]>(() => {
+    if (cacheKey && streamCache.has(cacheKey)) {
+      return streamCache.get(cacheKey);
+    }
+    return [];
+  });
+
+  const [loading, setLoading] = useState(() => {
+    if (cacheKey && streamCache.has(cacheKey)) {
+      return false;
+    }
+    return true;
+  });
+
   const [error, setError] = useState<any>(null);
 
   useEffect(() => {
-    // Only reset loading if we don't have data yet or if it's the first run for this stream
-    setLoading(true);
-    loadingService.show();
+    let active = true;
+    const hasCache = cacheKey && streamCache.has(cacheKey);
+
+    if (!hasCache) {
+      setLoading(true);
+      loadingService.show();
+    }
+
     let hasDecremented = false;
 
     const unsubscribe = onSnapshot(
       stream,
       (snapshot) => {
+        if (!active) return;
         const items: T[] = [];
         snapshot.forEach((doc) => {
           items.push({ id: doc.id, ...doc.data() } as T);
         });
+
+        if (cacheKey) {
+          streamCache.set(cacheKey, items);
+        }
+
         setData(items);
         setLoading(false);
+
         if (!hasDecremented) {
           hasDecremented = true;
-          loadingService.hide();
+          if (!hasCache) {
+            loadingService.hide();
+          }
         }
       },
       (err) => {
+        if (!active) return;
         console.error("StreamBuilder Error:", err);
         setError(err);
         setLoading(false);
+
         if (!hasDecremented) {
           hasDecremented = true;
-          loadingService.hide();
+          if (!hasCache) {
+            loadingService.hide();
+          }
         }
       }
     );
 
     return () => {
+      active = false;
       unsubscribe();
       if (!hasDecremented) {
         hasDecremented = true;
-        loadingService.hide();
+        if (!hasCache) {
+          loadingService.hide();
+        }
       }
     };
-  }, [stream]);
+  }, [stream, cacheKey]);
+
+  if (loading && data.length === 0 && loadingNode) {
+    return React.createElement(React.Fragment, null, loadingNode);
+  }
 
   return React.createElement(React.Fragment, null, builder(data, loading, error));
 }

@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { collection, addDoc, query, where, getDocs, Timestamp, doc, setDoc } from "firebase/firestore";
 import { db, StreamBuilder, uploadFileToImgBB } from "../lib/firebase";
-import { FileText, Upload, CheckCircle, AlertCircle, X, ChevronDown, Download } from "lucide-react";
+import { checkDuplicatePhoneNumberGlobal, checkDuplicateEmailGlobal } from "../lib/validation";
+import { FileText, Upload, CheckCircle, AlertCircle, X, ChevronDown, Download, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
-const convertBengaliToEnglishDigits = (str: string): string => {
+const convertBengaliToEnglishDigits = (str: string | undefined | null): string => {
+  if (str === undefined || str === null) return "";
   const banglaDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
-  return str.replace(/[০-৯]/g, (match) => banglaDigits.indexOf(match).toString());
+  return str.toString().replace(/[০-৯]/g, (match) => banglaDigits.indexOf(match).toString());
 };
 
-const toBengaliDigits = (numStr: string | number): string => {
+const toBengaliDigits = (numStr: string | number | undefined | null): string => {
+  if (numStr === undefined || numStr === null) return "";
   const banglaDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
   return numStr.toString().replace(/[0-9]/g, (match) => banglaDigits[parseInt(match, 10)]);
 };
@@ -28,6 +31,9 @@ export default function AdmissionSection({ onFormStateChange, logoUrl }: { onFor
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  const [g1PhoneStatus, setG1PhoneStatus] = useState<{status: 'idle' | 'checking' | 'unique' | 'duplicate', duplicateInfo: any | null}>({status: 'idle', duplicateInfo: null});
+  const [g1EmailStatus, setG1EmailStatus] = useState<{status: 'idle' | 'checking' | 'unique' | 'duplicate', duplicateInfo: any | null}>({status: 'idle', duplicateInfo: null});
+
   const [popupMessage, setPopupMessage] = useState<{type: 'error' | 'success' | 'alert', text: string} | null>(null);
 
   const initialFormData = {
@@ -83,6 +89,42 @@ export default function AdmissionSection({ onFormStateChange, logoUrl }: { onFor
   const [formData, setFormData] = useState(initialFormData);
   const [submittedData, setSubmittedData] = useState<any>(null);
   const [acceptedRules, setAcceptedRules] = useState(false);
+
+  useEffect(() => {
+    if (!formData.g1Phone || formData.g1Phone.length < 11) {
+      setG1PhoneStatus({status: 'idle', duplicateInfo: null});
+      return;
+    }
+    const check = async () => {
+      setG1PhoneStatus({status: 'checking', duplicateInfo: null});
+      const duplicate = await checkDuplicatePhoneNumberGlobal(formData.g1Phone);
+      if (duplicate) {
+        setG1PhoneStatus({status: 'duplicate', duplicateInfo: duplicate});
+      } else {
+        setG1PhoneStatus({status: 'unique', duplicateInfo: null});
+      }
+    };
+    const timer = setTimeout(check, 500);
+    return () => clearTimeout(timer);
+  }, [formData.g1Phone]);
+
+  useEffect(() => {
+    if (!formData.g1Email || !formData.g1Email.includes("@")) {
+      setG1EmailStatus({status: 'idle', duplicateInfo: null});
+      return;
+    }
+    const check = async () => {
+      setG1EmailStatus({status: 'checking', duplicateInfo: null});
+      const duplicate = await checkDuplicateEmailGlobal(formData.g1Email);
+      if (duplicate) {
+        setG1EmailStatus({status: 'duplicate', duplicateInfo: duplicate});
+      } else {
+        setG1EmailStatus({status: 'unique', duplicateInfo: null});
+      }
+    };
+    const timer = setTimeout(check, 500);
+    return () => clearTimeout(timer);
+  }, [formData.g1Email]);
 
   const bannerConfigQuery = query(collection(db, "global_config"));
 
@@ -423,14 +465,25 @@ export default function AdmissionSection({ onFormStateChange, logoUrl }: { onFor
                       value={formData.g1Phone} 
                       onChange={e => handleInputChange("g1Phone", e.target.value)} 
                       className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur ${
-                        g1PhoneError ? "border-red-500 focus:ring-red-500" : "border-slate-300"
+                        g1PhoneError || g1PhoneStatus.status === 'duplicate' ? "border-red-500 focus:ring-red-500" : 
+                        g1PhoneStatus.status === 'unique' ? "border-emerald-500 focus:ring-emerald-500" : "border-slate-300"
                       }`}
                       style={{ fontFamily: 'Alinur Tatsama' }}
                       placeholder="মোবাইল নাম্বার" 
                     />
+                    <div className="absolute right-3 top-[10px]">
+                      {g1PhoneStatus.status === 'checking' && <div className="w-4 h-4 border-2 border-slate-200 border-t-emerald-500 rounded-full animate-spin"></div>}
+                      {g1PhoneStatus.status === 'unique' && <div className="w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center"><Check className="w-2 h-2 text-white" /></div>}
+                      {g1PhoneStatus.status === 'duplicate' && <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center"><X className="w-2 h-2 text-white" /></div>}
+                    </div>
                     {g1PhoneError && (
-                      <p className="text-red-500 text-xs font-bold mt-1" style={{ fontFamily: 'Alinur Tatsama' }}>
+                      <p className="text-red-500 text-[10px] font-bold mt-1" style={{ fontFamily: 'Alinur Tatsama' }}>
                         {g1PhoneError}
+                      </p>
+                    )}
+                    {g1PhoneStatus.status === 'duplicate' && (
+                      <p className="text-red-500 text-[10px] font-bold mt-1" style={{ fontFamily: 'Alinur Tatsama' }}>
+                        ⚠ এই নাম্বারটি ইতিমধ্যে <strong>{g1PhoneStatus.duplicateInfo?.name}</strong> এর নামে ব্যবহৃত হচ্ছে।
                       </p>
                     )}
                     <div className="text-right mt-1">
@@ -442,7 +495,29 @@ export default function AdmissionSection({ onFormStateChange, logoUrl }: { onFor
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">ইমেইল (ঐচ্ছিক)</label>
-                  <input type="email" value={formData.g1Email} onChange={e => handleInputChange("g1Email", e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur" style={{ fontFamily: 'Alinur Tatsama' }} placeholder="ইমেইল এড্রেস" />
+                  <div className="relative">
+                    <input 
+                      type="email" 
+                      value={formData.g1Email} 
+                      onChange={e => handleInputChange("g1Email", e.target.value)} 
+                      className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 font-alinur ${
+                        g1EmailStatus.status === 'duplicate' ? "border-red-500 focus:ring-red-500" : 
+                        g1EmailStatus.status === 'unique' ? "border-emerald-500 focus:ring-emerald-500" : "border-slate-300"
+                      }`} 
+                      style={{ fontFamily: 'Alinur Tatsama' }} 
+                      placeholder="ইমেইল এড্রেস" 
+                    />
+                    <div className="absolute right-3 top-[10px]">
+                      {g1EmailStatus.status === 'checking' && <div className="w-4 h-4 border-2 border-slate-200 border-t-emerald-500 rounded-full animate-spin"></div>}
+                      {g1EmailStatus.status === 'unique' && <div className="w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center"><Check className="w-2 h-2 text-white" /></div>}
+                      {g1EmailStatus.status === 'duplicate' && <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center"><X className="w-2 h-2 text-white" /></div>}
+                    </div>
+                  </div>
+                  {g1EmailStatus.status === 'duplicate' && (
+                    <p className="text-red-500 text-[10px] font-bold mt-1" style={{ fontFamily: 'Alinur Tatsama' }}>
+                      ⚠ এই ইমেইলটি ইতিমধ্যে <strong>{g1EmailStatus.duplicateInfo?.name}</strong> এর নামে ব্যবহৃত হচ্ছে।
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">এনআইডি নাম্বার *</label>
@@ -605,9 +680,9 @@ export default function AdmissionSection({ onFormStateChange, logoUrl }: { onFor
 
             <button 
               type="submit" 
-              disabled={!acceptedRules || !isFormPhoneValid || isSubmitting}
+              disabled={!acceptedRules || !isFormPhoneValid || isSubmitting || g1PhoneStatus.status === 'duplicate' || g1EmailStatus.status === 'duplicate'}
               className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all ${
-                acceptedRules && isFormPhoneValid && !isSubmitting
+                acceptedRules && isFormPhoneValid && !isSubmitting && g1PhoneStatus.status !== 'duplicate' && g1EmailStatus.status !== 'duplicate'
                   ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30" 
                   : "bg-slate-300 text-slate-500 cursor-not-allowed"
               }`}

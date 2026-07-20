@@ -1,22 +1,26 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, setDoc, getDocs, getDoc, serverTimestamp, where, limit } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType, uploadFileToImgBB, StreamBuilder } from "../lib/firebase";
+import { checkDuplicatePhoneNumberGlobal, checkUniqueLoginIdGlobal } from "../lib/validation";
 import { Teacher, SuccessStory, CommitteeMember, HonoredPerson, AdmissionForm, Routine, ContactMessage } from "../types";
-import { Trash2, Edit3, Plus, Check, X, CreditCard, Mail, UserPlus, Users, GraduationCap, Calendar, Award, MessageSquare, Heart, CheckCircle2, XCircle, Settings, Megaphone, ChevronDown, LayoutDashboard, Globe, Lock, ArrowLeft, CheckCircle, AlertCircle, AlertTriangle, CalendarCheck, CalendarRange, ClipboardList, Loader2, BookOpen, Home, Compass, HelpCircle, Send, Clock, LogOut, Activity, TrendingUp, History, Search, Menu } from "lucide-react";
+import { Trash2, Edit3, Plus, Check, X, CreditCard, Mail, UserPlus, Users, GraduationCap, Calendar, Award, MessageSquare, Heart, CheckCircle2, XCircle, Settings, Megaphone, ChevronDown, ChevronRight, LayoutDashboard, Globe, Lock, ArrowLeft, CheckCircle, AlertCircle, AlertTriangle, CalendarCheck, CalendarRange, ClipboardList, Loader2, BookOpen, Home, Compass, HelpCircle, Send, Clock, LogOut, Activity, TrendingUp, History, Search, Menu, Phone, MapPin, User } from "lucide-react";
 import PathdanUpdateForm from "./PathdanUpdateForm";
 import SodossoFormUpdateForm from "./SodossoFormUpdateForm";
 import KormochariUpdateForm from "./KormochariUpdateForm";
 import HafizgonUpdateForm from "./HafizgonUpdateForm";
 import TeacherManagement from "./TeacherManagement";
 import AdminControlSection from "./AdminControlSection";
+import AdminHomeworkSubjectManagement from "./AdminHomeworkSubjectManagement";
 import { motion, AnimatePresence } from "motion/react";
 
-const toBengaliDigits = (numStr: string | number): string => {
+const toBengaliDigits = (numStr: string | number | undefined | null): string => {
+  if (numStr === undefined || numStr === null) return "";
   const banglaDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
   return numStr.toString().replace(/[0-9]/g, (match) => banglaDigits[parseInt(match, 10)]);
 };
 
-const toEnglishDigits = (numStr: string | number): string => {
+const toEnglishDigits = (numStr: string | number | undefined | null): string => {
+  if (numStr === undefined || numStr === null) return "";
   const banglaToEnglish: { [key: string]: string } = {
     "০": "0", "১": "1", "২": "2", "৩": "3", "৪": "4", "৫": "5", "৬": "6", "৭": "7", "৮": "8", "৯": "9"
   };
@@ -62,6 +66,76 @@ const StudentDashboardInner = ({
 }: any) => {
   const today = new Date();
   
+  // State to load teachers and handle gender suffix automatically
+  const [teachersList, setTeachersList] = useState<any[]>([]);
+  const [homeworkSubTab, setHomeworkSubTab] = useState<"today" | "pending">("today");
+  const [selectedStudySubject, setSelectedStudySubject] = useState<string>("");
+  const [showSubjectListDropdown, setShowSubjectListDropdown] = useState<boolean>(false);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "teachers"), (snapshot) => {
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setTeachersList(list);
+    }, (error) => {
+      console.error("Error loading teachers for student display suffix:", error);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const getTeacherDisplayName = (name: string) => {
+    if (!name) return "মাদ্রাসা শিক্ষক";
+    const nameLower = name.trim().toLowerCase();
+    const matchedTeacher = teachersList.find(t => t.name?.trim().toLowerCase() === nameLower);
+    const gender = matchedTeacher?.gender || "পুরুষ";
+    const isFemale = gender === "নারী" || gender === "মহিলা" || 
+                     nameLower.includes("ম্যাডাম") || 
+                     nameLower.includes("খাতুন") || 
+                     nameLower.includes("বেগম") || 
+                     nameLower.includes("মোসাম্মৎ") || 
+                     nameLower.includes("মোসাঃ") ||
+                     nameLower.includes("মিস") || 
+                     nameLower.includes("মিজ");
+    if (isFemale) {
+      if (name.endsWith("ম্যাডাম")) return name;
+      return `${name} ম্যাডাম`;
+    } else {
+      if (name.endsWith("স্যার")) return name;
+      return `${name} স্যার`;
+    }
+  };
+
+  const getLastLoginStatus = () => {
+    let lastLoginTime = null;
+    try {
+      const savedUserStr = localStorage.getItem("sndm_user");
+      if (savedUserStr) {
+        const savedUser = JSON.parse(savedUserStr);
+        if (savedUser && savedUser.lastLogin) {
+          lastLoginTime = new Date(savedUser.lastLogin);
+        }
+      }
+    } catch (e) {
+      console.error("Error reading last login info:", e);
+    }
+    
+    if (!lastLoginTime && user?.lastLogin) {
+      lastLoginTime = new Date(user.lastLogin);
+    }
+    
+    if (!lastLoginTime) {
+      lastLoginTime = new Date();
+    }
+    
+    return lastLoginTime.toLocaleString('bn-BD', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
   // Memoize student-specific queries to prevent infinite re-listening loops
   const attendanceQuery = useMemo(() => {
     if (!studentRoll) return null;
@@ -129,66 +203,6 @@ const StudentDashboardInner = ({
         </div>
       </div>
 
-      {/* টপ মোস্ট প্রোফাইল কার্ড (Top-most Profile Card) - Overlapping */}
-      <div className="px-6 -mt-16 relative z-10 max-w-lg mx-auto">
-        <motion.div 
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="bg-white rounded-[32px] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-white flex flex-col items-center"
-        >
-          <div className="relative group">
-            <div className="absolute inset-0 bg-emerald-500 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
-            <div className="h-28 w-28 rounded-full border-4 border-white shadow-xl overflow-hidden relative z-10">
-              <img 
-                src={studentPhoto} 
-                alt="Profile" 
-                className="h-full w-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-            <div className="absolute -bottom-1 -right-1 h-8 w-8 bg-amber-500 rounded-full border-2 border-white flex items-center justify-center shadow-md z-20">
-              <Award className="h-4 w-4 text-white" />
-            </div>
-          </div>
-
-          <div className="mt-4 flex items-center gap-3">
-            <div className="px-5 py-1.5 bg-emerald-50 rounded-2xl border border-emerald-100">
-              <span className="text-xs text-slate-400 font-bold uppercase tracking-widest block mb-0.5">রোল নাম্বার</span>
-              <span className="text-xl font-black text-emerald-900 block leading-none">{toBengaliDigits(studentRoll)}</span>
-            </div>
-            <div className="h-10 w-[1px] bg-slate-100"></div>
-            <div className="px-5 py-1.5 bg-amber-50 rounded-2xl border border-amber-100">
-              <span className="text-xs text-slate-400 font-bold uppercase tracking-widest block mb-0.5">র‍্যাংক/অবস্থান</span>
-              <span className="text-xl font-black text-amber-700 block leading-none">সাথী</span>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* কাস্টম ট্যাপ নেভিগেশন (Custom Rounded Tab Navigation) */}
-      <div className="px-4 mt-8 max-w-lg mx-auto">
-        <div className="bg-white/80 backdrop-blur-md p-1.5 rounded-[24px] shadow-sm border border-slate-100 flex items-center gap-1">
-          {[
-            { id: "home", label: "হোম", icon: Home },
-            { id: "homework", label: "পড়া", icon: BookOpen },
-            { id: "features", label: "ফিচার", icon: Compass },
-            { id: "support", label: "সাপোর্ট", icon: HelpCircle }
-          ].map((tab: any) => (
-            <button
-              key={tab.id}
-              onClick={() => setStudentActiveTab(tab.id as any)}
-              className={`flex-1 flex flex-col items-center py-2.5 rounded-[18px] transition-all relative ${studentActiveTab === tab.id ? "bg-emerald-900 text-white shadow-lg shadow-emerald-900/20" : "text-slate-400 hover:bg-emerald-50/50"}`}
-            >
-              <tab.icon className={`h-5 w-5 mb-1 ${studentActiveTab === tab.id ? "text-amber-400" : ""}`} />
-              <span className="text-[10px] font-black tracking-tight" style={{ fontFamily: 'Alinur Tatsama' }}>{tab.label}</span>
-              {studentActiveTab === tab.id && (
-                <motion.div layoutId="activeTab" className="absolute -bottom-1 w-1 h-1 bg-amber-400 rounded-full" />
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Main Sub-view Content based on studentActiveTab */}
       <div className="px-6 mt-8 max-w-lg mx-auto overflow-hidden">
         <AnimatePresence mode="wait">
@@ -201,6 +215,69 @@ const StudentDashboardInner = ({
               className="space-y-6"
               style={{ fontFamily: 'Alinur Tatsama' }}
             >
+              {/* টপ মোস্ট প্রোফাইল  কার্ড (Top-most Profile Card) - Overlapping */}
+              <div className="relative z-10 -mt-24 mb-6">
+                <motion.div 
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  className="bg-white rounded-[32px] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-white flex flex-col items-center"
+                >
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-emerald-500 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                    <div className="h-28 w-28 rounded-full border-4 border-white shadow-xl overflow-hidden relative z-10">
+                      <img 
+                        src={studentPhoto} 
+                        alt="Profile" 
+                        className="h-full w-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 h-8 w-8 bg-amber-500 rounded-full border-2 border-white flex items-center justify-center shadow-md z-20">
+                      <Award className="h-4 w-4 text-white" />
+                    </div>
+                  </div>
+
+                  <div className="mt-3 text-center">
+                    <span className="text-xs text-slate-400 font-bold tracking-widest block mb-0.5">রোল নম্বর</span>
+                    <h3 className="text-2xl font-black text-emerald-950 leading-none">{toBengaliDigits(studentRoll)}</h3>
+                  </div>
+
+                  {/* বিস্তারিত প্রোফাইল সেকশন */}
+                  <div className="w-full mt-6 pt-5 border-t border-slate-100 space-y-3.5 text-right font-serif">
+                    <h4 className="font-black text-emerald-900 text-sm mb-3 text-center" style={{ fontFamily: 'Alinur Tatsama' }}>বিস্তারিত প্রোফাইল</h4>
+                    
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-bold text-slate-700">{loggedInStudent?.g1Name || loggedInStudent?.father_name || "মো: আবদুর রহমান"}</span>
+                      <span className="text-slate-400 font-bold flex items-center gap-1"><User className="h-3.5 w-3.5 text-slate-300" /> অভিভাবকের নাম:</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-bold text-slate-700">{toBengaliDigits(loggedInStudent?.g1Phone || loggedInStudent?.phone || "০১৭১২৩৪৫৬৭৮")}</span>
+                      <span className="text-slate-400 font-bold flex items-center gap-1"><Phone className="h-3.5 w-3.5 text-slate-300" /> অভিভাবকের মোবাইল:</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100">{loggedInStudent?.bloodGroup || "O+"}</span>
+                      <span className="text-slate-400 font-bold flex items-center gap-1"><Heart className="h-3.5 w-3.5 text-rose-300" /> রক্তের গ্রুপ:</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-start text-xs gap-4">
+                      <span className="font-bold text-slate-700 text-right max-w-[200px] leading-relaxed">
+                        {loggedInStudent?.studentPermanentAddress || loggedInStudent?.permanentAddress || "মাদরাসা কোয়ার্টার, ফেনী"}
+                      </span>
+                      <span className="text-slate-400 font-bold flex items-center gap-1 shrink-0"><MapPin className="h-3.5 w-3.5 text-slate-300" /> স্থায়ী ঠিকানা:</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-bold text-emerald-700">
+                        {getLastLoginStatus()}
+                      </span>
+                      <span className="text-slate-400 font-bold flex items-center gap-1"><Clock className="h-3.5 w-3.5 text-emerald-300" /> সর্বশেষ লগইন স্ট্যাটাস:</span>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+
               {/* ড্যাশবোর্ড ট্র্যাকিং মডিউল (Academic Tracking Modules) */}
               <div className="grid grid-cols-1 gap-4">
                 {/* আজকের হাজিরা ও মাসিক পারসেন্টেজ (Combined Stream for Attendance) */}
@@ -263,7 +340,7 @@ const StudentDashboardInner = ({
                   <StreamBuilder
                     stream={resultsQuery}
                     builder={(results: any[]) => {
-                      const latestResult = results[0] || { gpa: "৪.৮৫", grade: "A" }; // Default fallback
+                      const latestResult = results[0] || { examType: "বার্ষিক পরীক্ষা", year: "২০২৬", gpa: "৪.৮৫", grade: "A" };
                       return (
                         <motion.div 
                           initial={{ opacity: 0, y: 20 }}
@@ -278,7 +355,7 @@ const StudentDashboardInner = ({
                             </div>
                             <div>
                               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5" style={{ fontFamily: 'Alinur Tatsama' }}>সর্বশেষ রেজাল্ট স্ট্যাটাস</p>
-                              <h4 className="text-lg font-black text-emerald-950" style={{ fontFamily: 'Alinur Tatsama' }}>{latestResult.examType || "বার্ষিক পরীক্ষা"} - {toBengaliDigits(latestResult.year || "২০২৬")}</h4>
+                              <h4 className="text-lg font-black text-emerald-950" style={{ fontFamily: 'Alinur Tatsama' }}>{latestResult.examType} - {toBengaliDigits(latestResult.year)}</h4>
                             </div>
                           </div>
                           
@@ -292,8 +369,6 @@ const StudentDashboardInner = ({
                   />
                 )}
               </div>
-
-              {/* Additional cards removed as per directive */}
             </motion.div>
           )}
 
@@ -304,7 +379,32 @@ const StudentDashboardInner = ({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
               style={{ fontFamily: 'Alinur Tatsama' }}
+              className="space-y-4"
             >
+              {/* পড়া সাব-ট্যাবস */}
+              <div className="flex bg-slate-100 p-1 rounded-2xl mb-4">
+                <button
+                  onClick={() => setHomeworkSubTab("today")}
+                  className={`flex-1 py-3 text-sm font-black rounded-xl transition-all ${
+                    homeworkSubTab === "today" 
+                      ? "bg-white text-emerald-900 shadow-sm" 
+                      : "text-slate-500 hover:text-slate-850"
+                  }`}
+                >
+                  আজকের হোমওয়ার্ক
+                </button>
+                <button
+                  onClick={() => setHomeworkSubTab("pending")}
+                  className={`flex-1 py-3 text-sm font-black rounded-xl transition-all ${
+                    homeworkSubTab === "pending" 
+                      ? "bg-white text-emerald-900 shadow-sm" 
+                      : "text-slate-500 hover:text-slate-850"
+                  }`}
+                >
+                  বাকি হোমওয়ার্ক
+                </button>
+              </div>
+
               {/* Real-time Homework stream builder */}
               <StreamBuilder<any>
                 stream={homeworkQuery}
@@ -313,76 +413,233 @@ const StudentDashboardInner = ({
                     return (
                       <div className="text-center py-12" style={{ fontFamily: 'Alinur Tatsama' }}>
                         <Loader2 className="h-8 w-8 text-emerald-800 animate-spin mx-auto" />
-                        <p className="text-sm text-gray-500 mt-2">হোমওয়ার্ক লোড হচ্ছে...</p>
+                        <p className="text-sm text-gray-500 mt-2 font-bold">হোমওয়ার্ক লোড হচ্ছে...</p>
                       </div>
                     );
                   }
 
+                  // Filter homeworks for current student class
                   const classHomework = homeworkList.filter((hw: any) => 
                     hw.className === studentClass || hw.class === studentClass || !hw.className
                   );
 
-                  // Grouping homework by subject
-                  const groupedHomework = classHomework.reduce((acc: any, hw: any) => {
-                    const subject = hw.subject || "সাধারণ বিষয়";
-                    if (!acc[subject]) acc[subject] = [];
-                    acc[subject].push(hw);
-                    return acc;
-                  }, {});
+                  const todayStr = new Date().toISOString().split('T')[0];
+                  const isToday = (date: Date) => {
+                    const todayObj = new Date();
+                    return date.getFullYear() === todayObj.getFullYear() &&
+                           date.getMonth() === todayObj.getMonth() &&
+                           date.getDate() === todayObj.getDate();
+                  };
 
-                  const subjects = Object.keys(groupedHomework).sort();
+                  // TODAY'S HOMEWORK: Given today
+                  const todaysHomeworks = classHomework.filter(hw => {
+                    if (!hw.createdAt) return false;
+                    const createdDate = hw.createdAt.toDate ? hw.createdAt.toDate() : new Date(hw.createdAt);
+                    return isToday(createdDate);
+                  });
 
-                  return (
-                    <div className="space-y-6" style={{ fontFamily: 'Alinur Tatsama' }}>
-                      <div className="flex items-center gap-3 px-1">
-                        <div className="h-10 w-10 bg-emerald-800 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-900/20">
-                          <BookOpen className="h-6 w-6" />
-                        </div>
-                        <h3 className="text-2xl font-black text-emerald-950" style={{ fontFamily: 'Alinur Tatsama' }}>📚 আজকের হোমওয়ার্ক</h3>
-                      </div>
+                  // PENDING HOMEWORK: Given before today, not expired yet or not completed
+                  const pendingHomeworks = classHomework.filter(hw => {
+                    if (!hw.createdAt) return false;
+                    const createdDate = hw.createdAt.toDate ? hw.createdAt.toDate() : new Date(hw.createdAt);
+                    const isGivenBeforeToday = !isToday(createdDate);
+                    const isNotExpired = hw.dueDate ? (hw.dueDate >= todayStr) : true;
+                    const isNotCompleted = hw.status !== "Completed";
+                    return isGivenBeforeToday && (isNotExpired || isNotCompleted);
+                  });
 
-                      {subjects.length === 0 ? (
-                        <div className="bg-white rounded-3xl p-10 border border-slate-100 shadow-sm text-center space-y-4">
-                          <div className="bg-emerald-50 h-20 w-20 rounded-full flex items-center justify-center mx-auto border border-emerald-100">
-                            <ClipboardList className="h-10 w-10 text-emerald-700" />
+                  if (homeworkSubTab === "today") {
+                    const availableSubjects = Array.from(new Set(todaysHomeworks.map((h: any) => h.subject))).sort() as string[];
+                    const currentSubject = availableSubjects.includes(selectedStudySubject) 
+                      ? selectedStudySubject 
+                      : (availableSubjects[0] || "");
+
+                    return (
+                      <div className="space-y-4" style={{ fontFamily: 'Alinur Tatsama' }}>
+                        {/* Digital Count Badge */}
+                        <div 
+                          onClick={() => {
+                            if (todaysHomeworks.length > 0) {
+                              setShowSubjectListDropdown(!showSubjectListDropdown);
+                            }
+                          }}
+                          className="bg-emerald-900 text-amber-400 font-black text-center py-4 px-6 rounded-3xl shadow-lg border border-emerald-800 cursor-pointer hover:bg-emerald-950 transition-all flex items-center justify-between gap-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">📊</span>
+                            <span className="text-base font-bold">আজকের মোট হোমওয়ার্ক: {toBengaliDigits(todaysHomeworks.length)}টি</span>
                           </div>
-                          <h4 className="font-bold text-xl text-slate-800" style={{ fontFamily: 'Alinur Tatsama' }}>কোনো হোমওয়ার্ক পাওয়া যায়নি</h4>
-                          <p className="text-sm text-slate-500 max-w-xs mx-auto" style={{ fontFamily: 'Alinur Tatsama' }}>
-                            আপনার শ্রেণী ({studentClass}) এর জন্য এই মুহূর্তে কোনো সচল হোমওয়ার্ক দেওয়া নেই।
-                          </p>
+                          {todaysHomeworks.length > 0 && (
+                            <ChevronDown className={`h-5 w-5 text-amber-400 transition-transform duration-300 ${showSubjectListDropdown ? "rotate-180" : ""}`} />
+                          )}
                         </div>
-                      ) : (
-                        <div className="grid gap-3">
-                          {subjects.map((subject, idx) => (
-                            <motion.button
-                              key={subject}
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: idx * 0.05 }}
-                              onClick={() => {
-                                setSelectedHomework({
-                                  subject: subject,
-                                  tasks: groupedHomework[subject]
-                                });
-                                setShowHomeworkDetailModal(true);
-                              }}
-                              className="w-full bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_30px_rgba(0,0,0,0.06)] transition-all flex items-center justify-between group cursor-pointer"
-                            >
-                              <div className="flex items-center gap-4">
-                                <div className="h-12 w-12 bg-emerald-50 text-emerald-700 rounded-xl flex items-center justify-center border border-emerald-100 group-hover:bg-emerald-600 group-hover:text-white transition-all">
-                                  <TrendingUp className="h-6 w-6" />
-                                </div>
-                                <h4 className="font-black text-lg text-emerald-950 group-hover:text-emerald-800" style={{ fontFamily: 'Alinur Tatsama' }}>{subject}</h4>
+
+                        {/* Dropdown list of subjects */}
+                        {showSubjectListDropdown && todaysHomeworks.length > 0 && (
+                          <motion.div 
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            className="bg-white rounded-2xl border border-slate-100 shadow-xl p-3 grid grid-cols-2 gap-2"
+                          >
+                            {todaysHomeworks.map((hw: any, idx: number) => (
+                              <button
+                                key={hw.id || idx}
+                                onClick={() => {
+                                  setSelectedStudySubject(hw.subject);
+                                  setShowSubjectListDropdown(false);
+                                }}
+                                className={`p-2.5 rounded-xl text-xs font-black transition-all border ${
+                                  currentSubject === hw.subject 
+                                    ? "bg-emerald-800 text-amber-400 border-emerald-800" 
+                                    : "bg-slate-50 text-slate-700 border-transparent hover:bg-slate-100"
+                                }`}
+                              >
+                                📖 {hw.subject}
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+
+                        {todaysHomeworks.length === 0 ? (
+                          <div className="bg-white rounded-3xl p-10 border border-slate-100 shadow-sm text-center space-y-4 mt-2">
+                            <div className="bg-emerald-50 h-20 w-20 rounded-full flex items-center justify-center mx-auto border border-emerald-100">
+                              <ClipboardList className="h-10 w-10 text-emerald-700" />
+                            </div>
+                            <h4 className="font-bold text-xl text-slate-800" style={{ fontFamily: 'Alinur Tatsama' }}>কোনো হোমওয়ার্ক পাওয়া যায়নি</h4>
+                            <p className="text-sm text-slate-500 max-w-xs mx-auto" style={{ fontFamily: 'Alinur Tatsama' }}>
+                              আপনার শ্রেণী ({studentClass}) এর জন্য আজ কোনো নতুন হোমওয়ার্ক দেওয়া হয়নি।
+                            </p>
+                          </div>
+                        ) : (
+                          <>
+                            {/* Subject selector Tabs */}
+                            <div className="mt-4">
+                              <span className="text-[11px] font-black text-slate-400 block mb-2 uppercase">বিষয় ভিত্তিক ফিল্টার:</span>
+                              <div className="flex flex-wrap gap-2">
+                                {availableSubjects.map((subj: string) => (
+                                  <button
+                                    key={subj}
+                                    onClick={() => setSelectedStudySubject(subj)}
+                                    className={`px-4 py-2 rounded-2xl text-xs font-black transition-all border ${
+                                      currentSubject === subj 
+                                        ? "bg-emerald-800 text-amber-400 border-emerald-800 shadow-md" 
+                                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                                    }`}
+                                  >
+                                    {subj}
+                                  </button>
+                                ))}
                               </div>
-                              <div className="bg-amber-50 text-amber-700 px-4 py-1.5 rounded-full border border-amber-100 font-black text-sm" style={{ fontFamily: 'Alinur Tatsama' }}>
-                                {toBengaliDigits(groupedHomework[subject].length)}টি হোমওয়ার্ক
-                              </div>
-                            </motion.button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
+                            </div>
+
+                            {/* Detailed Homework view */}
+                            <div className="space-y-4 mt-2">
+                              {todaysHomeworks.filter(h => h.subject === currentSubject).map((hw: any, index: number) => {
+                                const pubDate = hw.createdAt ? (hw.createdAt.toDate ? hw.createdAt.toDate() : new Date(hw.createdAt)) : null;
+                                const formattedPubDate = pubDate ? pubDate.toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' }) : "আজ";
+                                return (
+                                  <motion.div
+                                    key={hw.id || index}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.02)] space-y-4"
+                                  >
+                                    <div className="flex items-center justify-between border-b border-slate-50 pb-3">
+                                      <div>
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">বিষয়</span>
+                                        <h4 className="font-black text-emerald-950 text-base">{hw.subject}</h4>
+                                      </div>
+                                      <div className="text-right">
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">শেষ তারিখ</span>
+                                        <span className="text-xs font-black text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-100">
+                                          {toBengaliDigits(hw.dueDate)}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4 text-xs font-bold">
+                                      <div>
+                                        <span className="text-[10px] text-slate-400 font-bold block mb-0.5">প্রকাশের তারিখ:</span>
+                                        <span className="text-slate-700">{toBengaliDigits(formattedPubDate)}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-[10px] text-slate-400 font-bold block mb-0.5">শিক্ষক:</span>
+                                        <span className="text-emerald-800">{getTeacherDisplayName(hw.teacherName)}</span>
+                                      </div>
+                                    </div>
+
+                                    <div className="space-y-1 pt-1">
+                                      <span className="text-[10px] text-slate-400 font-bold block">পাঠের শিরোনাম:</span>
+                                      <p className="font-black text-slate-850 text-sm">{hw.headline}</p>
+                                    </div>
+
+                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-1.5">
+                                      <span className="text-[10px] text-slate-400 font-bold block">হোমওয়ার্ক বিবরণ:</span>
+                                      <p className="text-xs text-slate-600 leading-relaxed font-bold whitespace-pre-line">{hw.details}</p>
+                                    </div>
+                                  </motion.div>
+                                );
+                              })}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  } else {
+                    // PENDING HOMEWORK RENDERING
+                    return (
+                      <div className="space-y-4" style={{ fontFamily: 'Alinur Tatsama' }}>
+                        {pendingHomeworks.length === 0 ? (
+                          <div className="bg-white rounded-3xl p-8 text-center space-y-3 border border-slate-50 shadow-sm mt-2">
+                            <div className="h-16 w-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto text-emerald-600 border border-emerald-100">
+                              <CheckCircle2 className="h-8 w-8" />
+                            </div>
+                            <h4 className="font-black text-lg text-slate-800">কোনো বাকি হোমওয়ার্ক নেই</h4>
+                            <p className="text-xs text-slate-500">আপনার সব পূর্ববর্তী হোমওয়ার্ক সফলভাবে সম্পন্ন হয়েছে!</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-4 mt-2">
+                            {pendingHomeworks.map((hw: any, idx: number) => {
+                              const pubDate = hw.createdAt ? (hw.createdAt.toDate ? hw.createdAt.toDate() : new Date(hw.createdAt)) : null;
+                              const formattedPubDate = pubDate ? pubDate.toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' }) : "পূর্বে";
+                              return (
+                                <motion.div
+                                  key={hw.id || idx}
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  className="bg-white rounded-3xl p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] space-y-3"
+                                >
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <span className="bg-amber-50 text-amber-700 text-[10px] font-black px-2.5 py-1 rounded-full border border-amber-100">
+                                        {hw.subject}
+                                      </span>
+                                      <h4 className="font-black text-slate-800 text-sm mt-2">{hw.headline}</h4>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                      <span className="text-[9px] text-slate-400 block font-bold">শেষ তারিখ</span>
+                                      <span className="text-xs font-black text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-100">
+                                        {toBengaliDigits(hw.dueDate)}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div className="bg-slate-50/50 p-3.5 rounded-xl border border-slate-50 text-xs text-slate-600 font-bold whitespace-pre-line leading-relaxed">
+                                    {hw.details}
+                                  </div>
+
+                                  <div className="flex justify-between items-center text-[10px] text-slate-400 pt-2 font-bold border-t border-slate-50">
+                                    <span>প্রকাশ: {toBengaliDigits(formattedPubDate)}</span>
+                                    <span>... {getTeacherDisplayName(hw.teacherName)}</span>
+                                  </div>
+                                </motion.div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
                 }}
               />
             </motion.div>
@@ -484,8 +741,963 @@ const StudentDashboardInner = ({
           )}
         </AnimatePresence>
       </div>
+
+      {/* বটম ফিক্সড কালারফুল নেভিগেশন বার (Bottom Fixed Colorful Navigation Bar) */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-150/80 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] px-4 py-2 z-40 max-w-lg mx-auto rounded-t-[30px] pb-safe">
+        <div className="flex items-center justify-around">
+          {[
+            { id: "home", label: "হোম", icon: Home, activeColor: "text-emerald-700 bg-emerald-50" },
+            { id: "homework", label: "পড়া", icon: BookOpen, activeColor: "text-amber-600 bg-amber-50" },
+            { id: "features", label: "ফিচার", icon: Compass, activeColor: "text-indigo-600 bg-indigo-50" },
+            { id: "support", label: "সাপোর্ট", icon: HelpCircle, activeColor: "text-rose-600 bg-rose-50" }
+          ].map((tab: any) => {
+            const isActive = studentActiveTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setStudentActiveTab(tab.id as any)}
+                className={`flex flex-col items-center gap-1 py-1.5 px-4 rounded-2xl transition-all relative ${
+                  isActive ? tab.activeColor : "text-slate-400 hover:text-slate-600"
+                }`}
+              >
+                <tab.icon className={`h-5 w-5 ${isActive ? "scale-110 animate-bounce" : ""} transition-transform duration-200`} />
+                <span className="text-[10px] font-black tracking-tight" style={{ fontFamily: 'Alinur Tatsama' }}>{tab.label}</span>
+                {isActive && (
+                  <motion.div 
+                    layoutId="activeTabIndicator" 
+                    className="absolute -bottom-0.5 w-1.5 h-1.5 bg-current rounded-full" 
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
+};
+
+const LeaveBadge = ({ studentRoll, className, todayStr }: any) => {
+  if (studentRoll === undefined || studentRoll === null || !className || !todayStr) return null;
+  return (
+    <StreamBuilder<any>
+      stream={query(
+        collection(db, "leaves"), 
+        where("studentRoll", "==", studentRoll), 
+        where("className", "==", className), 
+        where("status", "==", "Approved")
+      )}
+      builder={(leaves) => {
+        const activeLeave = leaves.find(l => {
+          const start = new Date(l.startDate);
+          const end = new Date(l.endDate);
+          const today = new Date(todayStr);
+          return today >= start && today <= end;
+        });
+
+        if (!activeLeave) return null;
+
+        return (
+          <button 
+            onClick={() => {
+              alert(`ছুটির বিবরণ: ${activeLeave.reason}\nঅনুমোদনকারী: ${activeLeave.teacherName}\nতারিখ: ${activeLeave.startDate} থেকে ${activeLeave.endDate}`);
+            }}
+            className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-100 text-[9px] font-black"
+          >
+            ছুটি
+          </button>
+        );
+      }}
+    />
+  );
+};
+
+const TeacherStudentManagement = ({ teacherData, toBengaliDigits }: any) => {
+  const [selectedClass, setSelectedClass] = useState("১০ম শ্রেণী");
+  const [showClassPopup, setShowClassPopup] = useState(false);
+  const [homeworkSubject, setHomeworkSubject] = useState("");
+  const [homeworkDate, setHomeworkDate] = useState("");
+  const [homeworkHeadline, setHomeworkHeadline] = useState("");
+  const [homeworkDetails, setHomeworkDetails] = useState("");
+  const [isSubmittingHomework, setIsSubmittingHomework] = useState(false);
+  const [attendanceMarkers, setAttendanceMarkers] = useState<{ [roll: string]: string }>({});
+  const [isSubmittingAttendance, setIsSubmittingAttendance] = useState(false);
+  const [lockStatus, setLockStatus] = useState<any>(null);
+  const [timeLeft, setTimeLeft] = useState("");
+  
+  // Navigation / sub-views: "menu", "homework", "homework_history", "attendance"
+  const [activeSubView, setActiveSubView] = useState("menu");
+  const [attendanceTab, setAttendanceTab] = useState<"register" | "report">("register");
+  const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0]);
+
+  const [availableSubjects, setAvailableSubjects] = useState<any[]>([]);
+  const [duplicateConfirmData, setDuplicateConfirmData] = useState<{
+    teacherName: string;
+    onConfirm: () => void;
+  } | null>(null);
+
+  useEffect(() => {
+    const q = query(
+      collection(db, "homework_subjects"),
+      where("className", "==", selectedClass)
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setAvailableSubjects(list);
+    }, (err) => {
+      console.error("Error subscribing to homework subjects:", err);
+    });
+    return () => unsubscribe();
+  }, [selectedClass]);
+
+  useEffect(() => {
+    if (availableSubjects.length > 0) {
+      setHomeworkSubject(availableSubjects[0].subjectName);
+    } else {
+      setHomeworkSubject("");
+    }
+  }, [availableSubjects]);
+
+  const studentsRef = React.useRef<any[]>([]);
+
+  const classes = [
+    "শিশু শ্রেণী", "১ম শ্রেণী", "২য় শ্রেণী", "৩য় শ্রেণী", "৪র্থ শ্রেণী", 
+    "৫ম শ্রেণী", "৬ষ্ঠ শ্রেণী", "৭ম শ্রেণী", "৮ম শ্রেণী", "৯ম শ্রেণী", "১০ম শ্রেণী", "হিফজ বিভাগ"
+  ];
+
+  const [currentDate, setCurrentDate] = useState(() => new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      if (
+        now.getDate() !== currentDate.getDate() ||
+        now.getMonth() !== currentDate.getMonth() ||
+        now.getFullYear() !== currentDate.getFullYear()
+      ) {
+        setCurrentDate(now);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [currentDate]);
+
+  const today = currentDate;
+  const todayStr = today.toISOString().split('T')[0];
+  const isFriday = today.getDay() === 5;
+
+  // Stabilized Firestore queries to prevent re-renders, infinite loops, and API re-connections
+  const totalStudentsQuery = useMemo(() => {
+    return query(collection(db, "students"), where("className", "==", selectedClass || ""));
+  }, [selectedClass]);
+
+  const homeworkHistoryQuery = useMemo(() => {
+    return query(collection(db, "homework"), where("className", "==", selectedClass || ""), orderBy("createdAt", "desc"), limit(15));
+  }, [selectedClass]);
+
+  const activeStudentsQuery = useMemo(() => {
+    return query(collection(db, "students"), where("className", "==", selectedClass || ""), orderBy("roll"));
+  }, [selectedClass]);
+
+  const attendanceReportQuery = useMemo(() => {
+    return query(collection(db, "attendance"), where("className", "==", selectedClass || ""), where("date", "==", reportDate || ""), orderBy("studentRoll"));
+  }, [selectedClass, reportDate]);
+
+  // Track lockStatus for the selected class today
+  useEffect(() => {
+    const q = query(
+      collection(db, "class_attendance_locks"),
+      where("className", "==", selectedClass),
+      where("date", "==", todayStr),
+      limit(1)
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        setLockStatus(snapshot.docs[0].data());
+      } else {
+        setLockStatus(null);
+      }
+    });
+    return () => unsubscribe();
+  }, [selectedClass, todayStr]);
+
+  // Countdown timer for daily calendar lock (until 11:59:59 PM today, midnight refresh)
+  useEffect(() => {
+    if (!lockStatus) return;
+    const timer = setInterval(() => {
+      const now = new Date();
+      const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const diff = tomorrow.getTime() - now.getTime();
+      if (diff <= 0) {
+        setTimeLeft("");
+        clearInterval(timer);
+      } else {
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+        setTimeLeft(`${h}:${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockStatus]);
+
+  // Handle hardware/software back button navigation with History API to prevent state loss
+  useEffect(() => {
+    // Replace initial state
+    window.history.replaceState({ subView: "menu" }, "");
+
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && event.state.subView) {
+        setActiveSubView(event.state.subView);
+      } else {
+        setActiveSubView("menu");
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const navigateTo = (subView: string) => {
+    setActiveSubView(subView);
+    window.history.pushState({ subView }, "");
+  };
+
+  const goBack = () => {
+    window.history.back();
+  };
+
+  const saveHomeworkDirectly = async () => {
+    setIsSubmittingHomework(true);
+    try {
+      await addDoc(collection(db, "homework"), {
+        subject: homeworkSubject,
+        dueDate: homeworkDate,
+        headline: homeworkHeadline,
+        details: homeworkDetails,
+        className: selectedClass,
+        teacherName: teacherData.name,
+        createdAt: serverTimestamp(),
+        status: "New"
+      });
+      setHomeworkSubject("");
+      setHomeworkDate("");
+      setHomeworkHeadline("");
+      setHomeworkDetails("");
+      alert("হোমওয়ার্ক সফলভাবে পাঠানো হয়েছে!");
+      goBack(); // Go back to menu upon successful homework submission
+    } catch (error) {
+      console.error("Homework error:", error);
+      alert("হোমওয়ার্ক সাবমিট করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+    } finally {
+      setIsSubmittingHomework(false);
+    }
+  };
+
+  const handleHomeworkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!homeworkSubject || !homeworkDate || !homeworkHeadline || !homeworkDetails) {
+      alert("সবগুলো তথ্য সঠিকভাবে পূরণ করুন।");
+      return;
+    }
+    setIsSubmittingHomework(true);
+    try {
+      // Query homeworks for this class to check if a homework for the same subject was already posted today
+      const q = query(
+        collection(db, "homework"),
+        where("className", "==", selectedClass)
+      );
+      const querySnapshot = await getDocs(q);
+      let duplicateHomework: any = null;
+
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data.subject === homeworkSubject && data.createdAt) {
+          const createdDate = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+          if (
+            createdDate.getFullYear() === today.getFullYear() &&
+            createdDate.getMonth() === today.getMonth() &&
+            createdDate.getDate() === today.getDate()
+          ) {
+            duplicateHomework = data;
+          }
+        }
+      });
+
+      if (duplicateHomework) {
+        setIsSubmittingHomework(false);
+        setDuplicateConfirmData({
+          teacherName: duplicateHomework.teacherName || "অন্য শিক্ষক",
+          onConfirm: () => {
+            saveHomeworkDirectly();
+            setDuplicateConfirmData(null);
+          }
+        });
+      } else {
+        await saveHomeworkDirectly();
+      }
+    } catch (err) {
+      console.error("Error checking duplicate homework: ", err);
+      // Fail safe: try to submit anyway if query fails
+      await saveHomeworkDirectly();
+    }
+  };
+
+  const handleAttendanceSubmit = async () => {
+    if (lockStatus) {
+      const formattedDay = today.toLocaleDateString('bn-BD', { weekday: 'long' });
+      const formattedDateBengali = today.toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' });
+      alert(`আজ ${formattedDateBengali} ${formattedDay} ${lockStatus.teacherName} এই ক্লাসের হাজিরা সম্পন্ন করেছেন। আগামী কাল আবার নতুন হাজিরা দিতে পারবেন।`);
+      return;
+    }
+    if (Object.keys(attendanceMarkers).length === 0) {
+      alert("অন্তত একজন শিক্ষার্থীর হাজিরা নিশ্চিত করুন।");
+      return;
+    }
+    setIsSubmittingAttendance(true);
+    try {
+      const batchPromises = Object.entries(attendanceMarkers).map(([roll, status]) => {
+        const studentObj = studentsRef.current.find(s => s.roll === roll);
+        return addDoc(collection(db, "attendance"), {
+          studentRoll: roll,
+          studentName: studentObj ? studentObj.name : "শিক্ষার্থী",
+          className: selectedClass,
+          date: todayStr,
+          status: status,
+          month: today.toLocaleString('en-US', { month: 'long' }),
+          year: today.getFullYear().toString(),
+          teacherName: teacherData.name,
+          timestamp: serverTimestamp()
+        });
+      });
+
+      await Promise.all(batchPromises);
+      
+      // Add a lock document
+      await addDoc(collection(db, "class_attendance_locks"), {
+        className: selectedClass,
+        date: todayStr,
+        teacherName: teacherData.name,
+        timestamp: serverTimestamp()
+      });
+
+      setAttendanceMarkers({});
+      alert("হাজিরা সফলভাবে সম্পন্ন হয়েছে!");
+      setAttendanceTab("report"); // Switch to report view to see the submitted attendance
+    } catch (error) {
+      console.error("Attendance error:", error);
+    } finally {
+      setIsSubmittingAttendance(false);
+    }
+  };
+
+  if (activeSubView === "menu") {
+    return (
+      <div className="space-y-6 pb-12 font-alinur animate-fade-in px-4 pt-8">
+        {/* 1. Class Selection Dropdown/Popup */}
+        <div className="relative">
+          <button 
+            onClick={() => setShowClassPopup(!showClassPopup)}
+            className="w-full bg-white rounded-2xl p-4 shadow-sm border border-emerald-100 flex items-center justify-between group active:scale-95 transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
+                <Users className="h-5 w-5" />
+              </div>
+              <div className="text-left">
+                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest block mb-0.5">শ্রেণী নির্বাচন করুন</span>
+                <span className="text-lg font-black text-emerald-950">{selectedClass}</span>
+              </div>
+            </div>
+            <ChevronDown className={`h-5 w-5 text-emerald-600 transition-transform ${showClassPopup ? 'rotate-180' : ''}`} />
+          </button>
+
+          <AnimatePresence>
+            {showClassPopup && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-emerald-100 z-50 p-2 grid grid-cols-2 gap-2 max-h-64 overflow-y-auto custom-scrollbar"
+              >
+                {classes.map(cls => (
+                  <button
+                    key={cls}
+                    onClick={() => {
+                      setSelectedClass(cls);
+                      setShowClassPopup(false);
+                      setAttendanceMarkers({});
+                    }}
+                    className={`py-2.5 px-4 rounded-xl text-sm font-bold text-center transition-all ${selectedClass === cls ? 'bg-emerald-800 text-white shadow-md' : 'bg-emerald-50 text-emerald-900 hover:bg-emerald-100'}`}
+                  >
+                    {cls}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* 2. Total Student Count Card */}
+        <StreamBuilder<any>
+          stream={totalStudentsQuery}
+          builder={(students) => (
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-gradient-to-br from-emerald-800 to-teal-700 rounded-3xl p-6 text-white shadow-lg shadow-emerald-900/20 relative overflow-hidden"
+            >
+              <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+              <div className="flex items-center justify-between relative z-10">
+                <div>
+                  <h3 className="text-xl font-black text-amber-400 leading-tight">মোট শিক্ষার্থী</h3>
+                  <p className="text-emerald-100/80 text-xs font-bold uppercase tracking-widest mt-1">Real-time Class Count</p>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-5xl font-black text-white">{toBengaliDigits(students.length)}</span>
+                  <span className="text-sm font-bold text-emerald-200">জন</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        />
+
+        {/* 3. Sub-page Navigation Cards */}
+        <div className="grid grid-cols-1 gap-4">
+          {/* Card A: Homework posting */}
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigateTo("homework")}
+            className="w-full bg-white rounded-3xl p-5 shadow-xs border border-slate-100 text-left hover:shadow-md transition-all flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center">
+                <BookOpen className="h-6 w-6" />
+              </div>
+              <div>
+                <h4 className="font-black text-base text-emerald-950">হোমওয়ার্ক দিন</h4>
+                <p className="text-xs text-slate-400 font-bold mt-0.5">নতুন হোমওয়ার্ক এসাইন ও পোস্ট করুন</p>
+              </div>
+            </div>
+            <ChevronRight className="h-5 w-5 text-emerald-600/50 group-hover:text-emerald-700 group-hover:translate-x-1 transition-all" />
+          </motion.button>
+
+          {/* Card B: Homework History */}
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigateTo("homework_history")}
+            className="w-full bg-white rounded-3xl p-5 shadow-xs border border-slate-100 text-left hover:shadow-md transition-all flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
+                <History className="h-6 w-6" />
+              </div>
+              <div>
+                <h4 className="font-black text-base text-emerald-950">হোমওয়ার্ক হিস্ট্রি ও আপডেট</h4>
+                <p className="text-xs text-slate-400 font-bold mt-0.5">পূর্বের কাজসমূহ ম্যানেজ ও আপডেট করুন</p>
+              </div>
+            </div>
+            <ChevronRight className="h-5 w-5 text-indigo-600/50 group-hover:text-indigo-700 group-hover:translate-x-1 transition-all" />
+          </motion.button>
+
+          {/* Card C: Smart Attendance */}
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigateTo("attendance")}
+            className="w-full bg-white rounded-3xl p-5 shadow-xs border border-slate-100 text-left hover:shadow-md transition-all flex items-center justify-between group relative overflow-hidden"
+          >
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 bg-emerald-950 text-amber-400 rounded-2xl flex items-center justify-center">
+                <CalendarCheck className="h-6 w-6" />
+              </div>
+              <div>
+                <h4 className="font-black text-base text-emerald-950">শিক্ষার্থী হাজিরা রেজিস্টার</h4>
+                <p className="text-xs text-slate-400 font-bold mt-0.5">উপস্থিতি, অনুপস্থিতি ও ছুটি ট্র্যাকিং</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {lockStatus ? (
+                <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full text-[10px] font-black flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                  সম্পন্ন
+                </span>
+              ) : (
+                <span className="bg-orange-50 text-orange-700 border border-orange-200 px-2.5 py-1 rounded-full text-[10px] font-black flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 bg-orange-500 rounded-full animate-pulse"></span>
+                  বাকি আছে
+                </span>
+              )}
+              <ChevronRight className="h-5 w-5 text-emerald-950/50 group-hover:text-emerald-950 group-hover:translate-x-1 transition-all" />
+            </div>
+          </motion.button>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeSubView === "homework") {
+    return (
+      <div className="space-y-6 pb-12 font-alinur animate-fade-in px-4 pt-6">
+        {/* Back navigation header */}
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={goBack}
+            className="h-10 w-10 bg-white rounded-xl border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-all"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div>
+            <h3 className="text-xl font-black text-emerald-950">নতুন হোমওয়ার্ক দিন</h3>
+            <p className="text-xs text-emerald-700 font-bold">শ্রেণী: {selectedClass}</p>
+          </div>
+        </div>
+
+        {/* Homework Card */}
+        <div className="bg-white rounded-[32px] p-6 shadow-sm border border-slate-100 space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
+              <BookOpen className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="font-black text-lg text-emerald-950">হোমওয়ার্ক ফর্ম (Assign)</h3>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Create a task for {selectedClass}</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleHomeworkSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-emerald-900 ml-1">সাবজেক্ট নাম</label>
+                <select 
+                  required
+                  value={homeworkSubject}
+                  onChange={(e) => setHomeworkSubject(e.target.value)}
+                  className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-slate-800"
+                >
+                  {availableSubjects.length === 0 ? (
+                    <option value="">কোনো বিষয় নেই (এডমিন প্যানেলে যোগ করুন)</option>
+                  ) : (
+                    <>
+                      <option value="">বিষয় সিলেক্ট করুন</option>
+                      {availableSubjects.map((subj) => (
+                        <option key={subj.id} value={subj.subjectName}>
+                          {subj.subjectName}
+                        </option>
+                      ))}
+                    </>
+                  )}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-emerald-900 ml-1">শেষ তারিখ</label>
+                <input 
+                  type="date" 
+                  value={homeworkDate}
+                  onChange={(e) => setHomeworkDate(e.target.value)}
+                  className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-bold"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-emerald-900 ml-1">হোমওয়ার্ক হেডলাইন</label>
+              <input 
+                type="text" 
+                value={homeworkHeadline}
+                onChange={(e) => setHomeworkHeadline(e.target.value)}
+                placeholder="হোমওয়ার্কের সংক্ষিপ্ত নাম"
+                className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-bold"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-emerald-900 ml-1">বিস্তারিত</label>
+              <textarea 
+                rows={4}
+                value={homeworkDetails}
+                onChange={(e) => setHomeworkDetails(e.target.value)}
+                placeholder="হোমওয়ার্কের বিস্তারিত বিবরণ লিখুন..."
+                className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-bold"
+              />
+            </div>
+            <button 
+              type="submit"
+              disabled={isSubmittingHomework}
+              className="w-full bg-emerald-900 text-amber-400 font-black py-4 rounded-2xl shadow-xl shadow-emerald-900/20 flex items-center justify-center gap-2 group disabled:opacity-50 active:scale-[0.99] transition-all"
+            >
+              <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform" />
+              <span>{isSubmittingHomework ? "পাঠানো হচ্ছে..." : "সাবমিট করুন"}</span>
+            </button>
+          </form>
+        </div>
+
+        {duplicateConfirmData && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in font-serif" style={{ fontFamily: "'Noto Serif Bengali', serif" }}>
+            <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full border border-gray-100 overflow-hidden transform transition-all p-6 space-y-6">
+              <div className="flex flex-col items-center text-center space-y-3">
+                <div className="h-16 w-16 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center">
+                  <AlertCircle className="h-8 w-8 text-amber-600" />
+                </div>
+                <h3 className="font-black text-lg text-slate-950">হোমওয়ার্ক ডুপ্লিকেট সতর্কতা</h3>
+                <p className="text-sm text-slate-600 leading-relaxed font-bold">
+                  আজ জনাব <span className="text-emerald-800 font-black">[{duplicateConfirmData.teacherName}]</span> এই বিষয়ে হোমওয়ার্ক সাবমিট করেছেন, আপনি কি আবারও হোমওয়ার্ক এড করতে চান?
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    duplicateConfirmData.onConfirm();
+                  }}
+                  className="flex-1 bg-emerald-800 hover:bg-emerald-900 text-amber-400 font-black py-3 px-4 rounded-xl text-sm transition-all shadow-sm cursor-pointer"
+                >
+                  হ্যাঁ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDuplicateConfirmData(null)}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black py-3 px-4 rounded-xl text-sm transition-all cursor-pointer"
+                >
+                  না
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (activeSubView === "homework_history") {
+    return (
+      <div className="space-y-6 pb-12 font-alinur animate-fade-in px-4 pt-6">
+        {/* Back navigation header */}
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={goBack}
+            className="h-10 w-10 bg-white rounded-xl border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-all"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div>
+            <h3 className="text-xl font-black text-emerald-950">হোমওয়ার্ক হিস্ট্রি ও আপডেট</h3>
+            <p className="text-xs text-emerald-700 font-bold">শ্রেণী: {selectedClass}</p>
+          </div>
+        </div>
+
+        {/* History List */}
+        <div className="bg-white rounded-[32px] p-6 shadow-sm border border-slate-100 space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+              <History className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="font-black text-lg text-emerald-950">হোমওয়ার্ক তালিকা</h3>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Previous homework entries</p>
+            </div>
+          </div>
+
+          <StreamBuilder<any>
+            stream={homeworkHistoryQuery}
+            builder={(homeworks) => {
+              if (homeworks.length === 0) return <p className="text-center py-10 text-slate-400 text-sm font-bold">কোনো হোমওয়ার্ক পাওয়া যায়নি।</p>;
+              return (
+                <div className="space-y-4 max-h-[55vh] overflow-y-auto pr-1 custom-scrollbar">
+                  {homeworks.map((hw: any, idx: number) => (
+                    <div key={hw.id} className="bg-emerald-50/40 rounded-2xl p-4 border border-emerald-100 space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-black text-sm text-emerald-900">{hw.headline}</h4>
+                          <p className="text-xs text-emerald-700 font-bold mt-0.5">{hw.subject} • শেষ তারিখ: {toBengaliDigits(hw.dueDate)}</p>
+                        </div>
+                        {idx === 0 && (
+                          <span className="text-[10px] font-black bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-full uppercase tracking-tighter">সর্বশেষ</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-600 leading-relaxed font-bold">{hw.details}</p>
+                      {hw.status !== "Completed" ? (
+                        <div className="flex gap-2 pt-2">
+                          <button 
+                            onClick={() => {
+                              const newDate = prompt("নতুন তারিখ দিন (YYYY-MM-DD):", hw.dueDate);
+                              if (newDate) {
+                                updateDoc(doc(db, "homework", hw.id), { 
+                                  dueDate: newDate, 
+                                  isUpdated: true,
+                                  updateStatus: "সময় বাড়ানো হয়েছে"
+                                }).then(() => alert("তারিখ আপডেট করা হয়েছে!"));
+                              }
+                            }}
+                            className="flex-1 bg-white text-emerald-800 border border-emerald-200 py-2 rounded-xl text-xs font-black shadow-xs active:scale-[0.98] transition-all"
+                          >
+                            তারিখ বাড়ান
+                          </button>
+                          <button 
+                            onClick={() => {
+                              updateDoc(doc(db, "homework", hw.id), { status: "Completed" }).then(() => alert("হোমওয়ার্ক শেষ করা হয়েছে!"));
+                            }}
+                            className="flex-1 bg-emerald-800 text-white py-2 rounded-xl text-xs font-black shadow-xs active:scale-[0.98] transition-all"
+                          >
+                            কমপ্লিট করুন
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-black bg-emerald-100/50 px-3 py-1.5 rounded-xl w-fit">
+                          <Check className="h-4 w-4" />
+                          <span>হোমওয়ার্ক সম্পন্ন হয়েছে</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (activeSubView === "attendance") {
+    const formattedDay = today.toLocaleDateString('bn-BD', { weekday: 'long' });
+    const formattedDateBengali = today.toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    return (
+      <div className="space-y-6 pb-12 font-alinur animate-fade-in px-4 pt-6">
+        {/* Back navigation header */}
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={goBack}
+            className="h-10 w-10 bg-white rounded-xl border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-all"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div>
+            <h3 className="text-xl font-black text-emerald-950">শিক্ষার্থী হাজিরা রেজিস্টার</h3>
+            <p className="text-xs text-emerald-700 font-bold">শ্রেণী: {selectedClass}</p>
+          </div>
+        </div>
+
+        {/* Tab Controls for Register vs Report */}
+        <div className="bg-emerald-50 p-1 rounded-2xl flex border border-emerald-100">
+          <button
+            onClick={() => setAttendanceTab("register")}
+            className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all ${attendanceTab === "register" ? 'bg-emerald-800 text-white shadow-sm' : 'text-emerald-950'}`}
+          >
+            হাজিরা রেজিস্টার
+          </button>
+          <button
+            onClick={() => setAttendanceTab("report")}
+            className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all ${attendanceTab === "report" ? 'bg-emerald-800 text-white shadow-sm' : 'text-emerald-950'}`}
+          >
+            হাজিরা রিপোর্ট ও হিস্ট্রি
+          </button>
+        </div>
+
+        {attendanceTab === "register" ? (
+          /* REGISTER TAB */
+          <div className="bg-white rounded-[32px] p-6 shadow-sm border border-slate-100 space-y-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-emerald-950 text-amber-400 rounded-xl flex items-center justify-center">
+                  <CalendarCheck className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="font-black text-lg text-emerald-950">স্মার্ট হাজিরা রেজিস্টার</h3>
+                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Attendance Sheet</p>
+                </div>
+              </div>
+              {lockStatus && (
+                <div className="bg-amber-50 text-amber-700 px-3 py-1 rounded-full border border-amber-100 text-[10px] font-black flex items-center gap-1.5">
+                  <span className="h-2 w-2 bg-amber-500 rounded-full animate-pulse"></span>
+                  {toBengaliDigits(timeLeft)}
+                </div>
+              )}
+            </div>
+
+            {lockStatus && (
+              <div 
+                onClick={() => {
+                  alert(`আজ ${formattedDateBengali} ${formattedDay} ${lockStatus.teacherName} এই ক্লাসের হাজিরা সম্পন্ন করেছেন। আগামী কাল আবার নতুন হাজিরা দিতে পারবেন।`);
+                }}
+                className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 cursor-pointer text-xs font-bold leading-relaxed space-y-1 relative overflow-hidden"
+              >
+                <div className="absolute right-0 top-0 h-full w-2 bg-amber-400"></div>
+                <p className="font-black text-sm text-amber-950">আজকের হাজিরা লকড</p>
+                <p>আজ {formattedDateBengali} {formattedDay} {lockStatus.teacherName} এই ক্লাসের হাজিরা সম্পন্ন করেছেন।</p>
+                <p className="font-black mt-2 text-emerald-800">আগামী কাল আবার নতুন হাজিরা দিতে পারবেন। (আর {toBengaliDigits(timeLeft)} পর হাজিরা উন্মুক্ত হবে)</p>
+              </div>
+            )}
+
+            {isFriday ? (
+              <div className="py-10 text-center bg-rose-50 rounded-2xl border border-dashed border-rose-100">
+                <Calendar className="h-10 w-10 text-rose-300 mx-auto mb-2" />
+                <h4 className="font-black text-rose-700 text-base">আজ শুক্রবার - সাপ্তাহিক ছুটি</h4>
+                <p className="text-xs text-rose-500 font-bold mt-1">আজ কোনো হাজিরা কাউন্ট হবে না।</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <StreamBuilder<any>
+                  stream={activeStudentsQuery}
+                  loadingNode={
+                    <div className="space-y-3 max-h-[42vh] overflow-y-auto pr-1">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100 flex flex-col gap-3 animate-pulse">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 bg-slate-200 rounded-xl shrink-0"></div>
+                            <div className="min-w-0 space-y-2 w-full">
+                              <div className="h-4 bg-slate-200 rounded-md w-1/3"></div>
+                              <div className="h-3 bg-slate-200 rounded-md w-1/4"></div>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-4 gap-1.5 w-full mt-1">
+                            {[1, 2, 3, 4].map((j) => (
+                              <div key={j} className="h-8 bg-slate-200 rounded-xl"></div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  }
+                  builder={(students) => {
+                    studentsRef.current = students; // Store the student names in ref for looking up when submitting
+                    if (students.length === 0) return <p className="text-center py-10 text-slate-400 text-sm font-bold">কোনো শিক্ষার্থী পাওয়া যায়নি।</p>;
+                    return (
+                      <div className="space-y-3 max-h-[42vh] overflow-y-auto pr-1 custom-scrollbar">
+                        {students.map((student: any) => (
+                          <div key={student.id} className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100 flex flex-col gap-3">
+                            {/* Top info row: Roll, Name, Phone */}
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="h-10 w-10 bg-white rounded-xl border border-slate-200 flex items-center justify-center text-emerald-800 font-black shrink-0 shadow-xs">
+                                  {toBengaliDigits(student.roll)}
+                                </div>
+                                <div className="min-w-0">
+                                  <h4 className="font-black text-sm text-emerald-950 truncate">{student.name}</h4>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <a href={`tel:${student.phone}`} className="h-6 w-6 bg-emerald-100 text-emerald-700 rounded-lg flex items-center justify-center hover:bg-emerald-700 hover:text-white transition-all">
+                                      <Activity className="h-3.5 w-3.5" />
+                                    </a>
+                                    <LeaveBadge studentRoll={student.roll} className={selectedClass} todayStr={todayStr} />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Requirement 3: Vertical layout directly below student name */}
+                            <div className="grid grid-cols-4 gap-1.5 w-full mt-1">
+                              {[
+                                { id: "Present", label: "উপস্থিত", color: "bg-emerald-600 border-emerald-600 text-white" },
+                                { id: "Absent", label: "অনুপস্থিত", color: "bg-rose-600 border-rose-600 text-white" },
+                                { id: "Late", label: "লেইট", color: "bg-amber-500 border-amber-500 text-white" },
+                                { id: "Leave", label: "ছুটি", color: "bg-indigo-600 border-indigo-600 text-white" }
+                              ].map(s => {
+                                const isActive = attendanceMarkers[student.roll] === s.id;
+                                return (
+                                  <button
+                                    key={s.id}
+                                    disabled={!!lockStatus}
+                                    onClick={() => setAttendanceMarkers(prev => ({ ...prev, [student.roll]: s.id }))}
+                                    className={`py-2 rounded-xl text-xs font-black transition-all border text-center ${
+                                      isActive 
+                                        ? `${s.color} shadow-sm font-black` 
+                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                    } disabled:opacity-40`}
+                                  >
+                                    {s.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }}
+                />
+
+                {/* Submit button - handles duplicate submission lock elegantly */}
+                <button 
+                  onClick={handleAttendanceSubmit}
+                  className="w-full bg-emerald-950 text-white font-black py-4 rounded-2xl shadow-xl shadow-emerald-900/20 flex items-center justify-center gap-2 group transition-all"
+                >
+                  <CheckCircle className="h-5 w-5" />
+                  <span>{isSubmittingAttendance ? "সাবমিট হচ্ছে..." : "হাজিরা সাবমিট করুন"}</span>
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* REPORT & HISTORY TAB */
+          <div className="bg-white rounded-[32px] p-6 shadow-sm border border-slate-100 space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
+                <Users className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="font-black text-lg text-emerald-950">হাজিরা রিপোর্ট বিবরণী</h3>
+                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Attendance Report logs</p>
+              </div>
+            </div>
+
+            {/* Date filter picker */}
+            <div className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100 flex items-center gap-3">
+              <div className="h-9 w-9 bg-white rounded-xl flex items-center justify-center text-emerald-600 shadow-xs">
+                <Search className="h-4 w-4" />
+              </div>
+              <div className="flex-1">
+                <span className="text-[10px] font-black text-emerald-700 uppercase block mb-0.5">তারিখ পরিবর্তন করুন</span>
+                <input 
+                  type="date" 
+                  value={reportDate}
+                  onChange={(e) => setReportDate(e.target.value)}
+                  className="bg-transparent border-none outline-none text-sm font-black text-emerald-900 w-full"
+                />
+              </div>
+            </div>
+
+            {/* Attendance Report Data */}
+            <div className="overflow-y-auto max-h-[42vh] pr-1 custom-scrollbar space-y-3">
+              <StreamBuilder<any>
+                stream={attendanceReportQuery}
+                builder={(attendance) => {
+                  if (attendance.length === 0) return (
+                    <div className="text-center py-10 text-slate-400 font-bold space-y-2">
+                      <Calendar className="h-10 w-10 text-slate-200 mx-auto" />
+                      <p className="text-sm">এই তারিখে ({toBengaliDigits(reportDate)}) কোনো হাজিরার রেকর্ড পাওয়া যায়নি।</p>
+                    </div>
+                  );
+                  return (
+                    <div className="space-y-2.5">
+                      {attendance.map((item: any) => (
+                        <div key={item.id} className="bg-slate-50 border border-slate-150 rounded-2xl p-4 flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="h-9 w-9 bg-white rounded-lg border border-slate-200 flex items-center justify-center text-emerald-800 font-black shrink-0">
+                              {toBengaliDigits(item.studentRoll)}
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="font-black text-sm text-emerald-950 truncate">{item.studentName || "শিক্ষার্থী"}</h4>
+                              <p className="text-[10px] text-slate-400 font-bold mt-0.5">শিক্ষক: {item.teacherName}</p>
+                            </div>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-black ${
+                            item.status === "Present" ? "bg-emerald-100 text-emerald-700 border border-emerald-200" :
+                            item.status === "Absent" ? "bg-rose-100 text-rose-700 border border-rose-200" :
+                            item.status === "Late" ? "bg-amber-100 text-amber-700 border border-amber-200" : "bg-indigo-100 text-indigo-700 border border-indigo-200"
+                          }`}>
+                            {item.status === "Present" ? "উপস্থিত" : item.status === "Absent" ? "অনুপস্থিত" : item.status === "Late" ? "লেইট" : "ছুটি"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return null;
 };
 
 const TeacherDashboardInner = ({ 
@@ -635,23 +1847,25 @@ const TeacherDashboardInner = ({
   return (
     <div className="relative -mt-8 -mx-2 bg-[#f8fafc] pb-28 min-h-screen">
       {/* Premium Green Header Card */}
-      <div className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-orange-800 pt-10 pb-36 px-6 rounded-b-[50px] shadow-2xl relative z-0 overflow-hidden">
-        {/* Abstract Background Shapes */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-20 -mt-20"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl -ml-20 -mb-20"></div>
+      {activeTeacherTab !== "students" && (
+        <div className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-orange-800 pt-10 pb-36 px-6 rounded-b-[50px] shadow-2xl relative z-0 overflow-hidden">
+          {/* Abstract Background Shapes */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-20 -mt-20"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl -ml-20 -mb-20"></div>
 
-        <div className="max-w-md mx-auto text-center relative z-10">
-           <h2 className="text-3xl font-black text-white mt-1 leading-tight tracking-tight" style={{ fontFamily: 'Alinur Tatsama' }}>
-            শিক্ষক ড্যাশবোর্ড
-          </h2>
-          <div className="flex items-center justify-center gap-2 mt-3">
-            <div className="bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
-              <Clock className="h-4 w-4 text-amber-400" />
-              <p className="text-emerald-50 font-bold text-xs tracking-wide">{formattedDate}</p>
+          <div className="max-w-md mx-auto text-center relative z-10">
+             <h2 className="text-3xl font-black text-white mt-1 leading-tight tracking-tight" style={{ fontFamily: 'Alinur Tatsama' }}>
+              শিক্ষক ড্যাশবোর্ড
+            </h2>
+            <div className="flex items-center justify-center gap-2 mt-3">
+              <div className="bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
+                <Clock className="h-4 w-4 text-amber-400" />
+                <p className="text-emerald-50 font-bold text-xs tracking-wide">{formattedDate}</p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Teacher Profile Card - Overlapping */}
       {activeTeacherTab === "home" && (
@@ -967,11 +2181,7 @@ const TeacherDashboardInner = ({
       )}
 
       {activeTeacherTab === "students" && (
-        <div className="px-6 py-24 text-center animate-fade-in">
-           <Users className="h-20 w-20 mx-auto text-emerald-100 mb-6" />
-           <h3 className="text-2xl font-black text-emerald-950">শিক্ষার্থী সেকশন</h3>
-           <p className="text-slate-500 font-bold">এই বিভাগটি শীঘ্রই আপডেট করা হবে।</p>
-        </div>
+        <TeacherStudentManagement teacherData={teacherData} toBengaliDigits={toBengaliDigits} />
       )}
 
       {activeTeacherTab === "routine" && (
@@ -1086,7 +2296,7 @@ const TeacherDashboardInner = ({
                 <StreamBuilder<any>
                   stream={query(
                     collection(db, "teacher_attendance"),
-                    where("teacherId", "==", teacherData?.id),
+                    where("teacherId", "==", teacherData?.id || ""),
                     orderBy("date", "desc")
                   )}
                   builder={(history, loading) => {
@@ -1191,6 +2401,194 @@ const TeacherDashboardInner = ({
           </div>
         )}
       </AnimatePresence>
+    </div>
+  );
+};
+
+const AdminStudentManagement = ({ toBengaliDigits }: any) => {
+  const [selectedClass, setSelectedClass] = useState("১০ম শ্রেণী");
+  const classes = [
+    "শিশু শ্রেণী", "১ম শ্রেণী", "২য় শ্রেণী", "৩য় শ্রেণী", "৪র্থ শ্রেণী", 
+    "৫ম শ্রেণী", "৬ষ্ঠ শ্রেণী", "৭ম শ্রেণী", "৮ম শ্রেণী", "৯ম শ্রেণী", "১০ম শ্রেণী", "হিফজ বিভাগ"
+  ];
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  return (
+    <div className="space-y-6 font-alinur animate-fade-in">
+      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
+              <CalendarCheck className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-emerald-950 font-serif">শ্রেণীভিত্তিক হাজিরা স্ট্যাটাস</h3>
+              <p className="text-xs text-gray-500">আজকের ({toBengaliDigits(todayStr)}) হাজিরা রিপোর্ট</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {classes.map(cls => (
+            <div key={cls}>
+              <StreamBuilder<any>
+                stream={query(collection(db, "class_attendance_locks"), where("className", "==", cls), where("date", "==", todayStr), limit(1))}
+                builder={(locks) => {
+                const isDone = locks.length > 0;
+                return (
+                  <div className={`p-4 rounded-xl border transition-all ${isDone ? 'bg-emerald-50 border-emerald-200 shadow-sm' : 'bg-rose-50 border-rose-100 shadow-xs'}`}>
+                    <div className="flex justify-between items-center">
+                      <span className={`text-sm font-bold ${isDone ? 'text-emerald-900' : 'text-rose-900'}`}>{cls}</span>
+                      {isDone ? (
+                        <div className="bg-emerald-500 text-white p-1 rounded-full shadow-sm">
+                          <Check className="h-3 w-3" />
+                        </div>
+                      ) : (
+                        <div className="bg-rose-500 text-white p-1 rounded-full shadow-sm">
+                          <X className="h-3 w-3" />
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-[10px] font-bold mt-1 opacity-70">
+                      {isDone ? `${locks[0].teacherName} হাজিরা নিয়েছেন` : "এখনও হাজিরা নেওয়া হয়নি"}
+                    </p>
+                  </div>
+                );
+              }}
+            />
+          </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="h-10 w-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
+            <Users className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-emerald-950 font-serif">শিক্ষার্থী হাজিরা বিবরণী</h3>
+            <div className="flex items-center gap-2 mt-1">
+              <select 
+                value={selectedClass} 
+                onChange={(e) => setSelectedClass(e.target.value)}
+                className="text-[10px] font-bold bg-slate-50 border border-slate-200 rounded px-2 py-1 outline-none"
+              >
+                {classes.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="bg-slate-50 text-slate-500 border-b">
+                <th className="p-3 font-black">রোল</th>
+                <th className="p-3 font-black">নাম</th>
+                <th className="p-3 font-black">অবস্থা</th>
+                <th className="p-3 font-black">শিক্ষক</th>
+                <th className="p-3 font-black">সময়</th>
+              </tr>
+            </thead>
+            <StreamBuilder<any>
+              stream={query(collection(db, "attendance"), where("className", "==", selectedClass), where("date", "==", todayStr), orderBy("studentRoll"))}
+              builder={(attendance) => (
+                <tbody className="divide-y divide-slate-100">
+                  {attendance.length === 0 ? (
+                    <tr><td colSpan={5} className="p-8 text-center text-slate-400 font-bold">আজকের কোনো ডাটা পাওয়া যায়নি।</td></tr>
+                  ) : (
+                    attendance.map((item: any) => (
+                      <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="p-3 font-black text-emerald-950">{toBengaliDigits(item.studentRoll)}</td>
+                        <td className="p-3 font-bold text-slate-700">{item.studentName || "শিক্ষার্থী"}</td>
+                        <td className="p-3">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                            item.status === "Present" ? "bg-emerald-100 text-emerald-700" :
+                            item.status === "Absent" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"
+                          }`}>
+                            {item.status === "Present" ? "উপস্থিত" : item.status === "Absent" ? "অনুপস্থিত" : item.status}
+                          </span>
+                        </td>
+                        <td className="p-3 text-slate-500">{item.teacherName}</td>
+                        <td className="p-3 text-slate-400 font-mono">
+                          {item.timestamp?.toMillis ? new Date(item.timestamp.toMillis()).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' }) : "---"}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              )}
+            />
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AdminLeaveManagement = ({ toBengaliDigits }: any) => {
+  return (
+    <div className="space-y-6 font-alinur animate-fade-in">
+      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="h-10 w-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center">
+            <ClipboardList className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-emerald-950 font-serif">শিক্ষার্থী ছুটি আবেদন (Pending)</h3>
+            <p className="text-xs text-gray-500">শিক্ষকদের পাঠানো ছুটির আবেদনগুলো রিভিউ করুন</p>
+          </div>
+        </div>
+
+        <StreamBuilder<any>
+          stream={query(collection(db, "leaves"), where("status", "==", "Pending"), orderBy("createdAt", "desc"))}
+          builder={(leaves) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {leaves.length === 0 ? (
+                <div className="col-span-2 text-center py-10 opacity-30">
+                  <ClipboardList className="h-16 w-16 mx-auto mb-2" />
+                  <p className="font-bold">কোনো পেন্ডিং আবেদন নেই</p>
+                </div>
+              ) : (
+                leaves.map((l: any) => (
+                  <div key={l.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4 hover:border-emerald-300 transition-all">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-black text-emerald-950">{l.studentName || "শিক্ষার্থী"}</h4>
+                        <p className="text-xs text-slate-500 font-bold">{l.className} • রোল: {toBengaliDigits(l.studentRoll)}</p>
+                      </div>
+                      <span className="text-[10px] font-black bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full uppercase">পেন্ডিং</span>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-slate-100">
+                      <p className="text-[11px] text-slate-400 uppercase font-black mb-1">ছুটির কারণ</p>
+                      <p className="text-sm font-bold text-slate-700">{l.reason}</p>
+                    </div>
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+                      <span>{toBengaliDigits(l.startDate)} থেকে {toBengaliDigits(l.endDate)}</span>
+                      <span>শিক্ষক: {l.teacherName}</span>
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <button 
+                        onClick={() => updateDoc(doc(db, "leaves", l.id), { status: "Approved", adminHandledAt: serverTimestamp() }).then(() => alert("আবেদন অনুমোদিত হয়েছে।"))}
+                        className="flex-1 bg-emerald-800 text-white py-2.5 rounded-xl text-xs font-black shadow-sm active:scale-95 transition-all"
+                      >
+                        অনুমোদন করুন
+                      </button>
+                      <button 
+                        onClick={() => updateDoc(doc(db, "leaves", l.id), { status: "Rejected", adminHandledAt: serverTimestamp() }).then(() => alert("আবেদন বাতিল করা হয়েছে।"))}
+                        className="flex-1 bg-rose-50 text-rose-600 border border-rose-100 py-2.5 rounded-xl text-xs font-black shadow-sm active:scale-95 transition-all"
+                      >
+                        বাতিল করুন
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        />
+      </div>
     </div>
   );
 };
@@ -1481,6 +2879,7 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
   const [isSettingsDropdownOpen, setIsSettingsDropdownOpen] = useState(false);
   const [isMenuBarDropdownOpen, setIsMenuBarDropdownOpen] = useState(false);
   const [isHomepageDropdownOpen, setIsHomepageDropdownOpen] = useState(false);
+  const [isStudentMgmtDropdownOpen, setIsStudentMgmtDropdownOpen] = useState(false);
   const [newNoticeText, setNewNoticeText] = useState("");
   const [teacherNoticeTitle, setTeacherNoticeTitle] = useState("");
   const [teacherNoticeDescription, setTeacherNoticeDescription] = useState("");
@@ -1524,6 +2923,9 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
   const [field4, setField4] = useState("");
   const [field5, setField5] = useState("");
   const [field6, setField6] = useState("");
+  const [isPhoneDuplicate, setIsPhoneDuplicate] = useState(false);
+  const [duplicateUserInfo, setDuplicateUserInfo] = useState<{ name: string; id: string } | null>(null);
+  const [isCheckingPhone, setIsCheckingPhone] = useState(false);
 
   // Extra Fields for Committee Bio-Data (Required empty defaults)
   const [commJoiningDate, setCommJoiningDate] = useState("");
@@ -1557,6 +2959,7 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
   const [selectedAdmission, setSelectedAdmission] = useState<any | null>(null);
   const [configAdmission, setConfigAdmission] = useState<any | null>(null);
   const [accountLoginId, setAccountLoginId] = useState("");
+  const [accountLoginIdStatus, setAccountLoginIdStatus] = useState<{status: 'idle' | 'checking' | 'unique' | 'duplicate', duplicateInfo: any | null}>({status: 'idle', duplicateInfo: null});
   const [accountPassword, setAccountPassword] = useState("");
   const [selectedRoll, setSelectedRoll] = useState("");
   const [duplicateStudentName, setDuplicateStudentName] = useState("");
@@ -2079,6 +3482,56 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
     };
   }, []);
 
+  // Real-time Account Login ID validation for Admissions
+  useEffect(() => {
+    if (!accountLoginId || accountLoginId.length < 5) {
+      setAccountLoginIdStatus({status: 'idle', duplicateInfo: null});
+      return;
+    }
+    const check = async () => {
+      setAccountLoginIdStatus({status: 'checking', duplicateInfo: null});
+      const duplicate = await checkUniqueLoginIdGlobal(accountLoginId);
+      if (duplicate) {
+        setAccountLoginIdStatus({status: 'duplicate', duplicateInfo: duplicate});
+      } else {
+        setAccountLoginIdStatus({status: 'unique', duplicateInfo: null});
+      }
+    };
+    const timer = setTimeout(check, 500);
+    return () => clearTimeout(timer);
+  }, [accountLoginId]);
+
+  // Live Phone Number Validation
+  useEffect(() => {
+    const checkPhone = async () => {
+      if (user.role === "admin" && activeAdminSubTab === "teachers" && isFormOpen && field3.length >= 11) {
+        setIsCheckingPhone(true);
+        try {
+          const targetPhone = field3.trim();
+          const duplicate = await checkDuplicatePhoneNumberGlobal(targetPhone);
+          
+          if (duplicate && duplicate.id !== editingId) {
+            setIsPhoneDuplicate(true);
+            setDuplicateUserInfo({ name: duplicate.name, id: duplicate.id });
+          } else {
+            setIsPhoneDuplicate(false);
+            setDuplicateUserInfo(null);
+          }
+        } catch (err) {
+          console.error("Error checking phone duplicate:", err);
+        } finally {
+          setIsCheckingPhone(false);
+        }
+      } else {
+        setIsPhoneDuplicate(false);
+        setDuplicateUserInfo(null);
+      }
+    };
+
+    const timeoutId = setTimeout(checkPhone, 500); // Debounce
+    return () => clearTimeout(timeoutId);
+  }, [field3, isFormOpen, activeAdminSubTab, editingId, user.role]);
+
   // Pre-populate contact fields with current Firestore data when contact_update tab is active
   useEffect(() => {
     if (activeAdminSubTab === "contact_update") {
@@ -2559,6 +4012,7 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
               { id: "honored", label: "স্মরণীয় ব্যক্তিত্ব", icon: Heart },
               { id: "routines", label: "রুটিন শিডিউল", icon: Calendar },
               { id: "hafizgon", label: "হিফজ বিভাগ", icon: BookOpen },
+              { id: "homework_subjects", label: "হোমওয়ার্ক সাবজেক্ট", icon: ClipboardList },
               ...(user.adminRole === "mother_admin" || user.adminRole === "super_admin" ? [{ id: "admin_control", label: "এডমিন কন্ট্রোল", icon: Lock }] : []),
             ].map((tab) => {
               const Icon = tab.icon;
@@ -2860,6 +4314,64 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
               )}
             </div>
 
+            {/* Student Management Tab with Dropdown */}
+            <div className="relative">
+              <button
+                id="admin-student-mgmt-dropdown-trigger"
+                onClick={() => {
+                  setIsMenuBarDropdownOpen(false);
+                  setIsNoticeDropdownOpen(false);
+                  setIsHeroDropdownOpen(false);
+                  setIsSettingsDropdownOpen(false);
+                  setIsHomepageDropdownOpen(false);
+                  setIsStudentMgmtDropdownOpen(!isStudentMgmtDropdownOpen);
+                }}
+                className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                  activeAdminSubTab === "student_leave" || activeAdminSubTab === "student_attendance_check"
+                    ? "bg-emerald-800 text-white shadow-sm"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                <Users className="h-4 w-4 text-amber-500" />
+                <span>শিক্ষার্থী ব্যবস্থাপনা</span>
+                <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${isStudentMgmtDropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+              
+              {isStudentMgmtDropdownOpen && (
+                <div className="absolute left-0 mt-1.5 w-56 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-30">
+                  <button
+                    onClick={() => {
+                      setActiveAdminSubTab("student_leave");
+                      setIsStudentMgmtDropdownOpen(false);
+                    }}
+                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold ${
+                      activeAdminSubTab === "student_leave"
+                        ? "bg-emerald-50 text-emerald-850"
+                        : "text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="h-1.5 w-1.5 rounded-full bg-amber-500"></div>
+                    <span>শিক্ষার্থী ছুটি আবেদন</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveAdminSubTab("student_attendance_check");
+                      setIsStudentMgmtDropdownOpen(false);
+                    }}
+                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold ${
+                      activeAdminSubTab === "student_attendance_check"
+                        ? "bg-emerald-50 text-emerald-850"
+                        : "text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-800"></div>
+                    <span>শিক্ষার্থী হাজিরা চেক</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Messages tab as simple button */}
             <button
               id="admin-subtab-messages"
@@ -2885,6 +4397,8 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
           <div className="flex justify-between items-center font-alinur">
             <div>
               <h3 className="text-lg font-bold text-emerald-950 font-serif">
+                {activeAdminSubTab === "student_leave" && "শিক্ষার্থী ছুটি আবেদন ও ম্যানেজমেন্ট"}
+                {activeAdminSubTab === "student_attendance_check" && "শিক্ষার্থী হাজিরা ট্র্যাকিং ও ডেইলি রিপোর্ট"}
                 {activeAdminSubTab === "dashboard" && "ড্যাশবোর্ড ও সার্বিক পরিসংখ্যান"}
                 {activeAdminSubTab === "admissions" && "ভর্তি আবেদন ট্র্যাকিং ও পেমেন্ট আপডেট"}
                 {activeAdminSubTab === "teachers" && "শিক্ষক ও ফ্যাকাল্টি লিস্ট"}
@@ -2902,9 +4416,10 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                 {activeAdminSubTab === "contact_update" && "প্রাতিষ্ঠানিক যোগাযোগ ও ঠিকানা আপডেট"}
                 {activeAdminSubTab === "hafizgon" && "হিফজ বিভাগ - হাফেজদের তথ্য ও প্রোফাইল ডাটাবেস"}
                 {activeAdminSubTab === "admin_control" && "এডমিন কন্ট্রোল প্যানেল ও সিকিউরিটি লজিক"}
+                {activeAdminSubTab === "homework_subjects" && "ক্লাসভিত্তিক হোমওয়ার্ক সাবজেক্ট ম্যানেজমেন্ট"}
               </h3>
             </div>
-            {activeAdminSubTab !== "dashboard" && activeAdminSubTab !== "admissions" && activeAdminSubTab !== "messages" && activeAdminSubTab !== "settings" && activeAdminSubTab !== "hero_background" && activeAdminSubTab !== "running_notices" && activeAdminSubTab !== "public_notices" && activeAdminSubTab !== "pathdan_update" && activeAdminSubTab !== "sodosso_form_settings" && activeAdminSubTab !== "contact_update" && activeAdminSubTab !== "routines" && activeAdminSubTab !== "hafizgon" && activeAdminSubTab !== "teachers" && activeAdminSubTab !== "admin_control" && (
+            {activeAdminSubTab !== "dashboard" && activeAdminSubTab !== "admissions" && activeAdminSubTab !== "messages" && activeAdminSubTab !== "settings" && activeAdminSubTab !== "hero_background" && activeAdminSubTab !== "running_notices" && activeAdminSubTab !== "public_notices" && activeAdminSubTab !== "pathdan_update" && activeAdminSubTab !== "sodosso_form_settings" && activeAdminSubTab !== "contact_update" && activeAdminSubTab !== "routines" && activeAdminSubTab !== "hafizgon" && activeAdminSubTab !== "teachers" && activeAdminSubTab !== "admin_control" && activeAdminSubTab !== "student_leave" && activeAdminSubTab !== "student_attendance_check" && activeAdminSubTab !== "homework_subjects" && (
               <button
                 id="admin-add-new-btn"
                 onClick={handleOpenAddForm}
@@ -2915,6 +4430,15 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
               </button>
             )}
           </div>
+
+          {/* Student Management Tabs Content */}
+          {activeAdminSubTab === "student_leave" && (
+            <AdminLeaveManagement toBengaliDigits={toBengaliDigits} />
+          )}
+
+          {activeAdminSubTab === "student_attendance_check" && (
+            <AdminStudentManagement toBengaliDigits={toBengaliDigits} />
+          )}
 
           {/* 0. Dashboard Overview */}
           {activeAdminSubTab === "dashboard" && (
@@ -3684,14 +5208,27 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                               <Mail className="h-4 w-4 text-emerald-700" />
                               <span>একাউন্ট লগইন তথ্য (লগইন নাম্বার অথবা ইমেইল)</span>
                             </label>
-                            <input
-                              type="text"
-                              required
-                              value={accountLoginId}
-                              onChange={(e) => setAccountLoginId(e.target.value)}
-                              placeholder="মোবাইল নাম্বার বা ইমেইল লিখুন"
-                              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all font-sans text-emerald-950 font-bold"
-                            />
+                            <div className="relative">
+                              <input
+                                type="text"
+                                required
+                                value={accountLoginId}
+                                onChange={(e) => setAccountLoginId(e.target.value)}
+                                placeholder="মোবাইল নাম্বার বা ইমেইল লিখুন"
+                                className={`w-full px-4 py-2.5 rounded-lg border text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-sans text-emerald-950 font-bold ${
+                                  accountLoginIdStatus.status === 'duplicate' ? 'border-red-400 bg-red-50' : 
+                                  accountLoginIdStatus.status === 'unique' ? 'border-emerald-500 bg-emerald-50/30' : 'border-gray-300'
+                                }`}
+                              />
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                {accountLoginIdStatus.status === 'checking' && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+                                {accountLoginIdStatus.status === 'unique' && <CheckCircle className="w-4 h-4 text-emerald-500" />}
+                                {accountLoginIdStatus.status === 'duplicate' && <XCircle className="w-4 h-4 text-red-500" />}
+                              </div>
+                            </div>
+                            {accountLoginIdStatus.status === 'duplicate' && (
+                              <p className="text-[10px] font-bold text-red-500 mt-1">⚠ এই আইডিটি ইতিমধ্যে <strong>{accountLoginIdStatus.duplicateInfo?.name}</strong> ({accountLoginIdStatus.duplicateInfo?.collection}) এর নামে ব্যবহৃত হচ্ছে।</p>
+                            )}
                             <p className="text-[10px] text-gray-400 font-bold">আমরা স্বয়ংক্রিয়ভাবে আবেদনকারীর মোবাইল নম্বর প্রিপপুলেট করেছি।</p>
                           </div>
 
@@ -3739,7 +5276,7 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
 
                           <button
                             type="submit"
-                            disabled={isConfigSaving}
+                            disabled={isConfigSaving || accountLoginIdStatus.status === 'duplicate'}
                             className="w-full bg-emerald-800 hover:bg-emerald-950 text-amber-400 hover:text-amber-300 font-bold py-3.5 rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 text-sm disabled:bg-emerald-700 cursor-pointer active:scale-98 font-alinur"
                             style={{ fontFamily: 'Alinur Tatsama' }}
                           >
@@ -5525,7 +7062,8 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                         );
                       }
                       
-                      const toBanglaNum = (str: string | number): string => {
+                      const toBanglaNum = (str: string | number | undefined | null): string => {
+                        if (str === undefined || str === null) return "";
                         const digits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
                         return str.toString().replace(/\d/g, (d) => digits[parseInt(d)]);
                       };
@@ -5870,6 +7408,11 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
             <HafizgonUpdateForm />
           )}
 
+          {/* 14.5. Homework Subject Management */}
+          {activeAdminSubTab === "homework_subjects" && (
+            <AdminHomeworkSubjectManagement />
+          )}
+
           {/* 15. Admin Control Section */}
           {activeAdminSubTab === "admin_control" && (
             <AdminControlSection user={user} />
@@ -5936,7 +7479,23 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-gray-700">মোবাইল ফোন নম্বর</label>
-                    <input type="text" required value={field3} onChange={(e) => setField3(e.target.value)} placeholder="যেমন: ০১৭১১-১২৩৪৫৬" className="w-full px-3 py-2 border rounded-md text-sm" />
+                    <input 
+                      type="text" 
+                      required 
+                      value={field3} 
+                      onChange={(e) => setField3(e.target.value)} 
+                      placeholder="যেমন: ০১৭১১-১২৩৪৫৬" 
+                      className={`w-full px-3 py-2 border rounded-md text-sm transition-colors ${isPhoneDuplicate ? 'border-red-500 bg-red-50' : 'border-gray-300'}`} 
+                    />
+                    {isCheckingPhone && <p className="text-[10px] text-emerald-600 font-bold animate-pulse">নম্বর চেক করা হচ্ছে...</p>}
+                    {isPhoneDuplicate && duplicateUserInfo && (
+                      <div className="bg-red-100 border border-red-200 p-2 rounded-lg mt-1 flex items-start gap-2">
+                        <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+                        <p className="text-[11px] text-red-700 font-bold leading-tight">
+                          এই নম্বরটি ইতিমধ্যে ব্যবহৃত হয়েছে! এটি <span className="text-red-900">{duplicateUserInfo.name}</span> (আইডি: <span className="text-red-900">{duplicateUserInfo.id}</span>) এর অ্যাকাউন্টে নিবন্ধিত আছে।
+                        </p>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-gray-700">ইমেইল</label>
@@ -6265,11 +7824,16 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
 
               <button
                 type="submit"
-                className={`w-full bg-emerald-800 hover:bg-emerald-950 text-white font-bold py-2.5 rounded-lg text-sm transition-all ${
+                disabled={user.role === "admin" && activeAdminSubTab === "teachers" && (isPhoneDuplicate || field3.trim().length !== 11 || isCheckingPhone)}
+                className={`w-full font-bold py-2.5 rounded-lg text-sm transition-all ${
                   activeAdminSubTab === "committee" ? "font-alinur" : ""
+                } ${
+                  (user.role === "admin" && activeAdminSubTab === "teachers" && (isPhoneDuplicate || field3.trim().length !== 11 || isCheckingPhone))
+                  ? "bg-gray-400 cursor-not-allowed text-gray-200"
+                  : "bg-emerald-800 hover:bg-emerald-950 text-white"
                 }`}
               >
-                দাখিল বা সংরক্ষণ করুন
+                {editingId ? "আপডেট করুন" : "দাখিল বা সংরক্ষণ করুন"}
               </button>
             </form>
           </div>

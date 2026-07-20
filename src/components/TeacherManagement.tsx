@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { collection, query, orderBy, doc, addDoc, updateDoc, deleteDoc, serverTimestamp, where, getDocs } from "firebase/firestore";
 import { db, StreamBuilder, uploadFileToImgBB } from "../lib/firebase";
+import { checkDuplicatePhoneNumberGlobal, checkUniqueLoginIdGlobal, checkDuplicateEmailGlobal } from "../lib/validation";
 import { Teacher } from "../types";
 import { 
   UserPlus, Users, GraduationCap, CreditCard, Building2, Lock, 
   Trash2, Edit3, Plus, X, Check, Camera, Loader2, ChevronRight, 
   ChevronDown, Phone, Mail, MapPin, Hash, Briefcase, Info, 
-  Search, ShieldCheck, Globe, Trash
+  Search, ShieldCheck, Globe, Trash, Key, User, Eye, EyeOff
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -64,16 +65,6 @@ export default function TeacherManagement() {
           </div>
           
           <div className="flex flex-wrap items-center gap-4 relative z-10">
-            <div className="relative group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-              <input 
-                type="text" 
-                placeholder="শিক্ষক খুঁজুন..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 pr-6 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm focus:border-emerald-500 focus:bg-white outline-none transition-all w-full md:w-64 font-bold"
-              />
-            </div>
             <button 
               onClick={() => { setEditingTeacher(null); setView("form"); }}
               className="flex items-center gap-2.5 bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black hover:bg-emerald-700 shadow-xl shadow-emerald-600/20 active:scale-95 transition-all group"
@@ -95,13 +86,7 @@ export default function TeacherManagement() {
                 </div>
               );
 
-              const filtered = teachers.filter(t => 
-                t.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                t.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                t.phone.includes(searchTerm)
-              );
-
-              if (filtered.length === 0) return (
+              if (teachers.length === 0) return (
                 <div className="flex flex-col items-center justify-center py-32 text-center space-y-4">
                   <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-300">
                     <Info className="w-10 h-10" />
@@ -122,7 +107,7 @@ export default function TeacherManagement() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-emerald-50/50">
-                      {filtered.map((teacher, idx) => (
+                      {teachers.map((teacher, idx) => (
                         <motion.tr 
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
@@ -177,21 +162,22 @@ export default function TeacherManagement() {
                             <div className="flex items-center justify-end gap-3">
                               <button 
                                 onClick={() => setSelectedTeacherForDetail(teacher)}
-                                className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-100 hover:scale-110 transition-all shadow-sm"
-                                title="বিস্তারিত দেখুন"
+                                className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-100 hover:scale-110 transition-all shadow-sm"
+                                title="একাউন্ট ইনফরমেশন"
                               >
-                                <Info className="w-4.5 h-4.5" />
+                                <Key className="w-4.5 h-4.5" />
                               </button>
                               <button 
                                 onClick={() => handleEdit(teacher)}
-                                className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center hover:bg-amber-100 hover:scale-110 transition-all shadow-sm"
-                                title="এডিট করুন"
+                                className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-100 hover:scale-110 transition-all shadow-sm"
+                                title="তথ্য বিস্তারিত ও এডিট"
                               >
-                                <Edit3 className="w-4.5 h-4.5" />
+                                <User className="w-4.5 h-4.5" />
                               </button>
                               <button 
                                 onClick={() => handleDelete(teacher.id)}
                                 className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center hover:bg-rose-100 hover:scale-110 transition-all shadow-sm"
+                                title="একাউন্ট ডিলিট"
                               >
                                 <Trash2 className="w-4.5 h-4.5" />
                               </button>
@@ -245,42 +231,119 @@ export default function TeacherManagement() {
 function TeacherDetailModal({ teacher, onClose, onSuccess }: { teacher: Teacher, onClose: () => void, onSuccess: (msg: string) => void }) {
   const [isResetting, setIsResetting] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [isUpdatingId, setIsUpdatingId] = useState(false);
+  const [isUpdatingPhone, setIsUpdatingPhone] = useState(false);
+  const [isUpdatingEmail, setIsUpdatingEmail] = useState(false);
   const [newLoginId, setNewLoginId] = useState(teacher.loginId || "");
-  const [idStatus, setIdStatus] = useState<'idle' | 'checking' | 'unique' | 'duplicate'>('idle');
+  const [newPhone, setNewPhone] = useState(teacher.phone || "");
+  const [newEmail, setNewEmail] = useState(teacher.email || "");
+  
+  const [idStatus, setIdStatus] = useState<{status: 'idle' | 'checking' | 'unique' | 'duplicate', duplicateInfo: any | null}>({status: 'idle', duplicateInfo: null});
+  const [phoneStatus, setPhoneStatus] = useState<{status: 'idle' | 'checking' | 'unique' | 'duplicate', duplicateInfo: {name: string, id: string, collection: string} | null}>({status: 'idle', duplicateInfo: null});
+  const [emailStatus, setEmailStatus] = useState<{status: 'idle' | 'checking' | 'unique' | 'duplicate', duplicateInfo: {name: string, id: string, collection: string} | null}>({status: 'idle', duplicateInfo: null});
 
   useEffect(() => {
     if (newLoginId === teacher.loginId) {
-      setIdStatus('idle');
+      setIdStatus({status: 'idle', duplicateInfo: null});
       return;
     }
     
     const check = async () => {
-      setIdStatus('checking');
-      const isUnique = await checkUniqueLoginId(newLoginId, teacher.id);
-      setIdStatus(isUnique ? 'unique' : 'duplicate');
+      setIdStatus({status: 'checking', duplicateInfo: null});
+      const duplicate = await checkUniqueLoginIdGlobal(newLoginId, teacher.id);
+      if (duplicate) {
+        setIdStatus({status: 'duplicate', duplicateInfo: duplicate});
+      } else {
+        setIdStatus({status: 'unique', duplicateInfo: null});
+      }
     };
 
     const timer = setTimeout(check, 500);
     return () => clearTimeout(timer);
   }, [newLoginId, teacher.id, teacher.loginId]);
 
-  const handleUpdateLoginId = async () => {
-    if (idStatus !== 'unique') return;
+  useEffect(() => {
+    if (newPhone === teacher.phone || newPhone.length < 11) {
+      setPhoneStatus({status: 'idle', duplicateInfo: null});
+      return;
+    }
+    
+    const check = async () => {
+      setPhoneStatus({status: 'checking', duplicateInfo: null});
+      const duplicate = await checkDuplicatePhoneNumberGlobal(newPhone, teacher.id);
+      if (duplicate) {
+        setPhoneStatus({status: 'duplicate', duplicateInfo: duplicate});
+      } else {
+        setPhoneStatus({status: 'unique', duplicateInfo: null});
+      }
+    };
 
+    const timer = setTimeout(check, 500);
+    return () => clearTimeout(timer);
+  }, [newPhone, teacher.id, teacher.phone]);
+
+  useEffect(() => {
+    if (newEmail === teacher.email || !newEmail.includes("@")) {
+      setEmailStatus({status: 'idle', duplicateInfo: null});
+      return;
+    }
+    
+    const check = async () => {
+      setEmailStatus({status: 'checking', duplicateInfo: null});
+      const duplicate = await checkDuplicateEmailGlobal(newEmail, teacher.id);
+      if (duplicate) {
+        setEmailStatus({status: 'duplicate', duplicateInfo: duplicate});
+      } else {
+        setEmailStatus({status: 'unique', duplicateInfo: null});
+      }
+    };
+
+    const timer = setTimeout(check, 500);
+    return () => clearTimeout(timer);
+  }, [newEmail, teacher.id, teacher.email]);
+
+  const handleUpdateLoginId = async () => {
+    if (idStatus.status !== 'unique') return;
     setIsUpdatingId(true);
     try {
       await updateDoc(doc(db, "teachers", teacher.id), { loginId: newLoginId });
-      onSuccess("নাম্বার আপডেট সম্পন্ন");
+      onSuccess("আইডি আপডেট সম্পন্ন");
       setIsUpdatingId(false);
     } catch (err) {
-      console.error(err);
-      alert("আপডেট করতে সমস্যা হয়েছে।");
+      alert("ত্রুটি হয়েছে।");
       setIsUpdatingId(false);
     }
   };
 
+  const handleUpdatePhone = async () => {
+    if (phoneStatus.status !== 'unique') return;
+    setIsUpdatingPhone(true);
+    try {
+      await updateDoc(doc(db, "teachers", teacher.id), { phone: newPhone });
+      onSuccess("ফোন নম্বর আপডেট সম্পন্ন");
+      setIsUpdatingPhone(false);
+    } catch (err) {
+      alert("ত্রুটি হয়েছে।");
+      setIsUpdatingPhone(false);
+    }
+  };
+
+  const handleUpdateEmail = async () => {
+    if (emailStatus.status !== 'unique') return;
+    setIsUpdatingEmail(true);
+    try {
+      await updateDoc(doc(db, "teachers", teacher.id), { email: newEmail });
+      onSuccess("ইমেইল আপডেট সম্পন্ন");
+      setIsUpdatingEmail(false);
+    } catch (err) {
+      alert("ত্রুটি হয়েছে।");
+      setIsUpdatingEmail(false);
+    }
+  };
+
   return (
+    <>
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -314,15 +377,126 @@ function TeacherDetailModal({ teacher, onClose, onSuccess }: { teacher: Teacher,
             <div className="space-y-6">
               <div className="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100">
                 <h4 className="text-sm font-black text-emerald-900 mb-4 flex items-center gap-2">
-                  <UserPlus className="w-4 h-4" /> ব্যক্তিগত ও স্থায়ী তথ্য
+                  <Globe className="w-4 h-4" /> ইউনিক আইডি ও তথ্য সংশোধন
+                </h4>
+                
+                <div className="space-y-6">
+                  {/* Phone Correction */}
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black text-slate-500 uppercase">ফোন নম্বর সংশোধন</p>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <input 
+                          type="text" 
+                          value={newPhone} 
+                          onChange={(e) => setNewPhone(e.target.value)}
+                          className={`w-full px-3 py-2.5 bg-white border-2 rounded-xl text-sm font-bold outline-none transition-all ${
+                            phoneStatus.status === 'unique' ? 'border-emerald-500 bg-emerald-50/30' : 
+                            phoneStatus.status === 'duplicate' ? 'border-rose-400 bg-rose-50' : 'border-slate-100'
+                          }`}
+                          placeholder="নতুন ফোন নম্বর"
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          {phoneStatus.status === 'checking' && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+                          {phoneStatus.status === 'unique' && <Check className="w-4 h-4 text-emerald-500" />}
+                        </div>
+                      </div>
+                      <button 
+                        onClick={handleUpdatePhone}
+                        disabled={isUpdatingPhone || phoneStatus.status !== 'unique'}
+                        className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-[10px] font-black disabled:opacity-50 hover:bg-emerald-700 transition-all shadow-md active:scale-95"
+                      >
+                        {isUpdatingPhone ? <Loader2 className="w-4 h-4 animate-spin" /> : "আপডেট"}
+                      </button>
+                    </div>
+                    {phoneStatus.status === 'duplicate' && (
+                      <p className="text-[9px] font-bold text-rose-500 mt-1">
+                        ⚠ এই নম্বরটি ইতিমধ্যে <strong>{phoneStatus.duplicateInfo?.name}</strong> ({phoneStatus.duplicateInfo?.collection}) এর নামে ব্যবহৃত হচ্ছে।
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Email Correction */}
+                  <div className="space-y-2 pt-2 border-t border-emerald-100/50">
+                    <p className="text-[10px] font-black text-slate-500 uppercase">ইমেইল ঠিকানা সংশোধন</p>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <input 
+                          type="email" 
+                          value={newEmail} 
+                          onChange={(e) => setNewEmail(e.target.value)}
+                          className={`w-full px-3 py-2.5 bg-white border-2 rounded-xl text-sm font-bold outline-none transition-all ${
+                            emailStatus.status === 'unique' ? 'border-emerald-500 bg-emerald-50/30' : 
+                            emailStatus.status === 'duplicate' ? 'border-rose-400 bg-rose-50' : 'border-slate-100'
+                          }`}
+                          placeholder="নতুন ইমেইল"
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          {emailStatus.status === 'checking' && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+                          {emailStatus.status === 'unique' && <Check className="w-4 h-4 text-emerald-500" />}
+                        </div>
+                      </div>
+                      <button 
+                        onClick={handleUpdateEmail}
+                        disabled={isUpdatingEmail || emailStatus.status !== 'unique'}
+                        className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-[10px] font-black disabled:opacity-50 hover:bg-emerald-700 transition-all shadow-md active:scale-95"
+                      >
+                        {isUpdatingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : "আপডেট"}
+                      </button>
+                    </div>
+                    {emailStatus.status === 'duplicate' && (
+                      <p className="text-[9px] font-bold text-rose-500 mt-1">
+                        ⚠ এই ইমেইলটি ইতিমধ্যে <strong>{emailStatus.duplicateInfo?.name}</strong> ({emailStatus.duplicateInfo?.collection}) এর নামে ব্যবহৃত হচ্ছে।
+                      </p>
+                    )}
+                  </div>
+
+                  {/* ID Correction */}
+                  <div className="space-y-2 pt-2 border-t border-emerald-100/50">
+                    <p className="text-[10px] font-black text-slate-500 uppercase">লগইন আইডি সংশোধন</p>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <input 
+                          type="text" 
+                          value={newLoginId} 
+                          onChange={(e) => setNewLoginId(e.target.value)}
+                          className={`w-full px-3 py-2.5 bg-white border-2 rounded-xl text-sm font-bold outline-none transition-all ${
+                            idStatus.status === 'unique' ? 'border-emerald-500 bg-emerald-50/30' : 
+                            idStatus.status === 'duplicate' ? 'border-rose-400 bg-rose-50' : 'border-slate-100'
+                          }`}
+                          placeholder="নতুন লগইন আইডি"
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          {idStatus.status === 'checking' && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+                          {idStatus.status === 'unique' && <Check className="w-4 h-4 text-emerald-500" />}
+                        </div>
+                      </div>
+                      <button 
+                        onClick={handleUpdateLoginId}
+                        disabled={isUpdatingId || idStatus.status !== 'unique'}
+                        className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-[10px] font-black disabled:opacity-50 hover:bg-emerald-700 transition-all shadow-md active:scale-95"
+                      >
+                        {isUpdatingId ? <Loader2 className="w-4 h-4 animate-spin" /> : "আপডেট"}
+                      </button>
+                    </div>
+                    {idStatus.status === 'duplicate' && (
+                      <p className="text-[9px] font-bold text-rose-500 mt-1">
+                        ⚠ এই আইডিটি ইতিমধ্যে <strong>{idStatus.duplicateInfo?.name}</strong> ({idStatus.duplicateInfo?.collection}) এর নামে ব্যবহৃত হচ্ছে।
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-amber-50/50 p-6 rounded-2xl border border-amber-100">
+                <h4 className="text-sm font-black text-amber-900 mb-4 flex items-center gap-2">
+                  <UserPlus className="w-4 h-4" /> ব্যক্তিগত তথ্য ও এনআইডি
                 </h4>
                 <div className="space-y-3 text-sm">
                   <p className="flex justify-between"><strong>মোবাইল:</strong> <span>{teacher.phone}</span></p>
                   <p className="flex justify-between"><strong>এনআইডি:</strong> <span>{teacher.nid}</span></p>
                   <p className="flex justify-between"><strong>ইমেইল:</strong> <span>{teacher.email || "N/A"}</span></p>
                   <p className="flex justify-between"><strong>জন্মসাল:</strong> <span>{teacher.birthYear}</span></p>
-                  <p className="flex justify-between"><strong>পিতার নাম:</strong> <span>{teacher.fatherName}</span></p>
-                  <p className="flex justify-between"><strong>মাতার নাম:</strong> <span>{teacher.motherName}</span></p>
                 </div>
               </div>
 
@@ -343,59 +517,6 @@ function TeacherDetailModal({ teacher, onClose, onSuccess }: { teacher: Teacher,
             </div>
 
             <div className="space-y-6">
-              <div className="bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100">
-                <h4 className="text-sm font-black text-indigo-900 mb-4 flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4" /> প্রাতিষ্ঠানিক ও অ্যাকাউন্ট
-                </h4>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-black text-indigo-400 uppercase">লগইন আইডি (ইউনিক)</p>
-                    <div className="flex flex-col gap-2">
-                      <div className="relative flex-1">
-                        <input 
-                          type="text" 
-                          value={newLoginId} 
-                          onChange={(e) => setNewLoginId(e.target.value)}
-                          className={`w-full px-3 py-2 bg-white border-2 rounded-lg text-sm font-bold outline-none transition-all ${
-                            idStatus === 'unique' ? 'border-emerald-500' : 
-                            idStatus === 'duplicate' ? 'border-rose-400' : 'border-indigo-200'
-                          }`}
-                          placeholder="লগইন আইডি দিন"
-                        />
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                          {idStatus === 'checking' && <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />}
-                          {idStatus === 'unique' && <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shadow-sm shadow-emerald-500/20 animate-bounce"><Check className="w-3 h-3 text-white" /></div>}
-                        </div>
-                      </div>
-                      
-                      {idStatus === 'duplicate' && (
-                        <div className="flex items-center justify-between gap-2 p-2 bg-rose-50 border border-rose-100 rounded-lg animate-pulse">
-                          <p className="text-[10px] font-black text-rose-600">এই আইডিটি ইতিমধ্যে ব্যবহৃত হচ্ছে!</p>
-                          <span className="px-2 py-0.5 bg-rose-500 text-white rounded text-[8px] font-black uppercase">আপডেট করুন</span>
-                        </div>
-                      )}
-
-                      <button 
-                        onClick={handleUpdateLoginId}
-                        disabled={isUpdatingId || idStatus !== 'unique'}
-                        className="w-full py-2 bg-indigo-600 text-white rounded-lg text-xs font-black hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-md active:scale-95"
-                      >
-                        {isUpdatingId ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "আইডি আপডেট সম্পন্ন করুন"}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="pt-4 border-t border-indigo-100">
-                    <button 
-                      onClick={() => setShowResetModal(true)}
-                      className="w-full py-3 bg-rose-500 text-white rounded-xl font-black text-sm flex items-center justify-center gap-2 hover:bg-rose-600 active:scale-95 transition-all shadow-lg shadow-rose-500/20"
-                    >
-                      <Lock className="w-4 h-4" />
-                      পাসওয়ার্ড রিসেট করুন
-                    </button>
-                  </div>
-                </div>
-              </div>
-
               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
                 <h4 className="text-sm font-black text-slate-700 mb-4 flex items-center gap-2">
                   <CreditCard className="w-4 h-4" /> ফিন্যান্সিয়াল তথ্য
@@ -406,10 +527,24 @@ function TeacherDetailModal({ teacher, onClose, onSuccess }: { teacher: Teacher,
                   <p className="flex justify-between"><strong>মোবাইল ব্যাংকিং:</strong> <span>{teacher.mobileBanking?.serviceName} - {teacher.mobileBanking?.number}</span></p>
                 </div>
               </div>
+              
+              <div className="bg-rose-50/50 p-6 rounded-2xl border border-rose-100">
+                <h4 className="text-sm font-black text-rose-900 mb-4 flex items-center gap-2">
+                  <Lock className="w-4 h-4" /> সিকিউরিটি ও পাসওয়ার্ড
+                </h4>
+                <button 
+                  onClick={() => setShowResetModal(true)}
+                  className="w-full py-3 bg-rose-500 text-white rounded-xl font-black text-sm flex items-center justify-center gap-2 hover:bg-rose-600 active:scale-95 transition-all shadow-lg shadow-rose-500/20"
+                >
+                  <Lock className="w-4 h-4" />
+                  পাসওয়ার্ড রিসেট করুন
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </motion.div>
+    </motion.div>
 
       {/* Custom Password Reset Modal */}
       <AnimatePresence>
@@ -437,18 +572,30 @@ function TeacherDetailModal({ teacher, onClose, onSuccess }: { teacher: Teacher,
 
               <div className="space-y-4">
                 <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
-                  <label className="block text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">পুরাতন পাসওয়ার্ড</label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-[10px] font-black text-amber-500 uppercase tracking-widest">পুরাতন পাসওয়ার্ড</label>
+                    <span className="text-[8px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-black">বর্তমান</span>
+                  </div>
                   <p className="text-lg font-black text-amber-900 font-mono tracking-widest">{teacher.password}</p>
                 </div>
 
                 <div>
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 ml-1">নতুন পাসওয়ার্ড</label>
-                  <input 
-                    type="text" 
-                    id="new_password_input"
-                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl text-sm font-bold outline-none focus:border-rose-500 focus:bg-white transition-all font-mono tracking-widest"
-                    placeholder="••••••••"
-                  />
+                  <div className="relative">
+                    <input 
+                      type={showNewPassword ? "text" : "password"} 
+                      id="new_password_input"
+                      className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl text-sm font-bold outline-none focus:border-rose-500 focus:bg-white transition-all font-mono tracking-widest pr-12"
+                      placeholder="••••••••"
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 <button 
@@ -457,6 +604,10 @@ function TeacherDetailModal({ teacher, onClose, onSuccess }: { teacher: Teacher,
                     const val = input.value;
                     if (!val || val.length < 6) {
                       alert("পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।");
+                      return;
+                    }
+                    if (val === teacher.password) {
+                      alert("পুরাতন পাসওয়ার্ড হুবহু আবার ব্যবহার করা যাবে না। নতুন পাসওয়ার্ড দিন।");
                       return;
                     }
                     setIsResetting(true);
@@ -480,46 +631,22 @@ function TeacherDetailModal({ teacher, onClose, onSuccess }: { teacher: Teacher,
           </div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </>
   );
 }
 
-const checkUniqueLoginId = async (loginId: string, currentDocId?: string) => {
-  const collections = ["teachers", "students", "admins"];
-  for (const coll of collections) {
-    // Check loginId field
-    const q = query(collection(db, coll), where("loginId", "==", loginId));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      if (currentDocId && coll === "teachers") {
-        const isSelf = snap.docs.some(d => d.id === currentDocId);
-        if (!isSelf) return false;
-      } else {
-        return false;
-      }
-    }
-    
-    // Also check phone field
-    const qPhone = query(collection(db, coll), where("phone", "==", loginId));
-    const snapPhone = await getDocs(qPhone);
-    if (!snapPhone.empty) {
-      if (currentDocId && coll === "teachers") {
-        const isSelf = snapPhone.docs.some(d => d.id === currentDocId);
-        if (!isSelf) return false;
-      } else {
-        return false;
-      }
-    }
-  }
-  return true;
-};
+const checkDuplicatePhoneNumber = checkDuplicatePhoneNumberGlobal;
+const checkUniqueLoginId = checkUniqueLoginIdGlobal;
+const checkDuplicateEmail = checkDuplicateEmailGlobal;
 
 function TeacherFullPageForm({ teacher, onClose }: { teacher: Teacher | null; onClose: () => void }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [photoPreview, setPhotoPreview] = useState(teacher?.photoUrl || "");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
-  const [idStatus, setIdStatus] = useState<'idle' | 'checking' | 'unique' | 'duplicate'>('idle');
+  const [idStatus, setIdStatus] = useState<{status: 'idle' | 'checking' | 'unique' | 'duplicate', duplicateInfo: any | null}>({status: 'idle', duplicateInfo: null});
+  const [phoneStatus, setPhoneStatus] = useState<{status: 'idle' | 'checking' | 'unique' | 'duplicate', duplicateInfo: {name: string, id: string, collection: string} | null}>({status: 'idle', duplicateInfo: null});
+  const [emailStatus, setEmailStatus] = useState<{status: 'idle' | 'checking' | 'unique' | 'duplicate', duplicateInfo: {name: string, id: string, collection: string} | null}>({status: 'idle', duplicateInfo: null});
 
   const [formData, setFormData] = useState<Partial<Teacher>>(() => {
     // 1. If editing existing teacher, use that
@@ -568,19 +695,63 @@ function TeacherFullPageForm({ teacher, onClose }: { teacher: Teacher | null; on
 
   useEffect(() => {
     if (!formData.loginId || formData.loginId === teacher?.loginId) {
-      setIdStatus('idle');
+      setIdStatus({status: 'idle', duplicateInfo: null});
       return;
     }
 
     const check = async () => {
-      setIdStatus('checking');
-      const isUnique = await checkUniqueLoginId(formData.loginId!, teacher?.id);
-      setIdStatus(isUnique ? 'unique' : 'duplicate');
+      setIdStatus({ status: 'checking', duplicateInfo: null });
+      const duplicate = await checkUniqueLoginId(formData.loginId!, teacher?.id);
+      if (duplicate) {
+        setIdStatus({ status: 'duplicate', duplicateInfo: duplicate });
+      } else {
+        setIdStatus({ status: 'unique', duplicateInfo: null });
+      }
     };
 
     const timer = setTimeout(check, 500);
     return () => clearTimeout(timer);
   }, [formData.loginId, teacher?.id, teacher?.loginId]);
+
+  useEffect(() => {
+    if (!formData.phone || formData.phone.length < 11 || formData.phone === teacher?.phone) {
+      setPhoneStatus({ status: 'idle', duplicateInfo: null });
+      return;
+    }
+
+    const check = async () => {
+      setPhoneStatus({ status: 'checking', duplicateInfo: null });
+      const duplicate = await checkDuplicatePhoneNumber(formData.phone!, teacher?.id);
+      if (duplicate) {
+        setPhoneStatus({ status: 'duplicate', duplicateInfo: duplicate });
+      } else {
+        setPhoneStatus({ status: 'unique', duplicateInfo: null });
+      }
+    };
+
+    const timer = setTimeout(check, 500);
+    return () => clearTimeout(timer);
+  }, [formData.phone, teacher?.id, teacher?.phone]);
+
+  useEffect(() => {
+    if (!formData.email || !formData.email.includes("@") || formData.email === teacher?.email) {
+      setEmailStatus({ status: 'idle', duplicateInfo: null });
+      return;
+    }
+
+    const check = async () => {
+      setEmailStatus({ status: 'checking', duplicateInfo: null });
+      const duplicate = await checkDuplicateEmail(formData.email!, teacher?.id);
+      if (duplicate) {
+        setEmailStatus({ status: 'duplicate', duplicateInfo: duplicate });
+      } else {
+        setEmailStatus({ status: 'unique', duplicateInfo: null });
+      }
+    };
+
+    const timer = setTimeout(check, 500);
+    return () => clearTimeout(timer);
+  }, [formData.email, teacher?.id, teacher?.email]);
 
   const convertToEnglish = (input: string) => {
     return input.replace(/[০-৯]/g, (match) => {
@@ -655,7 +826,8 @@ function TeacherFullPageForm({ teacher, onClose }: { teacher: Teacher | null; on
   const requiredFields = {
     name: !!formData.name,
     designation: !!formData.designation,
-    phone: !!formData.phone && formData.phone.length === 11,
+    phone: !!formData.phone && formData.phone.length === 11 && phoneStatus.status !== 'duplicate',
+    email: !formData.email || emailStatus.status !== 'duplicate',
     nid: !!formData.nid,
     fatherName: !!formData.fatherName,
     motherName: !!formData.motherName,
@@ -799,11 +971,63 @@ function TeacherFullPageForm({ teacher, onClose }: { teacher: Teacher | null; on
               <div><label className={labelClasses}>পূর্ণ নাম (বাংলায়) *</label><input name="name" className={inputClasses(showErrors && !formData.name)} value={formData.name} onChange={handleInputChange} /></div>
               <div><label className={labelClasses}>পূর্ণ নাম (ইংরেজিতে)</label><input name="nameEn" className={inputClasses()} value={formData.nameEn} onChange={handleInputChange} /></div>
               <div><label className={labelClasses}>পদবী *</label><input name="designation" className={inputClasses(showErrors && !formData.designation)} value={formData.designation} onChange={handleInputChange} /></div>
+              
+              <div className="md:col-span-2">
+                <label className={labelClasses}>ইমেইল ঠিকানা</label>
+                <div className="relative">
+                  <input 
+                    name="email" 
+                    type="email"
+                    className={`${inputClasses(showErrors && emailStatus.status === 'duplicate')} ${
+                      emailStatus.status === 'unique' ? 'border-emerald-500 bg-emerald-50/30' : 
+                      emailStatus.status === 'duplicate' ? 'border-rose-500 bg-rose-50' : ''
+                    }`} 
+                    value={formData.email} 
+                    onChange={handleInputChange} 
+                    placeholder="example@gmail.com"
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                    {emailStatus.status === 'checking' && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+                    {emailStatus.status === 'unique' && <Check className="w-4 h-4 text-emerald-500" />}
+                  </div>
+                </div>
+                {emailStatus.status === 'duplicate' && (
+                  <p className="text-[10px] font-bold text-rose-500 mt-1 flex items-center gap-1">
+                    <X className="w-3 h-3" /> 
+                    এই ইমেইলটি ইতিমধ্যে <strong>{emailStatus.duplicateInfo?.name}</strong> এর নামে ব্যবহৃত হচ্ছে।
+                  </p>
+                )}
+              </div>
+
               <div>
                 <label className={labelClasses}>মোবাইল নাম্বার *</label>
-                <input name="phone" className={inputClasses(showErrors && (!formData.phone || formData.phone.length !== 11))} value={formData.phone} onChange={handleInputChange} placeholder="01XXXXXXXXX" />
+                <div className="relative">
+                  <input 
+                    name="phone" 
+                    className={`${inputClasses(showErrors && (!formData.phone || formData.phone.length !== 11 || phoneStatus.status === 'duplicate'))} ${
+                      phoneStatus.status === 'unique' ? 'border-emerald-500 bg-emerald-50/30' : 
+                      phoneStatus.status === 'duplicate' ? 'border-rose-500 bg-rose-50' : ''
+                    }`} 
+                    value={formData.phone} 
+                    onChange={handleInputChange} 
+                    placeholder="01XXXXXXXXX" 
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                    {phoneStatus.status === 'checking' && <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />}
+                    {phoneStatus.status === 'unique' && <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shadow-sm"><Check className="w-3 h-3 text-white" /></div>}
+                    {phoneStatus.status === 'duplicate' && <div className="w-5 h-5 bg-rose-500 rounded-full flex items-center justify-center shadow-sm"><X className="w-3 h-3 text-white" /></div>}
+                  </div>
+                </div>
                 {showErrors && formData.phone && formData.phone.length !== 11 && (
                   <p className="text-[9px] text-red-500 font-black mt-1 ml-1 animate-pulse">অবশ্যই ১১ সংখ্যার মোবাইল নাম্বার দিন</p>
+                )}
+                {phoneStatus.status === 'duplicate' && phoneStatus.duplicateInfo && (
+                  <div className="mt-2 p-2.5 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2 shadow-sm animate-shake">
+                    <Info className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
+                    <p className="text-[10px] font-black text-rose-700 leading-tight">
+                      এই নম্বরটি ইতিমধ্যে ব্যবহৃত হয়েছে! এটি <span className="text-rose-950 underline decoration-rose-300">{phoneStatus.duplicateInfo.name}</span> (আইডি: <span className="text-rose-950">{phoneStatus.duplicateInfo.id}</span>) এর অ্যাকাউন্টে নিবন্ধিত আছে।
+                    </p>
+                  </div>
                 )}
               </div>
               <div><label className={labelClasses}>ইমেইল</label><input name="email" type="email" className={inputClasses()} value={formData.email} onChange={handleInputChange} /></div>
@@ -902,27 +1126,32 @@ function TeacherFullPageForm({ teacher, onClose }: { teacher: Teacher | null; on
                   <input 
                     name="loginId" 
                     className={`${inputClasses(showErrors && !formData.loginId)} bg-white border-slate-700 text-emerald-950 focus:border-amber-500 pr-12 ${
-                      idStatus === 'unique' ? 'border-emerald-500 ring-4 ring-emerald-500/10' : 
-                      idStatus === 'duplicate' ? 'border-rose-400 ring-4 ring-rose-400/10' : ''
+                      idStatus.status === 'unique' ? 'border-emerald-500 ring-4 ring-emerald-500/10' : 
+                      idStatus.status === 'duplicate' ? 'border-rose-400 ring-4 ring-rose-400/10' : ''
                     }`} 
                     value={formData.loginId} 
                     onChange={handleInputChange} 
                     placeholder="Login ID" 
                   />
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                    {idStatus === 'checking' && <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />}
-                    {idStatus === 'unique' && (
+                    {idStatus.status === 'checking' && <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />}
+                    {idStatus.status === 'unique' && (
                       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/20">
                         <Check className="w-4 h-4 text-white" />
                       </motion.div>
                     )}
-                    {idStatus === 'duplicate' && (
+                    {idStatus.status === 'duplicate' && (
                       <motion.div initial={{ x: 10, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="flex items-center gap-1 bg-rose-50 px-2 py-1 rounded-lg border border-rose-100">
-                        <span className="text-[8px] font-black text-rose-600 uppercase">আপডেট করুন</span>
+                        <span className="text-[8px] font-black text-rose-600 uppercase">ব্যবহৃত</span>
                       </motion.div>
                     )}
                   </div>
                 </div>
+                {idStatus.status === 'duplicate' && (
+                  <p className="text-[10px] font-bold text-rose-500 mt-2 px-1">
+                    ⚠ এই আইডিটি ইতিমধ্যে <strong>{idStatus.duplicateInfo?.name}</strong> ({idStatus.duplicateInfo?.collection}) এর নামে ব্যবহৃত হচ্ছে।
+                  </p>
+                )}
               </div>
               <div>
                 <label className={`${labelClasses} text-slate-400`}>পাসওয়ার্ড * (কমপক্ষে ৬ অক্ষর)</label>
@@ -938,16 +1167,20 @@ function TeacherFullPageForm({ teacher, onClose }: { teacher: Teacher | null; on
       <div className="fixed bottom-0 left-0 right-0 p-5 bg-white/90 backdrop-blur-xl border-t border-slate-100 flex items-center justify-center z-[110] shadow-2xl">
         <button 
           onClick={handleSubmit}
-          disabled={isSubmitting}
+          disabled={isSubmitting || !isFormValid || idStatus.status === 'checking' || phoneStatus.status === 'checking' || idStatus.status === 'duplicate' || phoneStatus.status === 'duplicate' || emailStatus.status === 'duplicate'}
           className={`px-16 py-4 rounded-2xl font-black text-sm shadow-xl transition-all flex items-center gap-3 active:scale-95 ${
-            isFormValid 
+            isFormValid && idStatus.status !== 'checking' && phoneStatus.status !== 'checking' && idStatus.status !== 'duplicate' && phoneStatus.status !== 'duplicate' && emailStatus.status !== 'duplicate'
               ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-600/20" 
               : "bg-slate-200 text-slate-400 cursor-not-allowed"
           }`}
         >
-          {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (isFormValid ? <Check className="w-5 h-5" /> : <Lock className="w-5 h-5" />)}
+          {isSubmitting || idStatus.status === 'checking' || phoneStatus.status === 'checking' ? <Loader2 className="w-5 h-5 animate-spin" /> : (isFormValid && idStatus.status !== 'duplicate' && phoneStatus.status !== 'duplicate' && emailStatus.status !== 'duplicate' ? <Check className="w-5 h-5" /> : <Lock className="w-5 h-5" />)}
           {teacher ? "আপডেট সম্পন্ন করুন" : "নিবন্ধন সম্পন্ন করুন"}
-          {!isFormValid && <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-md ml-2 opacity-60">অসম্পূর্ণ</span>}
+          {(!isFormValid || idStatus.status === 'checking' || phoneStatus.status === 'checking' || idStatus.status === 'duplicate' || phoneStatus.status === 'duplicate') && (
+            <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-md ml-2 opacity-60">
+              {idStatus.status === 'checking' || phoneStatus.status === 'checking' ? "যাচাই হচ্ছে..." : "অসম্পূর্ণ বা ভুল"}
+            </span>
+          )}
         </button>
       </div>
 

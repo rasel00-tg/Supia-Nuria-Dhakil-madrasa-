@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { collection, doc, setDoc, updateDoc, deleteDoc, query, onSnapshot, getDoc, serverTimestamp, where, getDocs } from "firebase/firestore";
 import { db, StreamBuilder, handleFirestoreError, OperationType } from "../lib/firebase";
+import { checkDuplicatePhoneNumberGlobal, checkDuplicateEmailGlobal } from "../lib/validation";
 import { Admin, AdminSystem } from "../types";
 import { Lock, UserPlus, Users, Trash2, ShieldAlert, CheckCircle, XCircle, Clock, Save, Loader2, Key, ShieldCheck, Search, Shield, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -24,6 +25,45 @@ export default function AdminControlSection({ user }: AdminControlSectionProps) 
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [adminPhone, setAdminPhone] = useState("");
+  const [phoneStatus, setPhoneStatus] = useState<{status: 'idle' | 'checking' | 'unique' | 'duplicate', duplicateInfo: any | null}>({status: 'idle', duplicateInfo: null});
+  const [emailStatus, setEmailStatus] = useState<{status: 'idle' | 'checking' | 'unique' | 'duplicate', duplicateInfo: any | null}>({status: 'idle', duplicateInfo: null});
+
+  useEffect(() => {
+    if (!adminPhone || adminPhone.length < 11) {
+      setPhoneStatus({status: 'idle', duplicateInfo: null});
+      return;
+    }
+    const check = async () => {
+      setPhoneStatus({status: 'checking', duplicateInfo: null});
+      const duplicate = await checkDuplicatePhoneNumberGlobal(adminPhone);
+      if (duplicate) {
+        setPhoneStatus({status: 'duplicate', duplicateInfo: duplicate});
+      } else {
+        setPhoneStatus({status: 'unique', duplicateInfo: null});
+      }
+    };
+    const timer = setTimeout(check, 500);
+    return () => clearTimeout(timer);
+  }, [adminPhone]);
+
+  useEffect(() => {
+    if (!adminEmail || !adminEmail.includes("@")) {
+      setEmailStatus({status: 'idle', duplicateInfo: null});
+      return;
+    }
+    const check = async () => {
+      setEmailStatus({status: 'checking', duplicateInfo: null});
+      const duplicate = await checkDuplicateEmailGlobal(adminEmail);
+      if (duplicate) {
+        setEmailStatus({status: 'duplicate', duplicateInfo: duplicate});
+      } else {
+        setEmailStatus({status: 'unique', duplicateInfo: null});
+      }
+    };
+    const timer = setTimeout(check, 500);
+    return () => clearTimeout(timer);
+  }, [adminEmail]);
+
   const [adminRole, setAdminRole] = useState<Admin["role"]>("assistant_admin");
   const [adminExpiry, setAdminExpiry] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -303,26 +343,52 @@ export default function AdminControlSection({ user }: AdminControlSectionProps) 
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700 ml-1">ইমেইল ঠিকানা</label>
-                  <input 
-                    type="email"
-                    required
-                    value={adminEmail}
-                    onChange={(e) => setAdminEmail(e.target.value)}
-                    placeholder="email@example.com"
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm"
-                  />
+                  <div className="relative">
+                    <input 
+                      type="email"
+                      required
+                      value={adminEmail}
+                      onChange={(e) => setAdminEmail(e.target.value)}
+                      placeholder="email@example.com"
+                      className={`w-full px-4 py-3 rounded-xl border outline-none transition-all text-sm ${
+                        emailStatus.status === 'duplicate' ? 'border-red-400 bg-red-50' : 
+                        emailStatus.status === 'unique' ? 'border-emerald-500 bg-emerald-50/30' : 'border-slate-200 focus:ring-2 focus:ring-emerald-500'
+                      }`}
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {emailStatus.status === 'checking' && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+                      {emailStatus.status === 'unique' && <CheckCircle className="w-4 h-4 text-emerald-500" />}
+                      {emailStatus.status === 'duplicate' && <XCircle className="w-4 h-4 text-red-500" />}
+                    </div>
+                  </div>
+                  {emailStatus.status === 'duplicate' && (
+                    <p className="text-[10px] font-bold text-red-500 mt-1">⚠ এই ইমেইলটি ইতিমধ্যে <strong>{emailStatus.duplicateInfo?.name}</strong> ({emailStatus.duplicateInfo?.collection}) এর নামে ব্যবহৃত হচ্ছে।</p>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700 ml-1">মোবাইল নাম্বার</label>
-                  <input 
-                    type="tel"
-                    required
-                    value={adminPhone}
-                    onChange={(e) => setAdminPhone(e.target.value)}
-                    placeholder="01XXXXXXXXX"
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm font-sans"
-                  />
+                  <div className="relative">
+                    <input 
+                      type="tel"
+                      required
+                      value={adminPhone}
+                      onChange={(e) => setAdminPhone(e.target.value)}
+                      placeholder="01XXXXXXXXX"
+                      className={`w-full px-4 py-3 rounded-xl border outline-none transition-all text-sm font-sans ${
+                        phoneStatus.status === 'duplicate' ? 'border-red-400 bg-red-50' : 
+                        phoneStatus.status === 'unique' ? 'border-emerald-500 bg-emerald-50/30' : 'border-slate-200 focus:ring-2 focus:ring-emerald-500'
+                      }`}
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {phoneStatus.status === 'checking' && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+                      {phoneStatus.status === 'unique' && <CheckCircle className="w-4 h-4 text-emerald-500" />}
+                      {phoneStatus.status === 'duplicate' && <XCircle className="w-4 h-4 text-red-500" />}
+                    </div>
+                  </div>
+                  {phoneStatus.status === 'duplicate' && (
+                    <p className="text-[10px] font-bold text-red-500 mt-1">⚠ এই নাম্বারটি ইতিমধ্যে <strong>{phoneStatus.duplicateInfo?.name}</strong> ({phoneStatus.duplicateInfo?.collection}) এর নামে ব্যবহৃত হচ্ছে।</p>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
@@ -366,7 +432,7 @@ export default function AdminControlSection({ user }: AdminControlSectionProps) 
                 <div className="md:col-span-2 pt-2">
                   <button 
                     type="submit"
-                    disabled={isSubmittingAdmin}
+                    disabled={isSubmittingAdmin || phoneStatus.status === 'duplicate' || emailStatus.status === 'duplicate'}
                     className="w-full py-4 bg-emerald-800 hover:bg-emerald-950 text-amber-400 font-black rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {isSubmittingAdmin ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}

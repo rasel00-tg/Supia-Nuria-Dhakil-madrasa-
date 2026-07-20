@@ -42,20 +42,14 @@ export default function LoginSection({ onLoginSuccess, logoUrl }: LoginSectionPr
 
       // Force refresh data by using getDocs (bypasses stale local cache in many cases)
       // 1. Try Admin Collection
-      const adminSnap = await getDocs(query(collection(db, "admins"), where("loginId", "==", trimmedInput)));
+      const adminSnap = await getDocs(query(collection(db, "admins"), where("loginId", "==", trimmedInput), where("password", "==", password)));
       if (!adminSnap.empty) {
         userDoc = adminSnap.docs[0].data();
         userRole = "admin";
-      } else {
-        const adminPhoneSnap = await getDocs(query(collection(db, "admins"), where("phone", "==", trimmedInput)));
-        if (!adminPhoneSnap.empty) {
-          userDoc = adminPhoneSnap.docs[0].data();
-          userRole = "admin";
-        }
       }
 
       // Security Checks for Admin
-      if (userRole === "admin" && userDoc && userDoc.password === password) {
+      if (userRole === "admin" && userDoc) {
         // Status check
         if (userDoc.status === "suspended") {
           setLoginFeedback("আপনার তথ্য ভূল হচ্ছে! আবার চেষ্টা করুন");
@@ -91,51 +85,39 @@ export default function LoginSection({ onLoginSuccess, logoUrl }: LoginSectionPr
 
       // 2. Try Teacher Collection
       if (!userDoc) {
-        const teacherSnap = await getDocs(query(collection(db, "teachers"), where("loginId", "==", trimmedInput)));
+        const teacherSnap = await getDocs(query(collection(db, "teachers"), where("loginId", "==", trimmedInput), where("password", "==", password)));
         if (!teacherSnap.empty) {
           userDoc = teacherSnap.docs[0].data();
           userRole = "teacher";
-        } else {
-          const teacherPhoneSnap = await getDocs(query(collection(db, "teachers"), where("phone", "==", trimmedInput)));
-          if (!teacherPhoneSnap.empty) {
-            userDoc = teacherPhoneSnap.docs[0].data();
-            userRole = "teacher";
-          }
         }
       }
 
       // 3. Try Student Collection
       if (!userDoc) {
-        const studentSnap = await getDocs(query(collection(db, "students"), where("loginId", "==", trimmedInput)));
+        const studentSnap = await getDocs(query(collection(db, "students"), where("loginId", "==", trimmedInput), where("password", "==", password)));
         if (!studentSnap.empty) {
           userDoc = studentSnap.docs[0].data();
           userRole = "student";
-        } else {
-          const studentPhoneSnap = await getDocs(query(collection(db, "students"), where("phone", "==", trimmedInput)));
-          if (!studentPhoneSnap.empty) {
-            userDoc = studentPhoneSnap.docs[0].data();
-            userRole = "student";
-          }
         }
       }
 
       // 4. Hardcoded Fallbacks (Legacy/Initial)
       if (!userDoc) {
-        if ((trimmedInput === "admin@madrasah.com" || trimmedInput === "01700000000") && password === "admin123") {
+        if (trimmedInput === "admin@madrasah.com" && password === "admin123") {
           setLoginFeedback("লগইন সফল!");
           setTimeout(() => {
             onLoginSuccess({ email: "admin@madrasah.com", role: "admin", adminRole: "mother_admin", name: "প্রধান এডমিনিস্ট্রেটর" });
           }, 1000);
           return;
         }
-        if ((trimmedInput === "teacher@madrasah.com" || trimmedInput === "01711111111") && password === "teacher123") {
+        if (trimmedInput === "teacher@madrasah.com" && password === "teacher123") {
           setLoginFeedback("লগইন সফল!");
           setTimeout(() => {
             onLoginSuccess({ email: "teacher@madrasah.com", role: "teacher", name: "হাফেজ মাওলানা আব্দুর রহমান" });
           }, 1000);
           return;
         }
-        if ((trimmedInput === "student@madrasah.com" || trimmedInput === "01712345678") && password === "student123") {
+        if (trimmedInput === "student@madrasah.com" && password === "student123") {
           setLoginFeedback("লগইন সফল!");
           setTimeout(() => {
             onLoginSuccess({ email: "student@madrasah.com", role: "student", name: "মোহাম্মদ আলী" });
@@ -144,7 +126,7 @@ export default function LoginSection({ onLoginSuccess, logoUrl }: LoginSectionPr
         }
       }
 
-      if (userDoc && userDoc.password === password) {
+      if (userDoc) {
         setLoginFeedback("লগইন সফল!");
         setTimeout(() => {
           onLoginSuccess({

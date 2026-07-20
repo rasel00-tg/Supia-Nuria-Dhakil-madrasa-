@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { Calendar, X, AlertCircle } from "lucide-react";
 
 // Helper function to convert English digits to Bengali digits
-const toBengaliNumber = (numStr: string | number): string => {
+const toBengaliNumber = (numStr: string | number | undefined | null): string => {
+  if (numStr === undefined || numStr === null) return "";
   const bengaliDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
   return numStr.toString().replace(/\d/g, (digit) => bengaliDigits[parseInt(digit)]);
 };
