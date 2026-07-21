@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Lock, Mail, Eye, EyeOff, ShieldCheck, Info, X, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -69,8 +69,13 @@ export default function LoginSection({ onLoginSuccess, logoUrl }: LoginSectionPr
         if (userDoc.role === "assistant_admin" && userDoc.expiryTimestamp) {
           const expiryDate = new Date(userDoc.expiryTimestamp);
           if (new Date() > expiryDate) {
+            try {
+              await deleteDoc(doc(db, "admins", adminSnap.docs[0].id));
+            } catch (e) {
+              console.error("Error deleting expired admin during login:", e);
+            }
             setLoginFeedback("আপনার তথ্য ভূল হচ্ছে! আবার চেষ্টা করুন");
-            setError("আপনার অ্যাকাউন্টের মেয়াদ উত্তীর্ণ হয়েছে!");
+            setError("আপনার একাউন্ট এর মেয়াদ শেষ হয়ে গিয়েছে!");
             setLoading(false);
             setTimeout(() => setLoginFeedback(null), 3000);
             return;

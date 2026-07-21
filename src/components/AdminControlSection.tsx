@@ -741,7 +741,18 @@ export default function AdminControlSection({ user }: AdminControlSectionProps) 
                 );
               }
 
-              const filteredAdmins = admins.filter(a => 
+              // Auto-delete expired assistant admins from Firestore and filter them out
+              const validAdmins = admins.filter(a => {
+                if (a.role === "assistant_admin" && a.expiryTimestamp) {
+                  if (new Date() > new Date(a.expiryTimestamp)) {
+                    deleteDoc(doc(db, "admins", a.id)).catch(err => console.error("Auto delete expired admin error:", err));
+                    return false;
+                  }
+                }
+                return true;
+              });
+
+              const filteredAdmins = validAdmins.filter(a => 
                 a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 (a.email && a.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
                 (a.loginId && a.loginId.toLowerCase().includes(searchQuery.toLowerCase())) ||

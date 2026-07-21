@@ -26,7 +26,7 @@ import { seedDatabaseIfEmpty } from "./lib/dbSeeder";
 import { GraduationCap, BookOpen, Clock, Heart, Award } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { db, StreamBuilder, uploadFileToImgBB, handleFirestoreError, OperationType } from "./lib/firebase";
-import { doc, onSnapshot, collection, query, setDoc, where, getDocs } from "firebase/firestore";
+import { doc, onSnapshot, collection, query, setDoc, where, getDocs, deleteDoc } from "firebase/firestore";
 import { Upload } from "lucide-react";
 import { loadingService } from "./lib/loadingService";
 import ImageCropper from "./components/ImageCropper";
@@ -350,12 +350,13 @@ export default function App() {
 
     const loginIdOrEmail = (user.email || "").toLowerCase();
 
-    const unsub = onSnapshot(collection(db, "admins"), (snapshot) => {
+    const unsub = onSnapshot(collection(db, "admins"), async (snapshot) => {
       const currentAdminDoc = snapshot.docs.find(d => {
         const data = d.data();
         return (
           (data.email && data.email.toLowerCase() === loginIdOrEmail) ||
-          (data.loginId && data.loginId.toLowerCase() === loginIdOrEmail)
+          (data.loginId && data.loginId.toLowerCase() === loginIdOrEmail) ||
+          (data.phone && data.phone === loginIdOrEmail)
         );
       });
 
@@ -371,6 +372,25 @@ export default function App() {
 
       const adminData = currentAdminDoc.data();
 
+      // Assistant Admin Expiry check & Auto-deletion from Firestore
+      if (adminData.role === "assistant_admin" && adminData.expiryTimestamp) {
+        if (new Date() > new Date(adminData.expiryTimestamp)) {
+          // Permanently delete document from Firestore database
+          try {
+            await deleteDoc(doc(db, "admins", currentAdminDoc.id));
+          } catch (e) {
+            console.error("Error auto-deleting expired admin from Firestore:", e);
+          }
+          // Display required popup notification
+          alert("আপনার একাউন্ট এর মেয়াদ শেষ হয়ে গিয়েছে!");
+          // Clear session and redirect to login
+          setUser(null);
+          localStorage.removeItem("sndm_user");
+          setActiveTab("login");
+          return;
+        }
+      }
+
       // Suspension/Lock check
       if (adminData.status === "suspended") {
         alert("আপনার এডমিন একাউন্টটি বর্তমানে স্থগিত (Suspended) করা হয়েছে।");
@@ -378,17 +398,6 @@ export default function App() {
         localStorage.removeItem("sndm_user");
         setActiveTab("login");
         return;
-      }
-
-      // Assistant Admin Expiry check
-      if (adminData.role === "assistant_admin" && adminData.expiryTimestamp) {
-        if (new Date() > new Date(adminData.expiryTimestamp)) {
-          alert("আপনার অ্যাকাউন্টের মেয়াদ উত্তীর্ণ হয়েছে!");
-          setUser(null);
-          localStorage.removeItem("sndm_user");
-          setActiveTab("login");
-          return;
-        }
       }
     }, (err) => {
       console.error("Error listening to admin changes:", err);
