@@ -14,6 +14,11 @@ class LoadingService {
     this.notify();
   }
 
+  forceHideInitial() {
+    this.activeCount = 0;
+    this.notify();
+  }
+
   get isLoading() {
     return this.activeCount > 0;
   }
