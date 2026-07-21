@@ -1,4 +1,4 @@
-import { useState, ChangeEvent, useEffect } from "react";
+import { useState, ChangeEvent, useEffect, useRef } from "react";
 import { Menu, X, BookOpen, GraduationCap, Calendar, Search, FileText, Lock, Clock, Calendar as CalendarIcon, ChevronDown, ChevronUp, Users, Info, Building, Image, MessageSquare, Phone, Globe } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { db, StreamBuilder } from "../lib/firebase";
@@ -13,6 +13,85 @@ interface NavbarProps {
   isLogoUploaded?: boolean;
   logoUploading?: boolean;
   onLogoUpload?: (e: ChangeEvent<HTMLInputElement>) => void;
+}
+
+function SequentialScrollingNotice({ notices }: { notices: any[] }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLDivElement>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [position, setPosition] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const requestRef = useRef<number | null>(null);
+  const speed = 1.1; // Moderate, highly readable scrolling speed
+
+  const safeCurrentIndex = notices.length > 0 ? currentIndex % notices.length : 0;
+  const currentNoticeText = notices.length > 0 
+    ? `${safeCurrentIndex + 1}. ${notices[safeCurrentIndex].text}` 
+    : "সুফিয়া নূরীয়া দাখিল মাদ্রাসায় আপনাকে স্বাগতম।";
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const textElement = textRef.current;
+    if (!container || !textElement) return;
+
+    // Start position: right edge of the container
+    let currentX = container.offsetWidth;
+    setPosition(currentX);
+
+    const animate = () => {
+      if (!isPaused) {
+        currentX -= speed;
+        // If the current notice's last character has scrolled completely off-screen to the left
+        if (currentX < -textElement.offsetWidth) {
+          // Move to the next notice sequentially
+          setCurrentIndex((prevIndex) => (prevIndex + 1) % notices.length);
+          // Reset starting position to the right edge of the container
+          currentX = container.offsetWidth;
+        }
+        setPosition(currentX);
+      }
+      requestRef.current = requestAnimationFrame(animate);
+    };
+
+    requestRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+      }
+    };
+  }, [isPaused, currentIndex, notices]);
+
+  // Reset position if container changes size
+  useEffect(() => {
+    const handleResize = () => {
+      if (containerRef.current) {
+        setPosition(containerRef.current.offsetWidth);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full overflow-hidden h-full flex items-center cursor-pointer select-none"
+      style={{ fontFamily: "'Noto Serif Bengali', serif !important" }}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={() => setIsPaused(true)}
+      onTouchEnd={() => setIsPaused(false)}
+    >
+      <div
+        ref={textRef}
+        className="absolute whitespace-nowrap will-change-transform text-amber-200 text-xs sm:text-sm font-semibold tracking-wide"
+        style={{ transform: `translateX(${position}px)` }}
+      >
+        {currentNoticeText}
+      </div>
+    </div>
+  );
 }
 
 export default function Navbar({
@@ -181,19 +260,8 @@ export default function Navbar({
                   if (!notices || notices.length === 0) {
                     return <span className="text-emerald-300/80">সুফিয়া নূরীয়া দাখিল মাদ্রাসায় আপনাকে স্বাগতম।</span>;
                   }
-                  // Join notices text
-                  const noticeTexts = notices.map((n, i) => `${i + 1}. ${n.text}`).join("    ||    ");
                   return (
-                    <marquee
-                      behavior="scroll"
-                      direction="left"
-                      scrollamount="4"
-                      className="w-full whitespace-nowrap"
-                      onMouseOver={(e) => (e.currentTarget as any).stop()}
-                      onMouseOut={(e) => (e.currentTarget as any).start()}
-                    >
-                      {noticeTexts}
-                    </marquee>
+                    <SequentialScrollingNotice notices={notices} />
                   );
                 }}
               />

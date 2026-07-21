@@ -800,10 +800,10 @@ export default function HomeSection({
                 return (
                   <div id="home-section" className="w-full">
                     {/* Hero Banner Section */}
-                    <section id="hero-banner" className="relative min-h-[420px] sm:min-h-[460px] md:min-h-[500px] w-full bg-emerald-950 text-white overflow-hidden border-b-8 border-amber-500 flex items-center justify-center py-6 sm:py-8 md:py-10">
+                    <section id="hero-banner" className="relative min-h-[340px] sm:min-h-[380px] md:min-h-[420px] w-full bg-emerald-950 text-white overflow-hidden border-b-8 border-amber-500 flex items-center justify-center py-4 sm:py-5 md:py-6">
                       {heroBgUrl ? (
                         <div 
-                          className="absolute inset-0 bg-contain bg-center bg-no-repeat transition-all duration-500 z-0 bg-emerald-950"
+                          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-500 z-0 bg-emerald-950"
                           style={{ backgroundImage: `url(${heroBgUrl})` }}
                         />
                       ) : (

@@ -2894,6 +2894,14 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
   const [publicNoticeDescriptionError, setPublicNoticeDescriptionError] = useState("");
   const [isPublicNoticeFormOpen, setIsPublicNoticeFormOpen] = useState(false);
 
+  // Notice Editing Modal state
+  const [editNoticeType, setEditNoticeType] = useState<"running" | "public" | "teacher" | null>(null);
+  const [editNoticeId, setEditNoticeId] = useState<string | null>(null);
+  const [editNoticeText, setEditNoticeText] = useState("");
+  const [editNoticeTitle, setEditNoticeTitle] = useState("");
+  const [editNoticeDescription, setEditNoticeDescription] = useState("");
+  const [isEditNoticeSaving, setIsEditNoticeSaving] = useState(false);
+
   // Contact update inputs state (should start empty as per instructions)
   const [contactAddressInput, setContactAddressInput] = useState("");
   const [contactOfficePhoneInput, setContactOfficePhoneInput] = useState("");
@@ -3856,6 +3864,60 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
       alert("নোটিশ যোগ করতে সমস্যা হয়েছে।");
     } finally {
       setIsNoticeUploading(false);
+    }
+  };
+
+  // Unified Notice Editing Handler
+  const handleSaveNoticeEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editNoticeId || !editNoticeType) return;
+    setIsEditNoticeSaving(true);
+    try {
+      if (editNoticeType === "running") {
+        if (!editNoticeText.trim()) {
+          alert("দয়া করে নোটিশের বিবরণ দিন।");
+          setIsEditNoticeSaving(false);
+          return;
+        }
+        await updateDoc(doc(db, "running_notices", editNoticeId), {
+          text: editNoticeText
+        });
+        alert("চলমান নোটিশটি সফলভাবে আপডেট করা হয়েছে!");
+      } else if (editNoticeType === "public") {
+        if (!editNoticeTitle.trim() || !editNoticeDescription.trim()) {
+          alert("দয়া করে নোটিশের টাইটেল ও বিবরণ দিন।");
+          setIsEditNoticeSaving(false);
+          return;
+        }
+        await updateDoc(doc(db, "notices", editNoticeId), {
+          title: editNoticeTitle,
+          description: editNoticeDescription,
+          isEdited: true
+        });
+        alert("পাবলিক নোটিশটি সফলভাবে আপডেট করা হয়েছে!");
+      } else if (editNoticeType === "teacher") {
+        if (!editNoticeTitle.trim() || !editNoticeDescription.trim()) {
+          alert("দয়া করে নোটিশের টাইটেল ও বিবরণ দিন।");
+          setIsEditNoticeSaving(false);
+          return;
+        }
+        await updateDoc(doc(db, "teacher_notices", editNoticeId), {
+          title: editNoticeTitle,
+          description: editNoticeDescription
+        });
+        alert("শিক্ষক নোটিশটি সফলভাবে আপডেট করা হয়েছে!");
+      }
+      // Reset state
+      setEditNoticeType(null);
+      setEditNoticeId(null);
+      setEditNoticeText("");
+      setEditNoticeTitle("");
+      setEditNoticeDescription("");
+    } catch (err) {
+      console.error("Error updating notice:", err);
+      alert("দুঃখিত, নোটিশ আপডেট করা যায়নি।");
+    } finally {
+      setIsEditNoticeSaving(false);
     }
   };
 
@@ -6827,22 +6889,40 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                                 </div>
                                 <p className="text-sm text-gray-800 font-medium leading-relaxed font-sans">{notice.text}</p>
                               </div>
-                              <button
-                                onClick={async () => {
-                                  if (window.confirm("আপনি কি নিশ্চিতভাবে এই নোটিশটি মুছতে চান?")) {
-                                    try {
-                                      await deleteDoc(doc(db, "running_notices", notice.id));
-                                      alert("নোটিশটি মুছে ফেলা হয়েছে।");
-                                    } catch (err) {
-                                      console.error("Error deleting notice:", err);
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditNoticeId(notice.id);
+                                    setEditNoticeText(notice.text || "");
+                                    setEditNoticeType("running");
+                                  }}
+                                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded cursor-pointer"
+                                  title="সম্পাদনা করুন"
+                                >
+                                  <Edit3 className="h-4 w-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={false}
+                                  onClick={async (e) => {
+                                    e.preventDefault();
+                                    if (window.confirm("আপনি কি নিশ্চিতভাবে এই নোটিশটি ডিলিট করতে চান?")) {
+                                      try {
+                                        await deleteDoc(doc(db, "running_notices", notice.id));
+                                        alert("নোটিশটি সম্পূর্ণ মুছে ফেলা হয়েছে।");
+                                      } catch (err) {
+                                        console.error("Error deleting notice:", err);
+                                        alert("মুছে ফেলতে ত্রুটি হয়েছে: " + (err instanceof Error ? err.message : String(err)));
+                                      }
                                     }
-                                  }
-                                }}
-                                className="p-1.5 text-red-600 hover:bg-red-50 rounded"
-                                title="মুছে ফেলুন"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
+                                  }}
+                                  className="p-1.5 text-red-600 hover:bg-red-50 rounded cursor-pointer opacity-100 pointer-events-auto"
+                                  title="ডিলিট করুন"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -7112,13 +7192,10 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                                     <div className="flex justify-center space-x-2">
                                       <button
                                         onClick={() => {
-                                          setPublicNoticeTitle(item.title || "");
-                                          setPublicNoticeDescription(item.description || "");
-                                          setPublicNoticeTitleError("");
-                                          setPublicNoticeDescriptionError("");
-                                          setEditingPublicNoticeId(item.id);
-                                          setIsPublicNoticeFormOpen(true);
-                                          window.scrollTo({ top: 300, behavior: "smooth" });
+                                          setEditNoticeId(item.id);
+                                          setEditNoticeTitle(item.title || "");
+                                          setEditNoticeDescription(item.description || "");
+                                          setEditNoticeType("public");
                                         }}
                                         className="p-1.5 text-blue-600 hover:bg-blue-50 rounded cursor-pointer"
                                         title="সম্পাদনা করুন"
@@ -7126,18 +7203,22 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                                         <Edit3 className="h-4 w-4" />
                                       </button>
                                       <button
-                                        onClick={async () => {
-                                          if (window.confirm("আপনি কি নিশ্চিতভাবে এই পাবলিক নোটিশটি মুছতে চান?")) {
+                                        type="button"
+                                        disabled={false}
+                                        onClick={async (e) => {
+                                          e.preventDefault();
+                                          if (window.confirm("আপনি কি নিশ্চিতভাবে এই নোটিশটি ডিলিট করতে চান?")) {
                                             try {
                                               await deleteDoc(doc(db, "notices", item.id));
                                               alert("নোটিশটি সম্পূর্ণ মুছে ফেলা হয়েছে।");
                                             } catch (err) {
                                               console.error("Error deleting public notice:", err);
+                                              alert("মুছে ফেলতে ত্রুটি হয়েছে: " + (err instanceof Error ? err.message : String(err)));
                                             }
                                           }
                                         }}
-                                        className="p-1.5 text-red-600 hover:bg-red-50 rounded cursor-pointer"
-                                        title="মুছে ফেলুন"
+                                        className="p-1.5 text-red-600 hover:bg-red-50 rounded cursor-pointer opacity-100 pointer-events-auto"
+                                        title="ডিলিট করুন"
                                       >
                                         <Trash2 className="h-4 w-4" />
                                       </button>
@@ -7232,21 +7313,40 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                                 <h5 className="font-bold text-emerald-950 text-sm">{notice.title}</h5>
                                 <p className="text-xs text-slate-600 leading-relaxed font-sans">{notice.description}</p>
                               </div>
-                              <button
-                                onClick={async () => {
-                                  if (window.confirm("আপনি কি নিশ্চিতভাবে এই শিক্ষক নোটিশটি মুছতে চান?")) {
-                                    try {
-                                      await deleteDoc(doc(db, "teacher_notices", notice.id));
-                                    } catch (err) {
-                                      console.error("Error deleting notice:", err);
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <button
+                                  onClick={() => {
+                                    setEditNoticeId(notice.id);
+                                    setEditNoticeTitle(notice.title || "");
+                                    setEditNoticeDescription(notice.description || "");
+                                    setEditNoticeType("teacher");
+                                  }}
+                                  className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all cursor-pointer"
+                                  title="সম্পাদনা করুন"
+                                >
+                                  <Edit3 className="h-5 w-5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={false}
+                                  onClick={async (e) => {
+                                    e.preventDefault();
+                                    if (window.confirm("আপনি কি নিশ্চিতভাবে এই নোটিশটি ডিলিট করতে চান?")) {
+                                      try {
+                                        await deleteDoc(doc(db, "teacher_notices", notice.id));
+                                        alert("নোটিশটি সম্পূর্ণ মুছে ফেলা হয়েছে।");
+                                      } catch (err) {
+                                        console.error("Error deleting notice:", err);
+                                        alert("মুছে ফেলতে ত্রুটি হয়েছে: " + (err instanceof Error ? err.message : String(err)));
+                                      }
                                     }
-                                  }
-                                }}
-                                className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                                title="মুছে ফেলুন"
-                              >
-                                <Trash2 className="h-5 w-5" />
-                              </button>
+                                  }}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-all cursor-pointer opacity-100 pointer-events-auto"
+                                  title="ডিলিট করুন"
+                                >
+                                  <Trash2 className="h-5 w-5" />
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -7417,6 +7517,107 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
           {activeAdminSubTab === "admin_control" && (
             <AdminControlSection user={user} />
           )}
+        </div>
+      )}
+
+      {/* ------------------- NOTICE EDIT DIALOG MODAL ------------------- */}
+      {editNoticeType !== null && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full border border-gray-200 overflow-hidden my-8 animate-fade-in" style={{ fontFamily: "'Noto Serif Bengali', serif" }}>
+            <div className="bg-emerald-800 text-white p-5 flex justify-between items-center border-b-4 border-amber-500">
+              <h3 className="font-bold text-base sm:text-lg">
+                {editNoticeType === "running" && "চলমান নোটিশ সংশোধন করুন"}
+                {editNoticeType === "public" && "পাবলিক নোটিশ সংশোধন করুন"}
+                {editNoticeType === "teacher" && "শিক্ষক নোটিশ সংশোধন করুন"}
+              </h3>
+              <button
+                onClick={() => {
+                  setEditNoticeType(null);
+                  setEditNoticeId(null);
+                  setEditNoticeText("");
+                  setEditNoticeTitle("");
+                  setEditNoticeDescription("");
+                }}
+                className="text-emerald-100 hover:text-white"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveNoticeEdit} className="p-6 space-y-4">
+              {editNoticeType === "running" && (
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-700 block">চলমান নোটিশের বিবরণ</label>
+                  <textarea
+                    rows={4}
+                    required
+                    value={editNoticeText}
+                    onChange={(e) => setEditNoticeText(e.target.value)}
+                    placeholder="চলমান নোটিশের বিবরণ লিখুন..."
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-emerald-950 font-sans"
+                  />
+                </div>
+              )}
+
+              {(editNoticeType === "public" || editNoticeType === "teacher") && (
+                <>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-700 block">নোটিশ টাইটেল (Title)</label>
+                    <input
+                      type="text"
+                      required
+                      value={editNoticeTitle}
+                      onChange={(e) => setEditNoticeTitle(e.target.value)}
+                      placeholder="নোটিশের শিরোনাম লিখুন..."
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-emerald-950"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-700 block">নোটিশ বিস্তারিত বিবরণ (Body Description)</label>
+                    <textarea
+                      rows={5}
+                      required
+                      value={editNoticeDescription}
+                      onChange={(e) => setEditNoticeDescription(e.target.value)}
+                      placeholder="নোটিশের বিস্তারিত বিবরণ লিখুন..."
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-emerald-950 font-sans"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditNoticeType(null);
+                    setEditNoticeId(null);
+                    setEditNoticeText("");
+                    setEditNoticeTitle("");
+                    setEditNoticeDescription("");
+                  }}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-4 py-2.5 rounded-lg text-xs transition-all cursor-pointer"
+                >
+                  বাতিল করুন
+                </button>
+                <button
+                  type="submit"
+                  disabled={isEditNoticeSaving}
+                  className="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-5 py-2.5 rounded-lg text-xs shadow-sm select-none transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                >
+                  {isEditNoticeSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>আপডেট হচ্ছে...</span>
+                    </>
+                  ) : (
+                    <span>আপডেট সম্পন্ন করুন</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

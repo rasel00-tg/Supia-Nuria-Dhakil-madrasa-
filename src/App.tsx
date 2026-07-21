@@ -29,9 +29,12 @@ import { db, StreamBuilder, uploadFileToImgBB, handleFirestoreError, OperationTy
 import { doc, onSnapshot, collection, query, setDoc } from "firebase/firestore";
 import { Upload } from "lucide-react";
 import { loadingService } from "./lib/loadingService";
+import ImageCropper from "./components/ImageCropper";
 
 const settingsCollectionQuery = query(collection(db, "settings"));
+const footerSettingsCollectionQuery = query(collection(db, "footer_settings"));
 const FooterStreamBuilder = StreamBuilder as any;
+const BatchLogoStreamBuilder = StreamBuilder as any;
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>("home");
@@ -45,6 +48,36 @@ export default function App() {
 
   const [jdcUploading, setJdcUploading] = useState<boolean>(false);
   const [imranUploading, setImranUploading] = useState<boolean>(false);
+  const [batchCropSrc, setBatchCropSrc] = useState<string | null>(null);
+  const [batchUploading, setBatchUploading] = useState<boolean>(false);
+
+  const handleBatchLogoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setBatchCropSrc(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleBatchCropComplete = async (croppedBlob: Blob) => {
+    setBatchCropSrc(null);
+    setBatchUploading(true);
+    try {
+      const croppedFile = new File([croppedBlob], "batch_logo.jpg", { type: "image/jpeg" });
+      const url = await uploadFileToImgBB(croppedFile);
+      await setDoc(doc(db, "footer_settings", "batch_logo"), {
+        logo_url: url,
+        is_uploaded: true
+      }, { merge: true });
+    } catch (error) {
+      console.error("Error cropping and uploading batch logo:", error);
+      alert("লোগো আপলোড ব্যর্থ হয়েছে। পুনরায় চেষ্টা করুন।");
+    } finally {
+      setBatchUploading(false);
+    }
+  };
 
   // Strict 2s Splash Timeout Guard and Slow Network alert states
   const [showSlowNetworkAlert, setShowSlowNetworkAlert] = useState<boolean>(false);
@@ -594,25 +627,25 @@ export default function App() {
             const isImranUploaded = footerSettings.isImranUploaded || false;
 
             return (
-              <footer id="main-footer" className="bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 text-white border-t-4 border-amber-500 py-3 px-4 sm:px-6 lg:px-8 mt-4 print:hidden font-alinur relative overflow-hidden leading-[1.1]">
+              <footer id="main-footer" className="bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 text-white border-t-4 border-amber-500 py-2.5 px-4 sm:px-6 lg:px-8 mt-3 print:hidden font-alinur relative overflow-hidden leading-[1.1]">
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#047857_1px,transparent_1px),linear-gradient(to_bottom,#047857_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-5 pointer-events-none"></div>
 
                 <div className="max-w-7xl mx-auto relative z-10">
                   {/* Branding Hub (Propeller Center) */}
-                  <div className="flex flex-col items-center text-center space-y-1 mb-3">
+                  <div className="flex flex-col items-center text-center space-y-1 mb-2">
                     <div className="relative">
                       <div className="absolute inset-0 bg-amber-500/20 blur-xl rounded-full animate-pulse"></div>
                       <img 
                         src={logoUrl || "/photo/logo.png"} 
                         alt="Logo" 
-                        className="h-18 w-18 sm:h-22 sm:w-22 object-contain rounded-full relative z-10 bg-white p-1 border-2 border-amber-400 shadow-lg transition-all duration-300 hover:scale-105"
+                        className="h-14 w-14 sm:h-16 sm:w-16 object-contain rounded-full relative z-10 bg-white p-1 border-2 border-amber-400 shadow-md transition-all duration-300 hover:scale-105"
                         onError={(e) => {
                           e.currentTarget.onerror = null;
                           e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";
                         }}
                       />
                     </div>
-                    <h3 className="font-extrabold text-lg sm:text-xl text-amber-400 tracking-wide leading-none">
+                    <h3 className="font-extrabold text-base sm:text-lg text-amber-400 tracking-wide leading-none">
                       সুফিয়া নূরীয়া দাখিল মাদ্রাসা
                     </h3>
                     <p className="text-[10px] sm:text-[11px] text-emerald-100 max-w-2xl mx-auto leading-tight opacity-90 font-bornomala">
@@ -621,20 +654,20 @@ export default function App() {
                   </div>
 
                   {/* Balanced Propeller Blades Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 items-start">
                     {/* Left Blade: Important Links */}
-                    <div className="space-y-1 md:text-left text-center">
-                      <h4 className="text-[12px] font-bold text-amber-400 border-b border-emerald-800/50 pb-0.5 inline-block md:block leading-none">
+                    <div className="space-y-1.5 md:text-left text-center">
+                      <h4 className="text-[11px] font-bold text-amber-400 border-b border-emerald-800/50 pb-1 inline-block md:block leading-none">
                         গুরুত্বপূর্ণ লিংকসমূহ
                       </h4>
-                      <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px]">
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] max-w-xs mx-auto md:mx-0 w-full">
                         {[
-                          { label: "স্মরনীয় ব্যাক্তিত্ব", tab: "honored" },
+                          { label: "স্মরণীয় ব্যক্তিত্ব", tab: "honored" },
                           { label: "শিক্ষকবৃন্দ", tab: "teachers" },
                           { label: "হোমপেজ", tab: "home" },
                           { label: "অনলাইন ভর্তি", tab: "admission" },
                           { label: "ক্লাস রুটিন", tab: "routine" },
-                          { label: "ফলাফল খুজুন", tab: "result" }
+                          { label: "ফলাফল খুঁজুন", tab: "result" }
                         ].map((link) => (
                           <button
                             key={link.label}
@@ -642,69 +675,108 @@ export default function App() {
                               setActiveTab(link.tab);
                               window.scrollTo({ top: 0, behavior: "smooth" });
                             }}
-                            className="text-left text-emerald-100 hover:text-amber-300 transition-colors duration-200 flex items-center gap-1 cursor-pointer font-medium leading-none"
+                            className="text-left text-emerald-100 hover:text-amber-300 transition-colors duration-200 flex items-center gap-1.5 cursor-pointer font-medium leading-normal w-full"
                           >
-                            <span className="text-amber-500/60 text-[8px]">✦</span>
-                            <span>{link.label}</span>
+                            <span className="text-amber-500/60 text-[8px] shrink-0">✦</span>
+                            <span className="truncate">{link.label}</span>
                           </button>
                         ))}
                       </div>
                     </div>
 
                     {/* Middle Blade: Credits & JDC Logo */}
-                    <div className="text-center border-x-0 md:border-x border-emerald-800/30 px-1">
-                      <h4 className="text-[12px] font-bold text-amber-400 border-b border-emerald-800/50 pb-0.5 inline-block md:block leading-none mb-1">
+                    <div className="flex flex-col items-center text-center border-x-0 md:border-x border-emerald-800/30 px-4 py-1 md:py-0 space-y-1">
+                      <h4 className="text-[11px] font-bold text-amber-400 border-b border-emerald-800/50 pb-1 inline-block md:block leading-none mb-1 w-fit">
                         সহযোগিতা ও শুভেচ্ছান্তে
                       </h4>
-                      <div className="text-[10px] text-emerald-100 flex flex-col items-center leading-none">
-                        <p className="mb-0">
-                          ডেভেলপমেন্ট ও কারিগরি আপডেট সহায়তায় -রাশেদুল করিম (সাবেক শিক্ষার্থী JDC-18)
+                      <div className="text-[10px] text-emerald-100 flex flex-col items-center justify-center space-y-1 leading-tight w-full">
+                        <p className="text-center font-medium">
+                          ডেভেলপমেন্ট ও কারিগরি আপডেট সহায়তায়:
                         </p>
-                        <div className="flex items-center justify-center gap-1">
-                          <p className="mb-0">
-                            শুভেচ্ছান্তে - JDC-18 ব্যাচের সকল শিক্ষার্থীবৃন্দ
-                          </p>
-                          {isJdcLogoUploaded && jdcLogoUrl && (
-                            <img 
-                              src={jdcLogoUrl} 
-                              alt="JDC-18 Logo" 
-                              className="w-16 h-16 object-contain" 
-                              style={{ imageRendering: '-webkit-optimize-contrast' }}
-                            />
-                          )}
-                        </div>
+                        <p className="text-center text-amber-300">
+                          রাশেদুল করিম (সাবেক শিক্ষার্থী JDC-18)
+                        </p>
+                        <p className="text-center pt-0.5 font-medium">
+                          শুভেচ্ছান্তে:
+                        </p>
+                        <p className="text-center text-amber-300">
+                          JDC-18 ব্যাচের সকল শিক্ষার্থীবৃন্দ
+                        </p>
+                        
+                        <BatchLogoStreamBuilder
+                          stream={footerSettingsCollectionQuery}
+                          builder={(batchLogoList) => {
+                            const batchLogoDoc = batchLogoList.find(b => b.id === "batch_logo") || {};
+                            const batchLogoUrl = batchLogoDoc.logo_url || "";
+                            const isUploaded = batchLogoDoc.is_uploaded || false;
 
-                        {!isJdcLogoUploaded && (
-                          <div className="pt-0.5">
-                            <input type="file" accept="image/*" className="hidden" id="footer-jdc-logo" onChange={handleJdcLogoUpload} disabled={jdcUploading} />
-                            <label htmlFor="footer-jdc-logo" className={`inline-flex items-center gap-1 bg-emerald-900/50 hover:bg-emerald-800 text-amber-300 text-[8px] font-bold py-0.5 px-1.5 rounded-md border border-amber-500/20 cursor-pointer transition-all ${jdcUploading ? "opacity-50" : ""}`}>
-                              <Upload className="w-2.5 h-2.5" />
-                              <span>{jdcUploading ? "..." : "লোগো"}</span>
-                            </label>
-                          </div>
-                        )}
+                            return (
+                              <div className="w-full flex flex-col items-center justify-center">
+                                {isUploaded && batchLogoUrl ? (
+                                  <div className="flex justify-center mt-1">
+                                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg border border-amber-500/20 bg-emerald-950/40 p-0 shadow-md shrink-0 flex items-center justify-center overflow-hidden">
+                                      <img 
+                                        src={batchLogoUrl} 
+                                        alt="JDC-18 Logo" 
+                                        className="w-full h-full object-cover" 
+                                        style={{ imageRendering: 'auto' }}
+                                      />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="pt-1 flex flex-col items-center justify-center">
+                                    <input 
+                                      type="file" 
+                                      accept="image/*" 
+                                      className="hidden" 
+                                      id="footer-jdc-logo" 
+                                      onChange={handleBatchLogoFileSelect} 
+                                      disabled={batchUploading} 
+                                    />
+                                    <label 
+                                      htmlFor="footer-jdc-logo" 
+                                      className={`inline-flex items-center gap-1.5 bg-emerald-900/60 hover:bg-emerald-800 text-amber-300 text-[9px] sm:text-[10px] font-bold py-1.5 px-3 rounded-md border border-amber-500/20 cursor-pointer transition-all ${batchUploading ? "opacity-50" : ""}`}
+                                    >
+                                      <Upload className="w-3 h-3" />
+                                      <span>{batchUploading ? "আপলোড হচ্ছে..." : "লোগো যুক্ত করুন"}</span>
+                                    </label>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }}
+                        />
                       </div>
                     </div>
 
                     {/* Right Blade: Remembrance */}
-                    <div className="space-y-1 md:text-right text-center">
-                      <div className="space-y-1 text-[10px] text-emerald-100">
-                        <div className="flex flex-col md:flex-row items-center md:justify-end gap-1.5">
-                          <div className="space-y-0">
-                            <p className="font-bold text-amber-300 text-[10px] leading-tight">স্বরনে -হাফেজ মোহাম্মদ ইমরান</p>
-                            <p className="text-[9px] text-emerald-200 leading-tight italic">আমাদের প্রিয় বন্ধুকে আল্লাহ জান্নাতুল ফেরদৌস দান করুক।</p>
-                          </div>
+                    <div className="flex flex-col items-center text-center justify-center space-y-1 py-1 md:py-0 w-full">
+                      <h4 className="text-[11px] font-bold text-amber-400 border-b border-emerald-800/50 pb-1 inline-block md:block leading-none mb-1 w-fit">
+                        স্মরণে
+                      </h4>
+                      <div className="text-[10px] text-emerald-100 flex flex-col items-center justify-center space-y-1.5 w-full">
+                        <div className="flex flex-col items-center justify-center gap-1">
                           {isImranUploaded && imranImageUrl && (
-                            <img src={imranImageUrl} alt="হাফেজ ইমরান" className="w-8 h-8 object-contain" />
+                            <div className="flex justify-center pb-1">
+                              <img 
+                                src={imranImageUrl} 
+                                alt="হাফেজ ইমরান" 
+                                className="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded-full border-2 border-amber-400 shadow-md bg-emerald-950/40 shrink-0" 
+                              />
+                            </div>
                           )}
+                          <div className="text-center space-y-0.5">
+                            <p className="font-bold text-amber-300 text-[10.5px] leading-tight">হাফেজ মোহাম্মদ ইমরান</p>
+                            <p className="text-[9.5px] text-emerald-200 leading-tight italic">আল্লাহ আমাদের প্রিয় বন্ধুকে জান্নাতুল ফেরদৌস নসীব করুন। আমিন।</p>
+                          </div>
                         </div>
 
                         {!isImranUploaded && (
-                          <div className="pt-0.5">
+                          <div className="pt-1 flex justify-center">
                             <input type="file" accept="image/*" className="hidden" id="footer-imran-image" onChange={handleImranImageUpload} disabled={imranUploading} />
-                            <label htmlFor="footer-imran-image" className={`inline-flex items-center gap-1 bg-emerald-900/50 hover:bg-emerald-800 text-amber-300 text-[8px] font-bold py-0.5 px-1.5 rounded-md border border-amber-500/20 cursor-pointer transition-all ${imranUploading ? "opacity-50" : ""}`}>
+                            <label htmlFor="footer-imran-image" className={`inline-flex items-center gap-1 bg-emerald-900/50 hover:bg-emerald-800 text-amber-300 text-[8px] font-bold py-1 px-2 rounded-md border border-amber-500/20 cursor-pointer transition-all ${imranUploading ? "opacity-50" : ""}`}>
                               <Upload className="w-2.5 h-2.5" />
-                              <span>{imranUploading ? "..." : "ছবি"}</span>
+                              <span>{imranUploading ? "..." : "ছবি আপলোড"}</span>
                             </label>
                           </div>
                         )}
@@ -713,9 +785,12 @@ export default function App() {
                   </div>
 
                   {/* Copyright Footer (Centered Propeller Base) */}
-                  <div className="w-full border-t border-emerald-900/40 mt-3 pt-2 flex flex-col items-center text-center space-y-0.5 text-[10px] text-emerald-400/80 leading-tight">
-                    <p>©️সুফিয়া নূরীয়া দাখিল মাদ্রাসা সর্বস্ব সুরক্ষিত</p>
-                    <p className="font-semibold text-amber-500/60 uppercase tracking-tight">ভার্সন 2.1</p>
+                  <div className="w-full border-t border-emerald-800/30 mt-3 pt-2 flex flex-col sm:flex-row items-center justify-between gap-1.5 text-[10px] sm:text-[10.5px] text-emerald-200/75 tracking-wide leading-relaxed font-sans">
+                    <p className="text-center sm:text-left">© {new Date().getFullYear()} সুফিয়া নূরীয়া দাখিল মাদ্রাসা। সর্বস্বত্ব সংরক্ষিত।</p>
+                    <div className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                      <p className="font-bold text-amber-400/80 tracking-widest uppercase">ভার্সন ২.১ (Version 2.1)</p>
+                    </div>
                   </div>
                 </div>
               </footer>
@@ -795,6 +870,17 @@ export default function App() {
               সকল আপডেট তাৎক্ষণিক পেতে ইন্টারনেট সংযোগ চালু করুন
             </p>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {batchCropSrc && (
+          <ImageCropper
+            image={batchCropSrc}
+            aspectRatio={1}
+            onCropComplete={handleBatchCropComplete}
+            onCancel={() => setBatchCropSrc(null)}
+          />
         )}
       </AnimatePresence>
     </div>
