@@ -3,7 +3,7 @@ import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, order
 import { db, handleFirestoreError, OperationType, uploadFileToImgBB, StreamBuilder } from "../lib/firebase";
 import { checkDuplicatePhoneNumberGlobal, checkUniqueLoginIdGlobal } from "../lib/validation";
 import { Teacher, SuccessStory, CommitteeMember, HonoredPerson, AdmissionForm, Routine, ContactMessage } from "../types";
-import { Trash2, Edit3, Plus, Check, X, CreditCard, Mail, UserPlus, Users, GraduationCap, Calendar, Award, MessageSquare, Heart, CheckCircle2, XCircle, Settings, Megaphone, ChevronDown, ChevronRight, LayoutDashboard, Globe, Lock, ArrowLeft, CheckCircle, AlertCircle, AlertTriangle, CalendarCheck, CalendarRange, ClipboardList, Loader2, BookOpen, Home, Compass, HelpCircle, Send, Clock, LogOut, Activity, TrendingUp, History, Search, Menu, Phone, MapPin, User } from "lucide-react";
+import { Trash2, Edit3, Plus, Check, X, CreditCard, Mail, UserPlus, Users, GraduationCap, Calendar, Award, MessageSquare, Heart, CheckCircle2, XCircle, Settings, Megaphone, ChevronDown, ChevronRight, LayoutDashboard, Globe, Lock, ArrowLeft, CheckCircle, AlertCircle, AlertTriangle, CalendarCheck, CalendarRange, ClipboardList, Loader2, BookOpen, Home, Compass, HelpCircle, Send, Clock, LogOut, Activity, TrendingUp, History, Search, Menu, Phone, MapPin, User, Info } from "lucide-react";
 import PathdanUpdateForm from "./PathdanUpdateForm";
 import SodossoFormUpdateForm from "./SodossoFormUpdateForm";
 import KormochariUpdateForm from "./KormochariUpdateForm";
@@ -71,6 +71,7 @@ const StudentDashboardInner = ({
   const [homeworkSubTab, setHomeworkSubTab] = useState<"today" | "pending">("today");
   const [selectedStudySubject, setSelectedStudySubject] = useState<string>("");
   const [showSubjectListDropdown, setShowSubjectListDropdown] = useState<boolean>(false);
+  const [showDetailsModal, setShowDetailsModal] = useState<boolean>(false);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "teachers"), (snapshot) => {
@@ -161,50 +162,64 @@ const StudentDashboardInner = ({
 
   return (
     <div className="relative -mt-8 -mx-2 bg-[#f8fafc] pb-28 min-h-screen">
-      {/* সলিড গ্রীন হেডার ব্লক (Solid Green Header Block) */}
-      <div className="bg-emerald-900 pt-16 pb-28 px-6 rounded-b-[40px] shadow-lg relative z-0">
-        {/* অ্যানিমেটেড লগআউট বাটন (Top Right Logout Button) */}
-        <motion.button
-          whileHover={{ scale: 1.1, rotate: 90 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setShowLogoutConfirm(true)}
-          className="absolute top-8 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white/90 backdrop-blur-sm border border-white/10 transition-all cursor-pointer z-20"
-        >
-          <LogOut className="h-5 w-5" />
-        </motion.button>
+      {/* সলিড গ্রীন হেডার ব্লক (Solid Green Header Block) - Hidden on "পড়া" (homework) tab */}
+      {studentActiveTab !== "homework" && (
+        <div className="bg-emerald-900 pt-16 pb-28 px-6 rounded-b-[40px] shadow-lg relative z-0">
+          {/* ড্রয়ার নেভিগেশন মেনু বাটন (Top Left Menu Button) */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => window.dispatchEvent(new CustomEvent('toggle-sidebar'))}
+            className="absolute top-8 left-6 p-2.5 bg-amber-500 hover:bg-amber-400 text-emerald-950 rounded-2xl shadow-md transition-all cursor-pointer z-20 flex items-center justify-center border border-amber-300 active:scale-95"
+            title="মেনু খুলুন"
+          >
+            <Menu className="h-5 w-5 stroke-[2.5]" />
+          </motion.button>
 
-        <div className="max-w-md mx-auto text-center">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+          {/* অ্যানিমেটেড লগআউট বাটন (Top Right Logout Button) */}
+          <motion.button
+            whileHover={{ scale: 1.1, rotate: 90 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setShowLogoutConfirm(true)}
+            className="absolute top-8 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white/90 backdrop-blur-sm border border-white/10 transition-all cursor-pointer z-20"
+            title="লগআউট করুন"
+          >
+            <LogOut className="h-5 w-5" />
+          </motion.button>
+
+          <div className="max-w-md mx-auto text-center">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+              >
+                <Clock className="h-4 w-4 text-amber-400" />
+              </motion.div>
+              <p className="text-emerald-300 font-bold text-sm tracking-wide opacity-90" style={{ fontFamily: 'Alinur Tatsama' }}>{formattedDate}</p>
+            </div>
+            <motion.h2 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-3xl font-black text-white mt-1 leading-tight" 
+              style={{ fontFamily: 'Alinur Tatsama' }}
             >
-              <Clock className="h-4 w-4 text-amber-400" />
-            </motion.div>
-            <p className="text-emerald-300 font-bold text-sm tracking-wide opacity-90" style={{ fontFamily: 'Alinur Tatsama' }}>{formattedDate}</p>
+              {studentName}
+            </motion.h2>
+            <motion.p 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-emerald-100/80 font-bold text-lg mt-1" 
+              style={{ fontFamily: 'Alinur Tatsama' }}
+            >
+              {studentClass}
+            </motion.p>
           </div>
-          <motion.h2 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-3xl font-black text-white mt-1 leading-tight" 
-            style={{ fontFamily: 'Alinur Tatsama' }}
-          >
-            {studentName}
-          </motion.h2>
-          <motion.p 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-emerald-100/80 font-bold text-lg mt-1" 
-            style={{ fontFamily: 'Alinur Tatsama' }}
-          >
-            {studentClass}
-          </motion.p>
         </div>
-      </div>
+      )}
 
       {/* Main Sub-view Content based on studentActiveTab */}
-      <div className="px-6 mt-8 max-w-lg mx-auto overflow-hidden">
+      <div className={`px-6 max-w-lg mx-auto overflow-visible ${studentActiveTab === "homework" ? "pt-6" : "mt-8"}`}>
         <AnimatePresence mode="wait">
           {studentActiveTab === "home" && (
             <motion.div
@@ -212,69 +227,50 @@ const StudentDashboardInner = ({
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
-              className="space-y-6"
+              className="space-y-6 overflow-visible"
               style={{ fontFamily: 'Alinur Tatsama' }}
             >
-              {/* টপ মোস্ট প্রোফাইল  কার্ড (Top-most Profile Card) - Overlapping */}
-              <div className="relative z-10 -mt-24 mb-6">
+              {/* টপ মোস্ট প্রোফাইল কার্ড (Top-most Profile Card) - Overlapping */}
+              <div className="relative z-20 -mt-20 mb-6 overflow-visible">
                 <motion.div 
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  className="bg-white rounded-[32px] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-white flex flex-col items-center"
+                  className="bg-white rounded-[32px] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-slate-100 flex flex-col items-center relative z-20 overflow-visible"
                 >
-                  <div className="relative group">
-                    <div className="absolute inset-0 bg-emerald-500 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
-                    <div className="h-28 w-28 rounded-full border-4 border-white shadow-xl overflow-hidden relative z-10">
+                  <div className="relative group mb-3 p-1 overflow-visible z-30">
+                    <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-lg opacity-30 group-hover:opacity-50 transition-opacity"></div>
+                    <div className="h-28 w-28 sm:h-32 sm:w-32 rounded-full border-4 border-emerald-600 shadow-xl overflow-hidden relative z-10 bg-slate-100 flex items-center justify-center shrink-0 p-0.5">
                       <img 
                         src={studentPhoto} 
-                        alt="Profile" 
-                        className="h-full w-full object-cover"
+                        alt={studentName} 
+                        className="h-full w-full object-cover object-center rounded-full"
                         referrerPolicy="no-referrer"
                       />
                     </div>
-                    <div className="absolute -bottom-1 -right-1 h-8 w-8 bg-amber-500 rounded-full border-2 border-white flex items-center justify-center shadow-md z-20">
-                      <Award className="h-4 w-4 text-white" />
+                    <div className="absolute bottom-1 right-1 h-8 w-8 bg-amber-500 rounded-full border-2 border-white flex items-center justify-center shadow-md z-20">
+                      <Award className="h-4 w-4 text-emerald-950" />
                     </div>
                   </div>
 
-                  <div className="mt-3 text-center">
-                    <span className="text-xs text-slate-400 font-bold tracking-widest block mb-0.5">রোল নম্বর</span>
-                    <h3 className="text-2xl font-black text-emerald-950 leading-none">{toBengaliDigits(studentRoll)}</h3>
+                  <div className="text-center space-y-1">
+                    <h3 className="text-xl font-black text-emerald-950 leading-tight">{studentName}</h3>
+                    <p className="text-xs text-slate-500 font-bold">{studentClass}</p>
+                    <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 px-3.5 py-1 rounded-full text-xs font-black border border-emerald-100/80 mt-1">
+                      <span>রোল নম্বর:</span>
+                      <span className="text-emerald-950 text-sm font-black">{toBengaliDigits(studentRoll)}</span>
+                    </div>
                   </div>
 
-                  {/* বিস্তারিত প্রোফাইল সেকশন */}
-                  <div className="w-full mt-6 pt-5 border-t border-slate-100 space-y-3.5 text-right font-serif">
-                    <h4 className="font-black text-emerald-900 text-sm mb-3 text-center" style={{ fontFamily: 'Alinur Tatsama' }}>বিস্তারিত প্রোফাইল</h4>
-                    
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-bold text-slate-700">{loggedInStudent?.g1Name || loggedInStudent?.father_name || "মো: আবদুর রহমান"}</span>
-                      <span className="text-slate-400 font-bold flex items-center gap-1"><User className="h-3.5 w-3.5 text-slate-300" /> অভিভাবকের নাম:</span>
-                    </div>
-                    
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-bold text-slate-700">{toBengaliDigits(loggedInStudent?.g1Phone || loggedInStudent?.phone || "০১৭১২৩৪৫৬৭৮")}</span>
-                      <span className="text-slate-400 font-bold flex items-center gap-1"><Phone className="h-3.5 w-3.5 text-slate-300" /> অভিভাবকের মোবাইল:</span>
-                    </div>
-                    
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100">{loggedInStudent?.bloodGroup || "O+"}</span>
-                      <span className="text-slate-400 font-bold flex items-center gap-1"><Heart className="h-3.5 w-3.5 text-rose-300" /> রক্তের গ্রুপ:</span>
-                    </div>
-                    
-                    <div className="flex justify-between items-start text-xs gap-4">
-                      <span className="font-bold text-slate-700 text-right max-w-[200px] leading-relaxed">
-                        {loggedInStudent?.studentPermanentAddress || loggedInStudent?.permanentAddress || "মাদরাসা কোয়ার্টার, ফেনী"}
-                      </span>
-                      <span className="text-slate-400 font-bold flex items-center gap-1 shrink-0"><MapPin className="h-3.5 w-3.5 text-slate-300" /> স্থায়ী ঠিকানা:</span>
-                    </div>
-                    
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-bold text-emerald-700">
-                        {getLastLoginStatus()}
-                      </span>
-                      <span className="text-slate-400 font-bold flex items-center gap-1"><Clock className="h-3.5 w-3.5 text-emerald-300" /> সর্বশেষ লগইন স্ট্যাটাস:</span>
-                    </div>
-                  </div>
+                  {/* আকর্ষণীয় "বিস্তারিত" (Details) বাটন */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setShowDetailsModal(true)}
+                    className="w-full mt-5 py-3.5 px-6 bg-gradient-to-r from-emerald-800 to-emerald-900 hover:from-emerald-900 hover:to-emerald-950 text-amber-400 font-black rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm border border-emerald-700/50 cursor-pointer"
+                  >
+                    <Info className="h-4.5 w-4.5 text-amber-400" />
+                    <span>বিস্তারিত</span>
+                  </motion.button>
                 </motion.div>
               </div>
 
@@ -419,33 +415,83 @@ const StudentDashboardInner = ({
                   }
 
                   // Filter homeworks for current student class
-                  const classHomework = homeworkList.filter((hw: any) => 
+                  const rawClassHomework = homeworkList.filter((hw: any) => 
                     hw.className === studentClass || hw.class === studentClass || !hw.className
                   );
 
-                  const todayStr = new Date().toISOString().split('T')[0];
+                  const d = new Date();
+                  const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                  const nowMs = Date.now();
+                  const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
                   const isToday = (date: Date) => {
-                    const todayObj = new Date();
-                    return date.getFullYear() === todayObj.getFullYear() &&
-                           date.getMonth() === todayObj.getMonth() &&
-                           date.getDate() === todayObj.getDate();
+                    return date.getFullYear() === d.getFullYear() &&
+                           date.getMonth() === d.getMonth() &&
+                           date.getDate() === d.getDate();
                   };
 
-                  // TODAY'S HOMEWORK: Given today
+                  const classHomework: any[] = [];
+
+                  // Process lifecycle, auto-expire & 24hr auto-delete cleanup
+                  rawClassHomework.forEach((hw: any) => {
+                    if (!hw.id) return;
+                    let isCompleted = hw.status === "completed" || hw.status === "Completed";
+                    const isExpired = hw.dueDate ? (hw.dueDate < todayStr) : false;
+
+                    // 1. Auto-mark completed if deadline expired
+                    if (isExpired && !isCompleted) {
+                      updateDoc(doc(db, "homework", hw.id), {
+                        status: "completed",
+                        completedAt: serverTimestamp()
+                      }).catch((err) => console.error("Error marking expired homework completed:", err));
+                      isCompleted = true;
+                      hw.status = "completed";
+                    }
+
+                    if (isCompleted) {
+                      let completedMs = 0;
+                      if (hw.completedAt) {
+                        if (typeof hw.completedAt.toMillis === 'function') {
+                          completedMs = hw.completedAt.toMillis();
+                        } else if (hw.completedAt.seconds) {
+                          completedMs = hw.completedAt.seconds * 1000;
+                        } else {
+                          completedMs = new Date(hw.completedAt).getTime();
+                        }
+                      } else if (hw.createdAt) {
+                        if (typeof hw.createdAt.toMillis === 'function') {
+                          completedMs = hw.createdAt.toMillis();
+                        } else if (hw.createdAt.seconds) {
+                          completedMs = hw.createdAt.seconds * 1000;
+                        } else {
+                          completedMs = new Date(hw.createdAt).getTime();
+                        }
+                      }
+
+                      // 2. Permanently delete from Firestore if completed > 24 hours (86,400s)
+                      if (completedMs > 0 && (nowMs - completedMs >= TWENTY_FOUR_HOURS_MS)) {
+                        deleteDoc(doc(db, "homework", hw.id)).catch((err) => console.error("Error auto-deleting homework:", err));
+                        return; // Exclude from rendering
+                      }
+                    }
+
+                    classHomework.push(hw);
+                  });
+
+                  // TODAY'S / COMPLETED HOMEWORK: Given today OR completed within 24 hours
                   const todaysHomeworks = classHomework.filter(hw => {
+                    const isCompleted = hw.status === "completed" || hw.status === "Completed";
+                    if (isCompleted) return true;
                     if (!hw.createdAt) return false;
                     const createdDate = hw.createdAt.toDate ? hw.createdAt.toDate() : new Date(hw.createdAt);
                     return isToday(createdDate);
                   });
 
-                  // PENDING HOMEWORK: Given before today, not expired yet or not completed
+                  // PENDING HOMEWORK: Only active homeworks (Not completed & Not expired)
                   const pendingHomeworks = classHomework.filter(hw => {
-                    if (!hw.createdAt) return false;
-                    const createdDate = hw.createdAt.toDate ? hw.createdAt.toDate() : new Date(hw.createdAt);
-                    const isGivenBeforeToday = !isToday(createdDate);
-                    const isNotExpired = hw.dueDate ? (hw.dueDate >= todayStr) : true;
-                    const isNotCompleted = hw.status !== "Completed";
-                    return isGivenBeforeToday && (isNotExpired || isNotCompleted);
+                    const isCompleted = hw.status === "completed" || hw.status === "Completed";
+                    const isExpired = hw.dueDate ? (hw.dueDate < todayStr) : false;
+                    return !isCompleted && !isExpired;
                   });
 
                   if (homeworkSubTab === "today") {
@@ -467,7 +513,7 @@ const StudentDashboardInner = ({
                         >
                           <div className="flex items-center gap-3">
                             <span className="text-2xl">📊</span>
-                            <span className="text-base font-bold">আজকের মোট হোমওয়ার্ক: {toBengaliDigits(todaysHomeworks.length)}টি</span>
+                            <span className="text-base font-bold">আজকের মোট কাজ: {toBengaliDigits(todaysHomeworks.length)}টি</span>
                           </div>
                           {todaysHomeworks.length > 0 && (
                             <ChevronDown className={`h-5 w-5 text-amber-400 transition-transform duration-300 ${showSubjectListDropdown ? "rotate-180" : ""}`} />
@@ -507,7 +553,7 @@ const StudentDashboardInner = ({
                             </div>
                             <h4 className="font-bold text-xl text-slate-800" style={{ fontFamily: 'Alinur Tatsama' }}>কোনো হোমওয়ার্ক পাওয়া যায়নি</h4>
                             <p className="text-sm text-slate-500 max-w-xs mx-auto" style={{ fontFamily: 'Alinur Tatsama' }}>
-                              আপনার শ্রেণী ({studentClass}) এর জন্য আজ কোনো নতুন হোমওয়ার্ক দেওয়া হয়নি।
+                              আপনার শ্রেণী ({studentClass}) এর জন্য আজ কোনো নতুন বা সম্পন্ন হোমওয়ার্ক নেই।
                             </p>
                           </div>
                         ) : (
@@ -537,22 +583,31 @@ const StudentDashboardInner = ({
                               {todaysHomeworks.filter(h => h.subject === currentSubject).map((hw: any, index: number) => {
                                 const pubDate = hw.createdAt ? (hw.createdAt.toDate ? hw.createdAt.toDate() : new Date(hw.createdAt)) : null;
                                 const formattedPubDate = pubDate ? pubDate.toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' }) : "আজ";
+                                const isHwCompleted = hw.status === "completed" || hw.status === "Completed";
                                 return (
                                   <motion.div
                                     key={hw.id || index}
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.02)] space-y-4"
+                                    className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.02)] space-y-4 relative overflow-hidden"
                                   >
                                     <div className="flex items-center justify-between border-b border-slate-50 pb-3">
                                       <div>
                                         <span className="text-[10px] text-slate-400 font-bold uppercase block">বিষয়</span>
                                         <h4 className="font-black text-emerald-950 text-base">{hw.subject}</h4>
                                       </div>
-                                      <div className="text-right">
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">শেষ তারিখ</span>
-                                        <span className="text-xs font-black text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-100">
-                                          {toBengaliDigits(hw.dueDate)}
+                                      <div className="text-right flex flex-col items-end gap-1">
+                                        {isHwCompleted ? (
+                                          <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full border border-emerald-200 flex items-center gap-1 shadow-xs">
+                                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> সম্পন্ন
+                                          </span>
+                                        ) : (
+                                          <span className="text-[10px] font-black bg-amber-50 text-amber-800 px-3 py-1 rounded-full border border-amber-200 flex items-center gap-1">
+                                            <Clock className="h-3.5 w-3.5 text-amber-600" /> চলমান
+                                          </span>
+                                        )}
+                                        <span className="text-xs font-black text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-100">
+                                          শেষ: {toBengaliDigits(hw.dueDate)}
                                         </span>
                                       </div>
                                     </div>
@@ -773,6 +828,104 @@ const StudentDashboardInner = ({
           })}
         </div>
       </div>
+
+      {/* শিক্ষার্থীর বিস্তারিত প্রোফাইল পপআপ ডায়ালগ (Profile Details Modal) */}
+      <AnimatePresence>
+        {showDetailsModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden font-alinur relative"
+              style={{ fontFamily: 'Alinur Tatsama' }}
+            >
+              {/* Modal Header */}
+              <div className="bg-emerald-900 p-6 text-white relative text-center">
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all cursor-pointer"
+                  title="বন্ধ করুন"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+                <div className="h-20 w-20 mx-auto rounded-full border-2 border-amber-400 shadow-md overflow-hidden bg-slate-100 mb-3">
+                  <img src={studentPhoto} alt={studentName} className="h-full w-full object-cover object-center" referrerPolicy="no-referrer" />
+                </div>
+                <h3 className="text-xl font-black text-amber-300">{studentName}</h3>
+                <p className="text-emerald-200 text-xs font-bold mt-0.5">{studentClass} | রোল নম্বর: {toBengaliDigits(studentRoll)}</p>
+              </div>
+
+              {/* Modal Body - Detailed Profile Info */}
+              <div className="p-6 space-y-3 max-h-[60vh] overflow-y-auto text-sm">
+                <h4 className="text-xs font-black text-emerald-900 uppercase tracking-wider border-b border-slate-100 pb-2 mb-3 text-center">
+                  শিক্ষার্থীর বিস্তারিত তথ্য
+                </h4>
+
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="font-bold text-slate-800 text-xs">{studentName}</span>
+                  <span className="text-slate-400 font-bold text-xs flex items-center gap-1.5"><User className="h-3.5 w-3.5 text-emerald-600" /> শিক্ষার্থীর নাম:</span>
+                </div>
+
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="font-bold text-slate-800 text-xs">{studentClass} (রোল: {toBengaliDigits(studentRoll)})</span>
+                  <span className="text-slate-400 font-bold text-xs flex items-center gap-1.5"><BookOpen className="h-3.5 w-3.5 text-emerald-600" /> শ্রেণী ও রোল:</span>
+                </div>
+
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="font-bold text-slate-800 text-xs">{loggedInStudent?.g1Name || loggedInStudent?.father_name || "মো: আবদুর রহমান"}</span>
+                  <span className="text-slate-400 font-bold text-xs flex items-center gap-1.5"><User className="h-3.5 w-3.5 text-emerald-600" /> অভিভাবকের নাম (১):</span>
+                </div>
+
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="font-bold text-slate-800 text-xs">{loggedInStudent?.g2Name || loggedInStudent?.mother_name || "মোরশেদা বেগম"}</span>
+                  <span className="text-slate-400 font-bold text-xs flex items-center gap-1.5"><User className="h-3.5 w-3.5 text-emerald-600" /> অভিভাবকের নাম (২):</span>
+                </div>
+
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="font-bold text-slate-800 text-xs">{toBengaliDigits(loggedInStudent?.g1Phone || loggedInStudent?.phone || "০১৭১২৩৪৫৬৭৮")}</span>
+                  <span className="text-slate-400 font-bold text-xs flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-emerald-600" /> অভিভাবকের মোবাইল:</span>
+                </div>
+
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100 text-xs">{loggedInStudent?.bloodGroup || "O+"}</span>
+                  <span className="text-slate-400 font-bold text-xs flex items-center gap-1.5"><Heart className="h-3.5 w-3.5 text-rose-400" /> রক্তের গ্রুপ:</span>
+                </div>
+
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="font-bold text-slate-800 text-xs">{loggedInStudent?.gender || "পুরুষ"}</span>
+                  <span className="text-slate-400 font-bold text-xs flex items-center gap-1.5"><Users className="h-3.5 w-3.5 text-emerald-600" /> জেন্ডার / লিঙ্গ:</span>
+                </div>
+
+                <div className="flex justify-between items-start py-2 border-b border-slate-50 gap-3">
+                  <span className="font-bold text-slate-800 text-xs text-right leading-relaxed max-w-[200px]">{loggedInStudent?.studentPermanentAddress || loggedInStudent?.permanentAddress || "মাদরাসা কোয়ার্টার, ফেনী"}</span>
+                  <span className="text-slate-400 font-bold text-xs flex items-center gap-1.5 shrink-0"><MapPin className="h-3.5 w-3.5 text-emerald-600" /> স্থায়ী ঠিকানা:</span>
+                </div>
+
+                <div className="flex justify-between items-start py-2 border-b border-slate-50 gap-3">
+                  <span className="font-bold text-slate-800 text-xs text-right leading-relaxed max-w-[200px]">{loggedInStudent?.studentPresentAddress || loggedInStudent?.presentAddress || "মাদরাসা কোয়ার্টার, ফেনী"}</span>
+                  <span className="text-slate-400 font-bold text-xs flex items-center gap-1.5 shrink-0"><MapPin className="h-3.5 w-3.5 text-emerald-600" /> বর্তমান ঠিকানা:</span>
+                </div>
+
+                <div className="flex justify-between items-center py-2">
+                  <span className="font-bold text-emerald-700 text-xs">{getLastLoginStatus()}</span>
+                  <span className="text-slate-400 font-bold text-xs flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-emerald-600" /> সর্বশেষ লগইন স্ট্যাটাস:</span>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 bg-slate-50 border-t border-slate-100 text-center">
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="w-full py-2.5 bg-emerald-800 hover:bg-emerald-950 text-amber-400 font-black rounded-xl text-xs transition-all shadow-sm cursor-pointer"
+                >
+                  বন্ধ করুন
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -1412,7 +1565,7 @@ const TeacherStudentManagement = ({ teacherData, toBengaliDigits }: any) => {
                         )}
                       </div>
                       <p className="text-xs text-slate-600 leading-relaxed font-bold">{hw.details}</p>
-                      {hw.status !== "Completed" ? (
+                      {hw.status !== "Completed" && hw.status !== "completed" ? (
                         <div className="flex gap-2 pt-2">
                           <button 
                             onClick={() => {
@@ -1431,7 +1584,10 @@ const TeacherStudentManagement = ({ teacherData, toBengaliDigits }: any) => {
                           </button>
                           <button 
                             onClick={() => {
-                              updateDoc(doc(db, "homework", hw.id), { status: "Completed" }).then(() => alert("হোমওয়ার্ক শেষ করা হয়েছে!"));
+                              updateDoc(doc(db, "homework", hw.id), { 
+                                status: "completed", 
+                                completedAt: serverTimestamp() 
+                              }).then(() => alert("হোমওয়ার্ক সম্পন্ন করা হয়েছে!"));
                             }}
                             className="flex-1 bg-emerald-800 text-white py-2 rounded-xl text-xs font-black shadow-xs active:scale-[0.98] transition-all"
                           >

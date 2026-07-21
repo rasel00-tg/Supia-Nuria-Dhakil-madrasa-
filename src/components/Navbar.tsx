@@ -214,7 +214,7 @@ export default function Navbar({
 
   return (
     <>
-    {activeTab !== "login" && (activeTab !== "dashboard" || user?.role !== "teacher") && (
+    {activeTab !== "login" && (activeTab !== "dashboard" || (user?.role !== "teacher" && user?.role !== "student")) && (
     <header id="main-header" className="sticky top-0 z-50 w-full bg-emerald-850 text-white shadow-md border-b-4 border-amber-500 select-none font-alinur">
       <div className="w-full px-2 py-3 flex items-center justify-between min-h-[56px] gap-3">
         
