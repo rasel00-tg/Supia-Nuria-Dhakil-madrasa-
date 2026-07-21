@@ -42,7 +42,13 @@ export default function LoginSection({ onLoginSuccess, logoUrl }: LoginSectionPr
 
       // Force refresh data by using getDocs (bypasses stale local cache in many cases)
       // 1. Try Admin Collection
-      const adminSnap = await getDocs(query(collection(db, "admins"), where("loginId", "==", trimmedInput), where("password", "==", password)));
+      let adminSnap = await getDocs(query(collection(db, "admins"), where("loginId", "==", trimmedInput), where("password", "==", password)));
+      if (adminSnap.empty) {
+        adminSnap = await getDocs(query(collection(db, "admins"), where("email", "==", trimmedInput), where("password", "==", password)));
+      }
+      if (adminSnap.empty) {
+        adminSnap = await getDocs(query(collection(db, "admins"), where("phone", "==", trimmedInput), where("password", "==", password)));
+      }
       if (!adminSnap.empty) {
         userDoc = adminSnap.docs[0].data();
         userRole = "admin";
@@ -64,7 +70,7 @@ export default function LoginSection({ onLoginSuccess, logoUrl }: LoginSectionPr
           const expiryDate = new Date(userDoc.expiryTimestamp);
           if (new Date() > expiryDate) {
             setLoginFeedback("আপনার তথ্য ভূল হচ্ছে! আবার চেষ্টা করুন");
-            setError("দুঃখিত, আপনার এডমিন একাউন্টের মেয়াদ শেষ হয়ে গেছে।");
+            setError("আপনার অ্যাকাউন্টের মেয়াদ উত্তীর্ণ হয়েছে!");
             setLoading(false);
             setTimeout(() => setLoginFeedback(null), 3000);
             return;

@@ -198,9 +198,15 @@ export interface Hafiz {
 export interface Admin {
   id: string;
   name: string;
+  fatherName?: string;
+  motherName?: string;
   email: string;
   loginId: string;
   phone: string;
+  address?: string;
+  nid?: string;
+  fatherNid?: string;
+  motherNid?: string;
   password?: string;
   role: 'mother_admin' | 'super_admin' | 'assistant_admin';
   status: 'active' | 'suspended';

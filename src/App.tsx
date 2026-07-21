@@ -26,7 +26,7 @@ import { seedDatabaseIfEmpty } from "./lib/dbSeeder";
 import { GraduationCap, BookOpen, Clock, Heart, Award } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { db, StreamBuilder, uploadFileToImgBB, handleFirestoreError, OperationType } from "./lib/firebase";
-import { doc, onSnapshot, collection, query, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, collection, query, setDoc, where, getDocs } from "firebase/firestore";
 import { Upload } from "lucide-react";
 import { loadingService } from "./lib/loadingService";
 import ImageCropper from "./components/ImageCropper";
@@ -343,10 +343,65 @@ export default function App() {
     setActiveTab("home");
   };
 
-  // Auto-logout countdown logic
+  // Real-time listener for active admin account status (lock, disable, delete, assistant admin expiry)
+  useEffect(() => {
+    if (!user || user.role !== "admin") return;
+    if (user.email === "mother.admin@sufianooria.com") return;
+
+    const loginIdOrEmail = (user.email || "").toLowerCase();
+
+    const unsub = onSnapshot(collection(db, "admins"), (snapshot) => {
+      const currentAdminDoc = snapshot.docs.find(d => {
+        const data = d.data();
+        return (
+          (data.email && data.email.toLowerCase() === loginIdOrEmail) ||
+          (data.loginId && data.loginId.toLowerCase() === loginIdOrEmail)
+        );
+      });
+
+      if (!currentAdminDoc) {
+        if (!snapshot.empty) {
+          alert("আপনার এডমিন একাউন্টটি ডিলিট করা হয়েছে।");
+          setUser(null);
+          localStorage.removeItem("sndm_user");
+          setActiveTab("login");
+        }
+        return;
+      }
+
+      const adminData = currentAdminDoc.data();
+
+      // Suspension/Lock check
+      if (adminData.status === "suspended") {
+        alert("আপনার এডমিন একাউন্টটি বর্তমানে স্থগিত (Suspended) করা হয়েছে।");
+        setUser(null);
+        localStorage.removeItem("sndm_user");
+        setActiveTab("login");
+        return;
+      }
+
+      // Assistant Admin Expiry check
+      if (adminData.role === "assistant_admin" && adminData.expiryTimestamp) {
+        if (new Date() > new Date(adminData.expiryTimestamp)) {
+          alert("আপনার অ্যাকাউন্টের মেয়াদ উত্তীর্ণ হয়েছে!");
+          setUser(null);
+          localStorage.removeItem("sndm_user");
+          setActiveTab("login");
+          return;
+        }
+      }
+    }, (err) => {
+      console.error("Error listening to admin changes:", err);
+    });
+
+    return () => unsub();
+  }, [user]);
+
+  // Auto-logout countdown logic & Unified 20-Min Inactivity & Background Logout Logic
   useEffect(() => {
     let timer: NodeJS.Timeout;
     
+    // Timer for active tab inactivity (when not on dashboard)
     if (user && activeTab !== "dashboard" && activeTab !== "login") {
       timer = setInterval(() => {
         setSessionTimeLeft((prev) => {
@@ -366,8 +421,40 @@ export default function App() {
       setSessionTimeLeft(1200);
     }
 
+    // Visibility change logic for AppLifecycleState.paused / hidden
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        if (user) {
+          localStorage.setItem("lastExitTimestamp", Date.now().toString());
+        }
+      } else if (document.visibilityState === "visible") {
+        const lastExitStr = localStorage.getItem("lastExitTimestamp");
+        if (lastExitStr && user) {
+          const lastExit = parseInt(lastExitStr, 10);
+          const now = Date.now();
+          const diffMs = now - lastExit;
+          // 20 minutes = 1200000 milliseconds
+          if (diffMs >= 1200000) {
+            // Purge firebase session and auto logout
+            setUser(null);
+            localStorage.removeItem("sndm_user");
+            localStorage.removeItem("lastExitTimestamp");
+            setActiveTab("login");
+            setSessionTimeLeft(1200);
+          } else {
+            // Reset timer automatically if returning within 20 mins
+            localStorage.removeItem("lastExitTimestamp");
+            setSessionTimeLeft(1200);
+          }
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
       if (timer) clearInterval(timer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [user, activeTab]);
 

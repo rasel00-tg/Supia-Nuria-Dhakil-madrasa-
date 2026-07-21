@@ -26,7 +26,7 @@ const SUGGESTION_OPTIONS = [
   "স্বাস্থ্য, পরিচ্ছন্নতা ও নিরাপত্তা ব্যবস্থা জোরদারের পরামর্শ"
 ];
 
-const successStoriesQuery = query(collection(db, "success_stories"), orderBy("year", "desc"));
+const successStoriesQuery = query(collection(db, "success_stories"), orderBy("timestamp", "desc"));
 const committeeQuery = query(collection(db, "committee"), orderBy("rank", "asc"));
 const honoredPersonsQuery = collection(db, "honored_persons");
 const settingsQuery = query(collection(db, "settings"));
@@ -34,9 +34,16 @@ const settingsQuery = query(collection(db, "settings"));
 interface SuccessStoriesCarouselProps {
   successStories: SuccessStory[];
   setSelectedStory: (story: SuccessStory) => void;
+  viewingAllAchievements: boolean;
+  setViewingAllAchievements: (val: boolean) => void;
 }
 
-function SuccessStoriesCarousel({ successStories, setSelectedStory }: SuccessStoriesCarouselProps) {
+function SuccessStoriesCarousel({ 
+  successStories, 
+  setSelectedStory,
+  viewingAllAchievements,
+  setViewingAllAchievements
+}: SuccessStoriesCarouselProps) {
   const [activeSuccessIndex, setActiveSuccessIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
 
@@ -147,40 +154,54 @@ function SuccessStoriesCarousel({ successStories, setSelectedStory }: SuccessSto
 
   return (
     <section id="success-stories-carousel" className="space-y-6">
-      <div className="flex items-center justify-between pb-1 border-b border-emerald-100/50">
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-black font-alinur tracking-tight bg-gradient-to-r from-emerald-800 via-emerald-950 to-amber-600 bg-clip-text text-transparent flex items-center gap-2">
-            <span>শিক্ষার্থীদের অনন্য সাফল্য</span>
-            <motion.div
-              animate={{ scale: [1, 1.15, 1], rotate: [0, 5, -5, 0] }}
-              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-              className="text-amber-500 cursor-pointer"
-            >
-              <Trophy className="h-7 w-7 filter drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
-            </motion.div>
-          </h2>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1 font-alinur">আমাদের কৃতি শিক্ষার্থীদের গৌরবোজ্জ্বল অর্জনসমূহ</p>
+      <div className="bg-gradient-to-r from-emerald-800 via-emerald-950 to-emerald-900 border-2 border-amber-500 rounded-3xl p-4 sm:p-5 shadow-lg relative overflow-hidden flex flex-col md:flex-row md:items-center md:justify-between gap-4 w-full">
+        {/* Subtle decorative background lights */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none"></div>
+        
+        <div className="flex items-center gap-3.5 relative z-10">
+          <div className="bg-amber-500/90 p-2.5 sm:p-3 rounded-xl border border-amber-300 shadow-md flex-shrink-0">
+            <Trophy className="h-6 w-6 sm:h-7 sm:w-7 text-emerald-950 filter drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)] animate-pulse" />
+          </div>
+          <div>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-black font-alinur tracking-tight text-white flex items-center gap-2">
+              <span>শিক্ষার্থীদের অনন্য সাফল্য</span>
+            </h2>
+            <p className="text-xs sm:text-sm text-emerald-200 mt-0.5 font-alinur font-medium opacity-90">আমাদের কৃতি শিক্ষার্থীদের গৌরবোজ্জ্বল অর্জনসমূহ</p>
+          </div>
         </div>
 
-        {/* Manual Navigation Controls (Upper right corner) */}
-        {successStories.length > 0 && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleNavigate("prev")}
-              className="p-1.5 sm:p-2 rounded-full border border-emerald-200/60 bg-emerald-50/40 hover:bg-emerald-100 text-emerald-800 transition-all shadow-sm cursor-pointer hover:scale-105"
-              title="পূর্ববর্তী"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => handleNavigate("next")}
-              className="p-1.5 sm:p-2 rounded-full border border-emerald-200/60 bg-emerald-50/40 hover:bg-emerald-100 text-emerald-800 transition-all shadow-sm cursor-pointer hover:scale-105"
-              title="পরবর্তী"
-            >
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        )}
+        {/* Buttons (সবগুলো দেখুন / Navigation Controls) */}
+        <div className="flex items-center justify-between md:justify-end gap-3.5 relative z-10 w-full md:w-auto border-t border-emerald-800/40 md:border-t-0 pt-3 md:pt-0">
+          {/* সবগুলো দেখুন বাটন */}
+          <button
+            onClick={() => setViewingAllAchievements(true)}
+            className="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-emerald-950 font-black py-2 px-4 rounded-full shadow-md transition-all duration-300 cursor-pointer font-alinur text-xs sm:text-sm border border-amber-400 hover:scale-105"
+          >
+            <span>সবগুলো দেখুন</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+
+          {/* Manual Navigation Controls */}
+          {successStories.length > 0 && (
+            <div className="flex items-center gap-1.5 border-l border-emerald-800/50 pl-3.5">
+              <button
+                onClick={() => handleNavigate("prev")}
+                className="p-1.5 sm:p-2 rounded-full border border-amber-500/30 bg-emerald-900/50 hover:bg-emerald-800 text-amber-400 transition-all shadow-sm cursor-pointer hover:scale-105"
+                title="পূর্ববর্তী"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => handleNavigate("next")}
+                className="p-1.5 sm:p-2 rounded-full border border-amber-500/30 bg-emerald-900/50 hover:bg-emerald-800 text-amber-400 transition-all shadow-sm cursor-pointer hover:scale-105"
+                title="পরবর্তী"
+              >
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="relative">
@@ -344,6 +365,31 @@ export default function HomeSection({
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
   const [logoError, setLogoError] = useState(false);
   const [selectedStory, setSelectedStory] = useState<SuccessStory | null>(null);
+  const [viewingAllAchievements, setViewingAllAchievements] = useState(false);
+
+  useEffect(() => {
+    if (viewingAllAchievements) {
+      window.history.pushState({ view: "all_achievements" }, "");
+    }
+    
+    const handlePopState = (event: PopStateEvent) => {
+      if (viewingAllAchievements) {
+        setViewingAllAchievements(false);
+        setTimeout(() => {
+          const section = document.getElementById("success-stories-carousel");
+          if (section) {
+            section.scrollIntoView({ behavior: "smooth" });
+          }
+        }, 100);
+      }
+    };
+    
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [viewingAllAchievements]);
+
   const [selectedCommitteeMember, setSelectedCommitteeMember] = useState<CommitteeMember | null>(null);
   const [clampedSpeeches, setClampedSpeeches] = useState<Record<string, boolean>>({});
   const [showWarningModal, setShowWarningModal] = useState(false);
@@ -634,6 +680,117 @@ export default function HomeSection({
                 const topTwoIds = [president?.id, vicePresident?.id].filter(Boolean) as string[];
                 const remainingMembers = committee.filter(m => !topTwoIds.includes(m.id)).sort((a, b) => (a.rank || 0) - (b.rank || 0));
 
+                const handleBackFromAll = () => {
+                  if (window.history.state?.view === "all_achievements") {
+                    window.history.back();
+                  } else {
+                    setViewingAllAchievements(false);
+                    setTimeout(() => {
+                      const section = document.getElementById("success-stories-carousel");
+                      if (section) section.scrollIntoView({ behavior: "smooth" });
+                    }, 100);
+                  }
+                };
+
+                if (viewingAllAchievements && !selectedStory) {
+                  return (
+                    <div id="all-achievements-view" className="w-full min-h-[80vh] bg-[#fdfdfb] py-8 px-4 sm:px-6 lg:px-8">
+                      <div className="max-w-6xl mx-auto space-y-8">
+                        {/* Header card with Back button */}
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-emerald-100 pb-6">
+                          <button
+                            id="back-from-all-btn"
+                            onClick={handleBackFromAll}
+                            className="inline-flex items-center gap-2 text-emerald-800 hover:text-amber-600 font-bold font-bengali text-sm bg-emerald-50 hover:bg-emerald-100 px-4 py-2 rounded-full transition-all shadow-sm cursor-pointer border border-emerald-100 w-fit"
+                          >
+                            <ArrowLeft className="h-4 w-4" />
+                            <span>হোম পেজে ফিরে যান</span>
+                          </button>
+                          
+                          <div className="text-right">
+                            <h1 className="text-2xl sm:text-3xl font-black text-emerald-900 font-bengali flex items-center sm:justify-end gap-2">
+                              <span>সকল অনন্য সাফল্য</span>
+                              <Trophy className="h-6 w-6 text-amber-500 animate-pulse" />
+                            </h1>
+                            <p className="text-xs sm:text-sm text-gray-500 mt-1 font-bengali">মাদ্রাসার কৃতি শিক্ষার্থীদের গৌরবোজ্জ্বল অর্জনের সম্পূর্ণ তালিকা</p>
+                          </div>
+                        </div>
+
+                        {/* Grid of All Achievements */}
+                        {successStories.length === 0 ? (
+                          <div className="w-full py-16 text-center text-gray-400 font-alinur">
+                            কোনো সাফল্যের তথ্য পাওয়া যায়নি।
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {successStories.map((story) => {
+                              const { headline, detail } = parseAchievement(story.achievement);
+                              return (
+                                <div
+                                  key={story.id}
+                                  onClick={() => {
+                                    setSelectedStory(story);
+                                    window.scrollTo({ top: 0, behavior: "smooth" });
+                                  }}
+                                  className="h-[370px] rounded-2xl relative overflow-hidden flex flex-col justify-end group cursor-pointer border-2 border-emerald-800/25 hover:border-amber-500/50 ring-4 ring-emerald-950/5 hover:ring-amber-500/20 transition-all duration-300 shadow-md hover:shadow-xl"
+                                >
+                                  {/* Full-image background */}
+                                  <img
+                                    src={story.imageUrl}
+                                    alt={story.student_name}
+                                    referrerPolicy="no-referrer"
+                                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 z-0"
+                                  />
+                                  
+                                  {/* Semi-transparent dark overlay */}
+                                  <div className="absolute inset-0 bg-gradient-to-t from-emerald-950 via-emerald-950/70 to-transparent opacity-95 z-10" />
+
+                                  {/* Year badge */}
+                                  <div className="absolute top-3.5 right-3.5 bg-amber-500/90 backdrop-blur-xs text-emerald-950 font-bold font-alinur text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full shadow border border-amber-300/30 z-20 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-950 animate-pulse"></span>
+                                    <span>{story.year}</span>
+                                  </div>
+
+                                  {/* Card content */}
+                                  <div className="relative z-20 p-4 sm:p-5 flex flex-col space-y-2.5">
+                                    {/* Student name */}
+                                    <h3 className="font-extrabold text-base sm:text-lg text-white font-alinur leading-snug drop-shadow-md group-hover:text-amber-300 transition-colors">
+                                      {story.student_name}
+                                    </h3>
+
+                                    {/* Headline badge */}
+                                    <span className="font-bold text-[10px] sm:text-[11px] text-amber-300 font-alinur leading-relaxed bg-emerald-900/80 backdrop-blur-xs px-2.5 py-1 rounded-md border border-emerald-700/50 w-fit line-clamp-1">
+                                      {headline}
+                                    </span>
+
+                                    {/* Details text */}
+                                    <p className="text-[10px] sm:text-xs text-emerald-100 font-alinur leading-relaxed text-justify line-clamp-3">
+                                      {detail}
+                                    </p>
+                                    
+                                    {/* Read more button */}
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedStory(story);
+                                        window.scrollTo({ top: 0, behavior: "smooth" });
+                                      }}
+                                      className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-black text-amber-300 hover:text-amber-400 font-alinur w-fit transition-colors pt-1 cursor-pointer"
+                                    >
+                                      <span>বিস্তারিত পড়ুন</span>
+                                      <span>➔</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+
                 if (selectedStory) {
                   const { headline, detail } = parseAchievement(selectedStory.achievement);
                   return (
@@ -921,9 +1078,14 @@ export default function HomeSection({
                     </section>
  
                     {/* Content Container with 100% width and padding */}
-                    <div className="w-full px-2 py-12 space-y-16">
+                    <div className="w-full px-2 pb-12 pt-0 space-y-16">
                       {/* ক. শিক্ষার্থীদের সাফল্য (Slider/Carousel Section) */}
-                      <SuccessStoriesCarousel successStories={successStories} setSelectedStory={setSelectedStory} />
+                      <SuccessStoriesCarousel 
+                        successStories={successStories} 
+                        setSelectedStory={setSelectedStory}
+                        viewingAllAchievements={viewingAllAchievements}
+                        setViewingAllAchievements={setViewingAllAchievements}
+                      />
 
                       {/* খ. মাদ্রাসা পরিচালনা পর্ষদের সম্মানিত সদস্যবৃন্দ (Consolidated Committee Section) */}
                       <section 

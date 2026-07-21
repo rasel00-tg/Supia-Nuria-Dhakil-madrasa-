@@ -3410,7 +3410,7 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
       handleFirestoreError(error, OperationType.LIST, "teachers");
     });
 
-    const unsubStories = onSnapshot(query(collection(db, "success_stories"), orderBy("year", "desc")), (snap) => {
+    const unsubStories = onSnapshot(query(collection(db, "success_stories"), orderBy("timestamp", "desc")), (snap) => {
       const items: SuccessStory[] = [];
       snap.forEach((d) => items.push({ id: d.id, ...d.data() } as SuccessStory));
       setStories(items);
