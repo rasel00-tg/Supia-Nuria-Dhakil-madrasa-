@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { initializeFirestore, Query, onSnapshot, DocumentData, enableIndexedDbPersistence } from "firebase/firestore";
+import { initializeFirestore, Query, onSnapshot, DocumentData, enableIndexedDbPersistence, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import React, { useEffect, useState, ReactNode } from "react";
 import { loadingService } from "./loadingService";
@@ -16,23 +16,13 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with long polling enabled to bypass websocket/proxy blockages in sandboxed iframe environment
+// Initialize Firestore with robust modern persistent offline cache & long polling to bypass websocket/proxy blockages in sandboxed iframe environment
 export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
   experimentalForceLongPolling: true,
 }, "ai-studio-cd3763db-984b-4a51-9a2b-e448ca0250a9");
-
-// Enable offline persistence for better performance when re-connecting or minimizing the app
-if (typeof window !== "undefined") {
-  enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code === 'failed-precondition') {
-      // Multiple tabs open, persistence can only be enabled in one tab at a time.
-      console.warn("Firestore persistence failed: multiple tabs open");
-    } else if (err.code === 'unimplemented-state') {
-      // The current browser does not support all of the features required to enable persistence
-      console.warn("Firestore persistence failed: browser not supported");
-    }
-  });
-}
 
 // Export Firebase Storage instance initialized with proper storage bucket config
 export const storage = getStorage(app);
@@ -242,48 +232,112 @@ export function StreamBuilder<T>({ stream, builder, loadingNode }: StreamBuilder
     }
 
     let hasDecremented = false;
+    let timeoutId: any = null;
 
-    const unsubscribe = onSnapshot(
-      stream,
-      (snapshot) => {
-        if (!active) return;
-        const items: T[] = [];
-        snapshot.forEach((doc) => {
-          items.push({ id: doc.id, ...doc.data() } as T);
-        });
-
-        if (cacheKey) {
-          streamCache.set(cacheKey, items);
-        }
-
-        setData(items);
-        setLoading(false);
-
-        if (!hasDecremented) {
+    // Timeout mechanism: 3.5s timeout for weak/slow connection
+    if (!hasCache) {
+      timeoutId = setTimeout(() => {
+        if (active && !hasDecremented) {
+          console.warn(`StreamBuilder timed out (3.5s limit reached) for cache key: ${cacheKey}. Falling back to cached data or empty state.`);
+          setLoading(false);
           hasDecremented = true;
-          if (!hasCache) {
-            loadingService.hide();
-          }
+          loadingService.hide();
         }
-      },
-      (err) => {
-        if (!active) return;
-        console.error("StreamBuilder Error:", err);
-        setError(err);
-        setLoading(false);
+      }, 3500);
+    }
 
-        if (!hasDecremented) {
-          hasDecremented = true;
-          if (!hasCache) {
-            loadingService.hide();
-          }
-        }
+    let unsubscribe: (() => void) | null = null;
+    let retryTimeoutId: any = null;
+
+    const startSubscription = (attempt = 0) => {
+      if (!active) return;
+
+      if (unsubscribe) {
+        unsubscribe();
       }
-    );
+
+      unsubscribe = onSnapshot(
+        stream,
+        (snapshot) => {
+          if (!active) return;
+
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+          }
+
+          const items: T[] = [];
+          snapshot.forEach((doc) => {
+            items.push({ id: doc.id, ...doc.data() } as T);
+          });
+
+          if (cacheKey) {
+            streamCache.set(cacheKey, items);
+          }
+
+          setData(items);
+          setLoading(false);
+
+          if (!hasDecremented) {
+            hasDecremented = true;
+            if (!hasCache) {
+              loadingService.hide();
+            }
+          }
+        },
+        (err) => {
+          if (!active) return;
+          console.error(`StreamBuilder Error (attempt ${attempt}):`, err);
+
+          // Network or timeout errors trigger backoff retry
+          const isNetworkError =
+            err.code === "unavailable" ||
+            err.code === "deadline-exceeded" ||
+            err.message?.toLowerCase().includes("network") ||
+            err.message?.toLowerCase().includes("offline") ||
+            err.message?.toLowerCase().includes("failed to get document");
+
+          if (isNetworkError && attempt < 10) {
+            const nextAttempt = attempt + 1;
+            const delay = Math.min(1000 * Math.pow(2, attempt), 10000); // Exp backoff max 10s
+            console.log(`Firestore StreamBuilder retrying in ${delay}ms... (Attempt ${nextAttempt}/10)`);
+            
+            retryTimeoutId = setTimeout(() => {
+              startSubscription(nextAttempt);
+            }, delay);
+          } else {
+            setError(err);
+            setLoading(false);
+
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+              timeoutId = null;
+            }
+
+            if (!hasDecremented) {
+              hasDecremented = true;
+              if (!hasCache) {
+                loadingService.hide();
+              }
+            }
+          }
+        }
+      );
+    };
+
+    startSubscription();
 
     return () => {
       active = false;
-      unsubscribe();
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      if (retryTimeoutId) {
+        clearTimeout(retryTimeoutId);
+      }
+      if (unsubscribe) {
+        unsubscribe();
+      }
       if (!hasDecremented) {
         hasDecremented = true;
         if (!hasCache) {
