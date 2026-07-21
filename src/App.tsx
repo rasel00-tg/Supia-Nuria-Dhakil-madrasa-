@@ -46,18 +46,20 @@ export default function App() {
   const [jdcUploading, setJdcUploading] = useState<boolean>(false);
   const [imranUploading, setImranUploading] = useState<boolean>(false);
 
-  // Strict 2.5s Splash Timeout Guard and Slow Network alert state
+  // Strict 2s Splash Timeout Guard and Slow Network alert states
   const [showSlowNetworkAlert, setShowSlowNetworkAlert] = useState<boolean>(false);
+  const [isNetworkSlow, setIsNetworkSlow] = useState<boolean>(!navigator.onLine);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       if (loadingService.isLoading) {
-        console.warn("Strict 2.5s Splash Timeout Guard triggered! Bypassing logo loading screen.");
+        console.warn("Strict 2s Splash Timeout Guard triggered! Bypassing logo loading screen.");
         loadingService.forceHideInitial();
         setShowSlowNetworkAlert(true);
+        setIsNetworkSlow(true); // Triggers the bottom red alert
         setActiveTab("home");
       }
-    }, 2500);
+    }, 2000); // Strict 2 seconds (2000 ms)
 
     return () => clearTimeout(timer);
   }, []);
@@ -70,37 +72,57 @@ export default function App() {
   const [showOfflineModal, setShowOfflineModal] = useState<boolean>(!navigator.onLine);
   const [showOnlineToast, setShowOnlineToast] = useState<boolean>(false);
 
-  // Connectivity Listener
+  // Connectivity and Network Performance Listeners
   useEffect(() => {
     const handleOnline = () => {
-      setIsOnline(prev => {
-        if (prev === false) {
-          setShowOfflineModal(false);
-          setShowOnlineToast(true);
-          // Auto-hide the toast after 4 seconds
-          setTimeout(() => setShowOnlineToast(false), 4000);
-          return true;
-        }
-        return prev;
-      });
+      setIsOnline(true);
+      setShowOfflineModal(false);
+      setShowOnlineToast(true);
+      setIsNetworkSlow(false); // Auto-dismiss red alert when connection is restored
+      setTimeout(() => setShowOnlineToast(false), 4000);
     };
 
     const handleOffline = () => {
-      setIsOnline(prev => {
-        if (prev === true) {
-          setShowOfflineModal(true);
-          return false;
-        }
-        return prev;
-      });
+      setIsOnline(false);
+      setShowOfflineModal(true);
+      setIsNetworkSlow(true); // Show red alert when offline
     };
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
+    // Monitor loading finished to auto-dismiss slow network alert when background sync is done
+    const unsubscribeLoading = loadingService.subscribe((loading) => {
+      if (!loading && navigator.onLine) {
+        setIsNetworkSlow(false);
+      }
+    });
+
+    // Monitor browser Connection API for real-time performance checking if available
+    const navConn = (navigator as any).connection;
+    const handleConnectionChange = () => {
+      if (navConn) {
+        const isSlow = navConn.downlink < 1.0 || navConn.rtt > 500 || navConn.effectiveType === '2g' || navConn.effectiveType === 'slow-2g';
+        if (isSlow) {
+          setIsNetworkSlow(true);
+        } else if (navigator.onLine) {
+          setIsNetworkSlow(false);
+        }
+      }
+    };
+
+    if (navConn) {
+      navConn.addEventListener("change", handleConnectionChange);
+      handleConnectionChange();
+    }
+
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
+      unsubscribeLoading();
+      if (navConn) {
+        navConn.removeEventListener("change", handleConnectionChange);
+      }
     };
   }, []);
 
@@ -380,6 +402,44 @@ export default function App() {
               <button
                 onClick={() => setShowSlowNetworkAlert(false)}
                 className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors p-1.5 rounded-full hover:bg-slate-100"
+                aria-label="Close"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Dynamic Bottom Red Error Auto-Dismissing Alert */}
+      <AnimatePresence>
+        {isNetworkSlow && activeTab === "home" && (
+          <div className="fixed bottom-20 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-[450px] z-[9999]" style={{ fontFamily: "'Noto Serif Bengali', serif" }}>
+            <motion.div
+              initial={{ y: 50, scale: 0.95, opacity: 0 }}
+              animate={{ y: 0, scale: 1, opacity: 1 }}
+              exit={{ y: 50, scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 380, damping: 28 }}
+              className="bg-rose-600/95 backdrop-blur-md text-white p-4 rounded-2xl shadow-[0_10px_30px_rgba(225,29,72,0.35)] border-2 border-rose-500/50 flex items-center gap-3 relative"
+            >
+              <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white shrink-0 animate-pulse">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0 pr-6">
+                <p className="font-extrabold text-white text-base leading-tight">
+                  আপনার নেটওয়ার্ক অত্যন্ত স্লো!
+                </p>
+                <p className="text-xs text-rose-100 mt-1 leading-relaxed">
+                  অফলাইন ক্যাশ থেকে মাদ্রাসা তথ্য প্রদর্শিত হচ্ছে। সংযোগ স্বাভাবিক হওয়া মাত্র তথ্য স্বয়ংক্রিয়ভাবে আপডেট হবে।
+                </p>
+              </div>
+              <button
+                onClick={() => setIsNetworkSlow(false)}
+                className="absolute top-3 right-3 text-rose-200 hover:text-white focus:outline-none transition-colors p-1.5 rounded-full hover:bg-white/10"
                 aria-label="Close"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
