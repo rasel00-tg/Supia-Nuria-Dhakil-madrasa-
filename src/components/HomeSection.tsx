@@ -723,7 +723,7 @@ export default function HomeSection({
                           </div>
                         ) : (
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {successStories.map((story) => {
+                            {successStories.slice(0, 6).map((story) => {
                               const { headline, detail } = parseAchievement(story.achievement);
                               return (
                                 <div

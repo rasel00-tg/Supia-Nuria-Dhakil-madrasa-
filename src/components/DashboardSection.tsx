@@ -11,6 +11,7 @@ import HafizgonUpdateForm from "./HafizgonUpdateForm";
 import TeacherManagement from "./TeacherManagement";
 import AdminControlSection from "./AdminControlSection";
 import AdminHomeworkSubjectManagement from "./AdminHomeworkSubjectManagement";
+import ImageCropper from "./ImageCropper";
 import { motion, AnimatePresence } from "motion/react";
 
 const toBengaliDigits = (numStr: string | number | undefined | null): string => {
@@ -4183,6 +4184,15 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
   const [isContactLogoUploaded, setIsContactLogoUploaded] = useState(false);
   const [showLogoSuccessPopup, setShowLogoSuccessPopup] = useState(false);
 
+  // Success Stories dedicated states (6-limit constraint, cropper, validation, on-submit upload)
+  const [storyLimitWarning, setStoryLimitWarning] = useState(false);
+  const [storyCropperImage, setStoryCropperImage] = useState<string | null>(null);
+  const [storyCroppedBlob, setStoryCroppedBlob] = useState<Blob | null>(null);
+  const [storyPreviewUrl, setStoryPreviewUrl] = useState<string>("");
+  const [storyFormErrors, setStoryFormErrors] = useState<{ name?: string; achievement?: string; year?: string; image?: string }>({});
+  const [storySuccessNotification, setStorySuccessNotification] = useState<string | null>(null);
+  const [isSavingStory, setIsSavingStory] = useState(false);
+
   // Admissions Sub-Views States
   const [admissionView, setAdmissionView] = useState<"list" | "detail" | "config">("list");
   const [selectedAdmissionId, setSelectedAdmissionId] = useState<string | null>(null);
@@ -4855,6 +4865,10 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
 
   // CRUD handlers
   const handleOpenAddForm = () => {
+    if (activeAdminSubTab === "stories" && stories.length >= 6) {
+      setStoryLimitWarning(true);
+      return;
+    }
     setEditingId(null);
     setField1(""); setField2(""); setField3(""); setField4(""); setField5(""); setField6("");
     setCommJoiningDate("");
@@ -4868,6 +4882,9 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
     setCommWhatsapp("");
     setCommPhoneNum("");
     setUploadError("");
+    setStoryCroppedBlob(null);
+    setStoryPreviewUrl("");
+    setStoryFormErrors({});
     setIsFormOpen(true);
   };
 
@@ -4880,6 +4897,9 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
       setField2(item.achievement || "");
       setField3(item.year?.toString() || "");
       setField4(item.imageUrl || "");
+      setStoryPreviewUrl(item.imageUrl || "");
+      setStoryCroppedBlob(null);
+      setStoryFormErrors({});
     } else if (type === "committee") {
       setField1(item.name || "");
       setField2(item.role || "");
@@ -4924,26 +4944,51 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
           await addDoc(collection(db, "teachers"), payload);
         }
       } else if (subTab === "stories") {
-        const payload = { 
-          student_name: field1, 
-          achievement: field2, 
-          year: parseInt(field3) || 2026, 
-          imageUrl: field4 || "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80",
-          timestamp: new Date() // Added for auto-delete logic
-        };
-        if (editingId) {
-          await updateDoc(doc(db, "success_stories", editingId), payload);
-        } else {
-          // Auto-Delete Oldest Record Logic
-          const successCol = collection(db, "success_stories");
-          const q = query(successCol, orderBy("timestamp", "asc"), limit(1));
-          const snap = await getDocs(q);
-          
-          await addDoc(successCol, payload);
-          
-          if (!snap.empty) {
-            await deleteDoc(doc(db, "success_stories", snap.docs[0].id));
+        // Validation check for Required Fields
+        const errors: { name?: string; achievement?: string; year?: string; image?: string } = {};
+        if (!field1.trim()) errors.name = "শিক্ষার্থীর নাম দেওয়া আবশ্যক।";
+        if (!field2.trim()) errors.achievement = "সাফল্য বা কৃতিত্বের বিবরণ দেওয়া আবশ্যক।";
+        if (!field3.trim()) errors.year = "অর্জনের বছর দেওয়া আবশ্যক।";
+        if (!storyCroppedBlob && !field4.trim()) errors.image = "শিক্ষার্থীর ছবি সিলেক্ট ও ক্রপ করা আবশ্যক।";
+
+        if (Object.keys(errors).length > 0) {
+          setStoryFormErrors(errors);
+          return;
+        }
+
+        setIsSavingStory(true);
+        try {
+          let finalImageUrl = field4.trim();
+          if (storyCroppedBlob) {
+            const croppedFile = new File([storyCroppedBlob], `story_${Date.now()}.jpg`, { type: "image/jpeg" });
+            finalImageUrl = await uploadFileToImgBB(croppedFile);
           }
+
+          const payload = { 
+            student_name: field1.trim(), 
+            achievement: field2.trim(), 
+            year: parseInt(field3.trim()) || 2026, 
+            imageUrl: finalImageUrl,
+            timestamp: new Date()
+          };
+
+          if (editingId) {
+            await updateDoc(doc(db, "success_stories", editingId), payload);
+          } else {
+            await addDoc(collection(db, "success_stories"), payload);
+          }
+
+          setIsFormOpen(false);
+          setStorySuccessNotification(editingId ? "শিক্ষার্থীর সাফল্য তথ্য আপডেট করা হয়েছে!" : "আপনার নতুন শিক্ষার্থীর সাফল্য যোগ হয়েছে!");
+          setStoryCroppedBlob(null);
+          setStoryPreviewUrl("");
+          setStoryFormErrors({});
+          setField1(""); setField2(""); setField3(""); setField4("");
+        } catch (error) {
+          console.error("Error saving story:", error);
+          alert("সাফল্যের তথ্য সংরক্ষণ করতে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।");
+        } finally {
+          setIsSavingStory(false);
         }
       } else if (subTab === "committee") {
         const payload = { 
@@ -9011,33 +9056,120 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
               {user.role === "admin" && activeAdminSubTab === "stories" && (
                 <>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-700">শিক্ষার্থীর নাম</label>
-                    <input type="text" required value={field1} onChange={(e) => setField1(e.target.value)} placeholder="যেমন: মোহাম্মদ মিনহাজুল ইসলাম" className="w-full px-3 py-2 border rounded-md text-sm" />
+                    <label className="text-xs font-bold text-gray-700">শিক্ষার্থীর নাম <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      value={field1}
+                      onChange={(e) => {
+                        setField1(e.target.value);
+                        if (storyFormErrors.name) setStoryFormErrors(prev => ({ ...prev, name: undefined }));
+                      }}
+                      placeholder="যেমন: মোহাম্মদ মিনহাজুল ইসলাম"
+                      className={`w-full px-3 py-2 border rounded-md text-sm transition-colors ${
+                        storyFormErrors.name ? 'border-red-500 bg-red-50/50' : 'border-gray-300'
+                      }`}
+                    />
+                    {storyFormErrors.name && (
+                      <p className="text-xs font-bold text-red-600 mt-1 flex items-center gap-1 font-alinur">
+                        <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                        <span>{storyFormErrors.name}</span>
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-700">সাফল্য / কৃতিত্ব বিবরণ</label>
-                    <textarea required rows={3} value={field2} onChange={(e) => setField2(e.target.value)} placeholder="যেমন: দাখিল পরীক্ষায় জিপিএ ৫.০০..." className="w-full px-3 py-2 border rounded-md text-sm resize-none"></textarea>
+                    <label className="text-xs font-bold text-gray-700">সাফল্য / কৃতিত্ব বিবরণ <span className="text-red-500">*</span></label>
+                    <textarea
+                      rows={3}
+                      value={field2}
+                      onChange={(e) => {
+                        setField2(e.target.value);
+                        if (storyFormErrors.achievement) setStoryFormErrors(prev => ({ ...prev, achievement: undefined }));
+                      }}
+                      placeholder="যেমন: দাখিল পরীক্ষায় জিপিএ ৫.০০..."
+                      className={`w-full px-3 py-2 border rounded-md text-sm resize-none transition-colors ${
+                        storyFormErrors.achievement ? 'border-red-500 bg-red-50/50' : 'border-gray-300'
+                      }`}
+                    ></textarea>
+                    {storyFormErrors.achievement && (
+                      <p className="text-xs font-bold text-red-600 mt-1 flex items-center gap-1 font-alinur">
+                        <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                        <span>{storyFormErrors.achievement}</span>
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-700">অর্জনের বছর</label>
-                    <input type="number" required value={field3} onChange={(e) => setField3(e.target.value)} placeholder="যেমন: ২০২৫" className="w-full px-3 py-2 border rounded-md text-sm" />
+                    <label className="text-xs font-bold text-gray-700">অর্জনের বছর <span className="text-red-500">*</span></label>
+                    <input
+                      type="number"
+                      value={field3}
+                      onChange={(e) => {
+                        setField3(e.target.value);
+                        if (storyFormErrors.year) setStoryFormErrors(prev => ({ ...prev, year: undefined }));
+                      }}
+                      placeholder="যেমন: ২০২৫"
+                      className={`w-full px-3 py-2 border rounded-md text-sm transition-colors ${
+                        storyFormErrors.year ? 'border-red-500 bg-red-50/50' : 'border-gray-300'
+                      }`}
+                    />
+                    {storyFormErrors.year && (
+                      <p className="text-xs font-bold text-red-600 mt-1 flex items-center gap-1 font-alinur">
+                        <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                        <span>{storyFormErrors.year}</span>
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-700">ছবি ইউআরএল (Student Photo URL)</label>
+                    <label className="text-xs font-bold text-gray-700">ছবি নির্বাচন ও ক্রপ (Student Photo) <span className="text-red-500">*</span></label>
+                    {storyPreviewUrl && (
+                      <div className="flex items-center gap-3 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 my-1 font-alinur">
+                        <img src={storyPreviewUrl} alt="Preview" className="w-14 h-14 object-cover rounded-lg border border-emerald-500 shadow-xs shrink-0" />
+                        <div className="text-xs text-emerald-950 font-bold space-y-0.5">
+                          <p className="text-emerald-800 flex items-center gap-1">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                            <span>ছবি ক্রপ সম্পন্ন হয়েছে</span>
+                          </p>
+                          <p className="text-[10px] text-emerald-700 font-medium">ফরমের "সাবমিট" বাটনে ক্লিক করলে ছবি ImgBB-তে আপলোড হবে।</p>
+                        </div>
+                      </div>
+                    )}
                     <div className="flex gap-2">
-                      <input type="text" value={field4} onChange={(e) => setField4(e.target.value)} placeholder="Image URL" className="flex-1 min-w-0 px-3 py-2 border rounded-md text-sm" />
-                      <label className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 font-bold px-3 py-1.5 rounded-md text-xs cursor-pointer flex items-center justify-center gap-1 select-none shrink-0">
+                      <input
+                        type="text"
+                        value={field4}
+                        onChange={(e) => {
+                          setField4(e.target.value);
+                          if (storyFormErrors.image) setStoryFormErrors(prev => ({ ...prev, image: undefined }));
+                        }}
+                        placeholder="অথবা সরাসরি ছবির URL দিন"
+                        className="flex-1 min-w-0 px-3 py-2 border rounded-md text-sm"
+                      />
+                      <label className="bg-emerald-700 hover:bg-emerald-800 text-amber-400 font-bold px-3.5 py-1.5 rounded-md text-xs cursor-pointer flex items-center justify-center gap-1 select-none shrink-0 transition-all active:scale-95">
                         <input
                           type="file"
                           accept="image/*"
                           className="hidden"
-                          onChange={(e) => handleFileUpload(e, setField4, "stories")}
-                          disabled={isUploading}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              setStoryCropperImage(reader.result as string);
+                              if (storyFormErrors.image) setStoryFormErrors(prev => ({ ...prev, image: undefined }));
+                            };
+                            reader.readAsDataURL(file);
+                            e.target.value = "";
+                          }}
                         />
-                        {isUploading ? "আপলোড..." : "ফাইল সিলেক্ট"}
+                        <Award className="h-4 w-4" />
+                        <span>ছবি সিলেক্ট</span>
                       </label>
                     </div>
-                    {uploadError && <p className="text-[11px] text-red-500 font-medium mt-1">{uploadError}</p>}
+                    {storyFormErrors.image && (
+                      <p className="text-xs font-bold text-red-600 mt-1 flex items-center gap-1 font-alinur">
+                        <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                        <span>{storyFormErrors.image}</span>
+                      </p>
+                    )}
                   </div>
                 </>
               )}
@@ -9311,16 +9443,23 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
 
               <button
                 type="submit"
-                disabled={user.role === "admin" && activeAdminSubTab === "teachers" && (isPhoneDuplicate || field3.trim().length !== 11 || isCheckingPhone)}
-                className={`w-full font-bold py-2.5 rounded-lg text-sm transition-all ${
-                  activeAdminSubTab === "committee" ? "font-alinur" : ""
+                disabled={isSavingStory || (user.role === "admin" && activeAdminSubTab === "teachers" && (isPhoneDuplicate || field3.trim().length !== 11 || isCheckingPhone))}
+                className={`w-full font-bold py-2.5 rounded-lg text-sm transition-all flex items-center justify-center gap-2 ${
+                  activeAdminSubTab === "committee" || activeAdminSubTab === "stories" ? "font-alinur" : ""
                 } ${
-                  (user.role === "admin" && activeAdminSubTab === "teachers" && (isPhoneDuplicate || field3.trim().length !== 11 || isCheckingPhone))
+                  (isSavingStory || (user.role === "admin" && activeAdminSubTab === "teachers" && (isPhoneDuplicate || field3.trim().length !== 11 || isCheckingPhone)))
                   ? "bg-gray-400 cursor-not-allowed text-gray-200"
                   : "bg-emerald-800 hover:bg-emerald-950 text-white"
                 }`}
               >
-                {editingId ? "আপডেট করুন" : "দাখিল বা সংরক্ষণ করুন"}
+                {isSavingStory ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                    <span>ImgBB-তে আপলোড ও সেভ হচ্ছে...</span>
+                  </>
+                ) : (
+                  editingId ? "আপডেট করুন" : "দাখিল বা সংরক্ষণ করুন"
+                )}
               </button>
             </form>
           </div>
@@ -9607,6 +9746,76 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                 setShowLogoSuccessPopup(false);
               }}
               className="w-full bg-emerald-800 hover:bg-emerald-900 text-white font-extrabold text-xs py-2.5 rounded-full transition-colors cursor-pointer text-center shadow-md shadow-emerald-800/10"
+            >
+              ঠিক আছে
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Success Story Image Cropper Dialog */}
+      {storyCropperImage && (
+        <ImageCropper
+          image={storyCropperImage}
+          aspectRatio={1}
+          onCropComplete={(croppedBlob) => {
+            const previewUrl = URL.createObjectURL(croppedBlob);
+            setStoryCroppedBlob(croppedBlob);
+            setStoryPreviewUrl(previewUrl);
+            setStoryCropperImage(null);
+            setStoryFormErrors(prev => ({ ...prev, image: undefined }));
+          }}
+          onCancel={() => setStoryCropperImage(null)}
+        />
+      )}
+
+      {/* Red Warning Dialog for 6 Success Stories Limit */}
+      {storyLimitWarning && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 z-[100] animate-fade-in font-alinur">
+          <div className="bg-white border-2 border-red-500 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4">
+            <div className="flex justify-center">
+              <div className="h-16 w-16 bg-red-100 rounded-full flex items-center justify-center text-red-600 shadow-inner">
+                <AlertCircle className="h-9 w-9 stroke-[2.5]" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-black text-red-600 font-alinur">
+                প্রথমে ৬টি ছবির কোনো একটি ডিলিট করুন!
+              </h3>
+              <p className="text-xs text-gray-600 leading-relaxed font-bold">
+                শিক্ষার্থীর সাফল্য তালিকায় সর্বোচ্চ ৬টি কন্টেন্ট রাখা সম্ভব। নতুন কোনো সাফল্য যোগ করার পূর্বে তালিকায় থাকা পুরানো যেকোনো একটি সাফল্য ডিলিট করুন।
+              </p>
+            </div>
+            <button
+              onClick={() => setStoryLimitWarning(false)}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs py-3 rounded-2xl transition-all cursor-pointer text-center shadow-lg shadow-red-500/20 active:scale-95"
+            >
+              ঠিক আছে
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Success Notification Dialog for Success Stories */}
+      {storySuccessNotification && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 z-[100] animate-fade-in font-alinur">
+          <div className="bg-white border-2 border-emerald-600 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4">
+            <div className="flex justify-center">
+              <div className="h-16 w-16 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 shadow-inner">
+                <CheckCircle2 className="h-9 w-9 stroke-[2.5]" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-black text-emerald-950 font-alinur">
+                সফলভাবে সম্পন্ন হয়েছে
+              </h3>
+              <p className="text-xs text-emerald-800 leading-relaxed font-bold">
+                {storySuccessNotification}
+              </p>
+            </div>
+            <button
+              onClick={() => setStorySuccessNotification(null)}
+              className="w-full bg-emerald-800 hover:bg-emerald-950 text-amber-400 font-extrabold text-xs py-3 rounded-2xl transition-all cursor-pointer text-center shadow-lg shadow-emerald-900/20 active:scale-95"
             >
               ঠিক আছে
             </button>
