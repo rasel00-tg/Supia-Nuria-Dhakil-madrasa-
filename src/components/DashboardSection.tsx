@@ -1501,11 +1501,12 @@ const LeaveBadge = ({ studentRoll, className, todayStr }: any) => {
         return (
           <button 
             onClick={() => {
-              alert(`ছুটির বিবরণ: ${activeLeave.reason}\nঅনুমোদনকারী: ${activeLeave.teacherName}\nতারিখ: ${activeLeave.startDate} থেকে ${activeLeave.endDate}`);
+              alert(`ছুটির বিবরণ: ${activeLeave.reason}\nঅনুমোদনকারী: ${activeLeave.teacherName || "এডমিন"}\nতারিখ: ${activeLeave.startDate} থেকে ${activeLeave.endDate}`);
             }}
-            className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-100 text-[9px] font-black"
+            className="bg-emerald-600 text-white px-2.5 py-0.5 rounded-full shadow-xs text-[10px] font-black animate-pulse flex items-center gap-1 cursor-pointer"
           >
-            ছুটি
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-300"></span>
+            ছুটিতে আছে
           </button>
         );
       }}
@@ -3433,9 +3434,13 @@ const AdminStudentManagement = ({ toBengaliDigits }: any) => {
   );
 };
 
-const AdminLeaveManagement = ({ activeTab = "teacher", toBengaliDigits }: any) => {
-  const [subTab, setSubTab] = useState<"teacher" | "student">(
-    activeTab === "student" ? "student" : "teacher"
+const AdminLeaveManagement = ({ activeTab = "teacher_leave", toBengaliDigits }: any) => {
+  const [subTab, setSubTab] = useState<"teacher" | "student" | "history">(
+    activeTab === "student_leave" || activeTab === "student"
+      ? "student"
+      : activeTab === "leave_history" || activeTab === "history"
+      ? "history"
+      : "teacher"
   );
   const [statusFilter, setStatusFilter] = useState<"all" | "Pending" | "Approved" | "Rejected">("all");
 
@@ -3447,8 +3452,12 @@ const AdminLeaveManagement = ({ activeTab = "teacher", toBengaliDigits }: any) =
 
   // Sync subTab if prop changes
   useEffect(() => {
-    if (activeTab === "student" || activeTab === "teacher") {
-      setSubTab(activeTab);
+    if (activeTab === "student_leave" || activeTab === "student") {
+      setSubTab("student");
+    } else if (activeTab === "leave_history" || activeTab === "history") {
+      setSubTab("history");
+    } else {
+      setSubTab("teacher");
     }
   }, [activeTab]);
 
@@ -3503,14 +3512,60 @@ const AdminLeaveManagement = ({ activeTab = "teacher", toBengaliDigits }: any) =
     }
   };
 
+  // Helper: check if today is within active leave date range
+  const isCurrentlyActiveLeave = (startStr: string, endStr: string, status: string) => {
+    const norm = (status || "").toLowerCase();
+    if (norm !== "approved") return false;
+    if (!startStr || !endStr) return false;
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const start = new Date(startStr);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endStr);
+    end.setHours(23, 59, 59, 999);
+    return now >= start && now <= end;
+  };
+
+  // Helper: check if end date is in the past (expired)
+  const isExpiredLeave = (endStr: string) => {
+    if (!endStr) return false;
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const end = new Date(endStr);
+    end.setHours(23, 59, 59, 999);
+    return now > end;
+  };
+
+  // Helper: check if date falls in current month
+  const isCurrentMonthDate = (dateStr: string) => {
+    if (!dateStr) return false;
+    try {
+      const d = new Date(dateStr);
+      const now = new Date();
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    } catch {
+      return false;
+    }
+  };
+
+  // Current Month Name in Bengali
+  const getCurrentMonthName = () => {
+    const now = new Date();
+    const months = [
+      "জানুয়ারী", "ফেব্রুয়ারী", "মার্চ", "এপ্রিল", "মে", "জুন",
+      "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর"
+    ];
+    return `${months[now.getMonth()]} ${toBengaliDigits(now.getFullYear())}`;
+  };
+
   return (
     <div className="space-y-6 font-alinur animate-fade-in">
       {/* Sub-menu Toggle Tabs */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setSubTab("teacher")}
-            className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
+            className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
               subTab === "teacher"
                 ? "bg-emerald-800 text-white shadow-md shadow-emerald-900/20"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -3522,7 +3577,7 @@ const AdminLeaveManagement = ({ activeTab = "teacher", toBengaliDigits }: any) =
 
           <button
             onClick={() => setSubTab("student")}
-            className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
+            className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
               subTab === "student"
                 ? "bg-emerald-800 text-white shadow-md shadow-emerald-900/20"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -3531,187 +3586,398 @@ const AdminLeaveManagement = ({ activeTab = "teacher", toBengaliDigits }: any) =
             <Users className="h-4 w-4 text-amber-400" />
             <span>শিক্ষার্থী ছুটির আবেদন</span>
           </button>
+
+          <button
+            onClick={() => setSubTab("history")}
+            className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
+              subTab === "history"
+                ? "bg-emerald-800 text-white shadow-md shadow-emerald-900/20"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            <CalendarRange className="h-4 w-4 text-amber-400" />
+            <span>ছুটি হিস্ট্রি (চলতি মাস)</span>
+          </button>
         </div>
 
-        {/* Status Filter */}
-        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl text-xs font-bold">
-          {(["all", "Pending", "Approved", "Rejected"] as const).map((st) => (
-            <button
-              key={st}
-              onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                statusFilter === st
-                  ? "bg-white text-emerald-950 shadow-xs font-black"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              {st === "all" ? "সকল" : st === "Pending" ? "পেন্ডিং" : st === "Approved" ? "অনুমোদিত" : "বাতিলকৃত"}
-            </button>
-          ))}
-        </div>
+        {/* Status Filter (shown for teacher and student tabs) */}
+        {subTab !== "history" && (
+          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl text-xs font-bold">
+            {(["all", "Pending", "Approved", "Rejected"] as const).map((st) => (
+              <button
+                key={st}
+                onClick={() => setStatusFilter(st)}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  statusFilter === st
+                    ? "bg-white text-emerald-950 shadow-xs font-black"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                {st === "all" ? "সকল" : st === "Pending" ? "পেন্ডিং" : st === "Approved" ? "অনুমোদিত" : "বাতিলকৃত"}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Main Leave List Section */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
-          <div className="h-10 w-10 bg-emerald-50 text-emerald-700 rounded-xl flex items-center justify-center border border-emerald-100">
-            <ClipboardList className="h-6 w-6" />
+      {/* RENDER FOR TEACHER AND STUDENT LEAVE APPLICATIONS */}
+      {subTab !== "history" && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+            <div className="h-10 w-10 bg-emerald-50 text-emerald-700 rounded-xl flex items-center justify-center border border-emerald-100">
+              <ClipboardList className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-emerald-950 font-serif">
+                {subTab === "teacher" ? "শিক্ষক ছুটির আবেদনসমূহ" : "শিক্ষার্থী ছুটির আবেদনসমূহ"}
+              </h3>
+              <p className="text-xs text-slate-500">
+                {subTab === "teacher"
+                  ? "শিক্ষকদের জমাকৃত সকল ছুটির আবেদন ও পর্যালোচনা"
+                  : "শিক্ষার্থীদের পাঠানো সকল ছুটির আবেদন ও পর্যালোচনা"}
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-bold text-emerald-950 font-serif">
-              {subTab === "teacher" ? "শিক্ষক ছুটির আবেদনসমূহ" : "শিক্ষার্থী ছুটির আবেদনসমূহ"}
-            </h3>
-            <p className="text-xs text-slate-500">
-              {subTab === "teacher"
-                ? "শিক্ষকদের জমাকৃত সকল ছুটির আবেদন ও পর্যালোচনা"
-                : "শিক্ষার্থীদের পাঠানো সকল ছুটির আবেদন ও পর্যালোচনা"}
-            </p>
-          </div>
-        </div>
 
-        {/* StreamBuilder for Data */}
-        <StreamBuilder<any>
-          stream={
-            subTab === "teacher"
-              ? query(collection(db, "teacher_leaves"), orderBy("createdAt", "desc"))
-              : query(collection(db, "leaves"), orderBy("createdAt", "desc"))
-          }
-          builder={(allLeaves) => {
-            let displayLeaves = allLeaves;
-
-            // Filter for student vs teacher if in leaves collection
-            if (subTab === "teacher") {
-              displayLeaves = displayLeaves.filter((l: any) => l.applicantType === "teacher" || l.teacherName || l.designation);
-            } else {
-              displayLeaves = displayLeaves.filter((l: any) => l.applicantType !== "teacher");
+          {/* StreamBuilder for Data */}
+          <StreamBuilder<any>
+            stream={
+              subTab === "teacher"
+                ? query(collection(db, "teacher_leaves"), orderBy("createdAt", "desc"))
+                : query(collection(db, "leaves"), orderBy("createdAt", "desc"))
             }
+            builder={(allLeaves) => {
+              // Auto Cleanup Trigger for expired leave applications
+              const expiredLeaves = allLeaves.filter((l: any) => l.endDate && isExpiredLeave(l.endDate));
+              if (expiredLeaves.length > 0) {
+                expiredLeaves.forEach((exp: any) => {
+                  const colName = exp.collectionName || (subTab === "teacher" ? "teacher_leaves" : "leaves");
+                  deleteDoc(doc(db, colName, exp.id)).catch(err => console.error("Auto delete expired leave error:", err));
+                });
+              }
 
-            // Apply status filter
-            if (statusFilter !== "all") {
-              displayLeaves = displayLeaves.filter((l: any) => {
-                const s = l.status || "Pending";
-                if (statusFilter === "Pending") return s === "Pending" || s === "pending";
-                if (statusFilter === "Approved") return s === "Approved" || s === "approved";
-                if (statusFilter === "Rejected") return s === "Rejected" || s === "rejected";
-                return true;
-              });
-            }
+              let displayLeaves = allLeaves.filter((l: any) => !l.endDate || !isExpiredLeave(l.endDate));
 
-            if (displayLeaves.length === 0) {
+              // Filter for student vs teacher if in leaves collection
+              if (subTab === "teacher") {
+                displayLeaves = displayLeaves.filter((l: any) => l.applicantType === "teacher" || l.teacherName || l.designation);
+              } else {
+                displayLeaves = displayLeaves.filter((l: any) => l.applicantType !== "teacher");
+              }
+
+              // Apply status filter
+              if (statusFilter !== "all") {
+                displayLeaves = displayLeaves.filter((l: any) => {
+                  const s = l.status || "Pending";
+                  if (statusFilter === "Pending") return s === "Pending" || s === "pending";
+                  if (statusFilter === "Approved") return s === "Approved" || s === "approved";
+                  if (statusFilter === "Rejected") return s === "Rejected" || s === "rejected";
+                  return true;
+                });
+              }
+
+              if (displayLeaves.length === 0) {
+                return (
+                  <div className="text-center py-12 opacity-50 space-y-2">
+                    <ClipboardList className="h-16 w-16 mx-auto text-slate-400" />
+                    <p className="font-bold text-slate-600">কোনো সক্রিয় ছুটির আবেদন পাওয়া যায়নি</p>
+                    <p className="text-xs text-slate-400">ফিল্টার পরিবর্তন করে চেক করুন</p>
+                  </div>
+                );
+              }
+
               return (
-                <div className="text-center py-12 opacity-50 space-y-2">
-                  <ClipboardList className="h-16 w-16 mx-auto text-slate-400" />
-                  <p className="font-bold text-slate-600">কোনো ছুটির আবেদন পাওয়া যায়নি</p>
-                  <p className="text-xs text-slate-400">ফিল্টার পরিবর্তন করে চেক করুন</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {displayLeaves.map((l: any) => {
+                    const isApproved = l.status === "Approved" || l.status === "approved";
+                    const isRejected = l.status === "Rejected" || l.status === "rejected";
+                    const isPending = !isApproved && !isRejected;
+                    const daysCount = l.totalDays || calculateDays(l.startDate, l.endDate);
+                    const onLeaveNow = isCurrentlyActiveLeave(l.startDate, l.endDate, l.status);
+
+                    return (
+                      <div
+                        key={l.id}
+                        className={`bg-slate-50/90 border rounded-2xl p-5 space-y-4 hover:border-emerald-300 transition-all shadow-2xs relative ${
+                          onLeaveNow ? "border-emerald-500/80 bg-emerald-50/30 ring-1 ring-emerald-300" : "border-slate-200"
+                        }`}
+                      >
+                        {/* Card Header */}
+                        <div className="flex justify-between items-start gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 bg-emerald-100/60 rounded-xl flex items-center justify-center text-emerald-800 font-black text-sm relative">
+                              {subTab === "teacher" ? <GraduationCap className="h-5 w-5" /> : <User className="h-5 w-5" />}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-black text-emerald-950 text-sm">
+                                  {l.teacherName || l.studentName || l.applicantName || "আবেদনকারী"}
+                                </h4>
+                                {onLeaveNow && (
+                                  <span className="bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1 animate-pulse">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-amber-300"></span>
+                                    ছুটিতে আছে
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-500 font-bold mt-0.5">
+                                {subTab === "teacher" ? (
+                                  <span>{l.designation || l.teacherDesignation || "শিক্ষক"}</span>
+                                ) : (
+                                  <span>{l.className || "শ্রেণী"} • রোল: {toBengaliDigits(l.studentRoll || l.roll || "---")}</span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Status Badge */}
+                          <div>
+                            {onLeaveNow ? (
+                              <span className="text-[10px] font-black bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-300 px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3 text-amber-300" /> режиме আছে
+                              </span>
+                            ) : isApproved ? (
+                              <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3 text-emerald-600" /> গ্রহণকৃত
+                              </span>
+                            ) : isRejected ? (
+                              <span className="text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
+                                <XCircle className="h-3 w-3 text-rose-600" /> বাতিলকৃত
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
+                                <Clock className="h-3 w-3 text-amber-600" /> পেন্ডিং
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Date Range & Total Days */}
+                        <div className="bg-white p-3 rounded-xl border border-slate-200/80 flex items-center justify-between text-xs font-bold text-slate-700">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="h-4 w-4 text-emerald-600" />
+                            <span>{toBengaliDigits(l.startDate)} থেকে {toBengaliDigits(l.endDate)}</span>
+                          </div>
+                          <span className="bg-emerald-50 text-emerald-800 px-2.5 py-0.5 rounded-md text-[11px] font-black">
+                            {toBengaliDigits(daysCount)} দিন
+                          </span>
+                        </div>
+
+                        {/* Reason */}
+                        <div className="bg-white p-3 rounded-xl border border-slate-200/80 space-y-1">
+                          <p className="text-[10px] text-slate-400 uppercase font-black tracking-wide">ছুটির বিস্তারিত কারণ</p>
+                          <p className="text-xs font-bold text-slate-700 leading-relaxed">{l.reason || "কোনো বিবরণ প্রদান করা হয়নি।"}</p>
+                        </div>
+
+                        {/* Admin Note if present */}
+                        {(l.admin_note || l.adminNote) && (
+                          <div className="bg-amber-50/80 border border-amber-200/60 p-3 rounded-xl space-y-0.5 text-xs">
+                            <p className="text-[10px] text-amber-800 uppercase font-black tracking-wide">অ্যাডমিন নোট / সিদ্ধান্ত কারণ</p>
+                            <p className="font-bold text-amber-950">{l.admin_note || l.adminNote}</p>
+                          </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-2 pt-2 border-t border-slate-200/60">
+                          <button
+                            onClick={() => handleOpenActionModal({ ...l, collectionName: subTab === "teacher" ? "teacher_leaves" : "leaves" }, "approve")}
+                            className="flex-1 bg-emerald-800 hover:bg-emerald-950 text-white py-2.5 rounded-xl text-xs font-black shadow-xs active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <Check className="h-4 w-4 text-amber-400" />
+                            <span>গ্রহণ করুন</span>
+                          </button>
+                          <button
+                            onClick={() => handleOpenActionModal({ ...l, collectionName: subTab === "teacher" ? "teacher_leaves" : "leaves" }, "reject")}
+                            className="flex-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 py-2.5 rounded-xl text-xs font-black shadow-xs active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <X className="h-4 w-4 text-rose-600" />
+                            <span>বাতিল করুন</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               );
-            }
+            }}
+          />
+        </div>
+      )}
 
-            return (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {displayLeaves.map((l: any) => {
-                  const isApproved = l.status === "Approved" || l.status === "approved";
-                  const isRejected = l.status === "Rejected" || l.status === "rejected";
-                  const isPending = !isApproved && !isRejected;
-                  const daysCount = l.totalDays || calculateDays(l.startDate, l.endDate);
+      {/* RENDER FOR "LEAVE HISTORY" (ছুটি হিস্ট্রি - চলতি মাস) */}
+      {subTab === "history" && (
+        <div className="space-y-6">
+          {/* Month Banner */}
+          <div className="bg-gradient-to-r from-emerald-900 via-emerald-850 to-emerald-950 rounded-2xl p-6 text-white shadow-lg border-2 border-emerald-700/60 flex flex-wrap items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <CalendarRange className="h-6 w-6 text-amber-400" />
+                <h3 className="text-xl font-black font-serif text-amber-300">ছুটি হিস্ট্রি রিপোর্ট (Leave History)</h3>
+              </div>
+              <p className="text-xs text-emerald-200 font-bold">
+                চলতি মাসের সকল অনুমোদিত শিক্ষক ও শিক্ষার্থীদের ছুটির রেজিস্টার
+              </p>
+            </div>
+            <div className="bg-emerald-950/80 border border-emerald-500/50 px-4 py-2 rounded-xl text-center">
+              <span className="text-[10px] text-amber-300 uppercase font-black tracking-widest block">চলতি মাস</span>
+              <span className="text-sm font-black text-white">{getCurrentMonthName()}</span>
+            </div>
+          </div>
 
+          {/* SECTION 1: TEACHER LEAVE HISTORY */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+              <div className="h-9 w-9 bg-emerald-50 text-emerald-800 rounded-xl flex items-center justify-center border border-emerald-100">
+                <GraduationCap className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-base font-black text-emerald-950 font-serif">শিক্ষক ছুটি হিস্ট্রি সেকশন</h4>
+                <p className="text-xs text-slate-500">চলতি মাসের সকল অনুমোদিত শিক্ষক ছুটির রেকর্ড</p>
+              </div>
+            </div>
+
+            <StreamBuilder<any>
+              stream={query(collection(db, "teacher_leaves"), orderBy("createdAt", "desc"))}
+              builder={(allTeacherLeaves) => {
+                const approvedTeacherLeaves = allTeacherLeaves.filter((l: any) => {
+                  const isAppr = l.status === "Approved" || l.status === "approved";
+                  const inMonth = isCurrentMonthDate(l.startDate) || isCurrentMonthDate(l.endDate);
+                  return isAppr && inMonth;
+                });
+
+                const totalTeacherDays = approvedTeacherLeaves.reduce((sum: number, item: any) => {
+                  return sum + (item.totalDays || calculateDays(item.startDate, item.endDate));
+                }, 0);
+
+                if (approvedTeacherLeaves.length === 0) {
                   return (
-                    <div
-                      key={l.id}
-                      className="bg-slate-50/90 border border-slate-200 rounded-2xl p-5 space-y-4 hover:border-emerald-300 transition-all shadow-2xs relative"
-                    >
-                      {/* Card Header */}
-                      <div className="flex justify-between items-start gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 bg-emerald-100/60 rounded-xl flex items-center justify-center text-emerald-800 font-black text-sm">
-                            {subTab === "teacher" ? <GraduationCap className="h-5 w-5" /> : <User className="h-5 w-5" />}
-                          </div>
-                          <div>
-                            <h4 className="font-black text-emerald-950 text-sm">
-                              {l.teacherName || l.studentName || l.applicantName || "আবেদনকারী"}
-                            </h4>
-                            <p className="text-xs text-slate-500 font-bold mt-0.5">
-                              {subTab === "teacher" ? (
-                                <span>{l.designation || l.teacherDesignation || "শিক্ষক"}</span>
-                              ) : (
-                                <span>{l.className || "শ্রেণী"} • রোল: {toBengaliDigits(l.studentRoll || l.roll || "---")}</span>
-                              )}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Status Badge */}
-                        <div>
-                          {isApproved && (
-                            <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
-                              <CheckCircle2 className="h-3 w-3 text-emerald-600" /> গ্রহণকৃত
-                            </span>
-                          )}
-                          {isRejected && (
-                            <span className="text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
-                              <XCircle className="h-3 w-3 text-rose-600" /> বাতিলকৃত
-                            </span>
-                          )}
-                          {isPending && (
-                            <span className="text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
-                              <Clock className="h-3 w-3 text-amber-600" /> পেন্ডিং
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Date Range & Total Days */}
-                      <div className="bg-white p-3 rounded-xl border border-slate-200/80 flex items-center justify-between text-xs font-bold text-slate-700">
-                        <div className="flex items-center gap-1.5">
-                          <Calendar className="h-4 w-4 text-emerald-600" />
-                          <span>{toBengaliDigits(l.startDate)} থেকে {toBengaliDigits(l.endDate)}</span>
-                        </div>
-                        <span className="bg-emerald-50 text-emerald-800 px-2.5 py-0.5 rounded-md text-[11px] font-black">
-                          {toBengaliDigits(daysCount)} দিন
-                        </span>
-                      </div>
-
-                      {/* Reason */}
-                      <div className="bg-white p-3 rounded-xl border border-slate-200/80 space-y-1">
-                        <p className="text-[10px] text-slate-400 uppercase font-black tracking-wide">ছুটির বিস্তারিত কারণ</p>
-                        <p className="text-xs font-bold text-slate-700 leading-relaxed">{l.reason || "কোনো বিবরণ প্রদান করা হয়নি।"}</p>
-                      </div>
-
-                      {/* Admin Note if present */}
-                      {(l.admin_note || l.adminNote) && (
-                        <div className="bg-amber-50/80 border border-amber-200/60 p-3 rounded-xl space-y-0.5 text-xs">
-                          <p className="text-[10px] text-amber-800 uppercase font-black tracking-wide">অ্যাডমিন নোট / সিদ্ধান্ত কারণ</p>
-                          <p className="font-bold text-amber-950">{l.admin_note || l.adminNote}</p>
-                        </div>
-                      )}
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-2 pt-2 border-t border-slate-200/60">
-                        <button
-                          onClick={() => handleOpenActionModal({ ...l, collectionName: subTab === "teacher" ? "teacher_leaves" : "leaves" }, "approve")}
-                          className="flex-1 bg-emerald-800 hover:bg-emerald-950 text-white py-2.5 rounded-xl text-xs font-black shadow-xs active:scale-95 transition-all flex items-center justify-center gap-1.5"
-                        >
-                          <Check className="h-4 w-4 text-amber-400" />
-                          <span>গ্রহণ করুন</span>
-                        </button>
-                        <button
-                          onClick={() => handleOpenActionModal({ ...l, collectionName: subTab === "teacher" ? "teacher_leaves" : "leaves" }, "reject")}
-                          className="flex-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 py-2.5 rounded-xl text-xs font-black shadow-xs active:scale-95 transition-all flex items-center justify-center gap-1.5"
-                        >
-                          <X className="h-4 w-4 text-rose-600" />
-                          <span>বাতিল করুন</span>
-                        </button>
-                      </div>
+                    <div className="text-center py-8 opacity-60 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                      <GraduationCap className="h-10 w-10 mx-auto text-slate-400 mb-1" />
+                      <p className="text-xs font-bold text-slate-600">চলতি মাসে কোনো শিক্ষক ছুটির হিস্ট্রি নেই</p>
                     </div>
                   );
-                })}
-              </div>
-            );
-          }}
-        />
-      </div>
+                }
 
-      {/* Action Modal (কাস্টম পপআপ ডায়ালগ for Reason/Note) */}
+                return (
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center text-xs bg-emerald-50 p-3 rounded-xl border border-emerald-100 font-bold text-emerald-950">
+                      <span>মোট শিক্ষক ছুটি আবেদন: {toBengaliDigits(approvedTeacherLeaves.length)}টি</span>
+                      <span>মোট মঞ্জুরীকৃত দিন: <span className="text-emerald-800 font-black">{toBengaliDigits(totalTeacherDays)} দিন</span></span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {approvedTeacherLeaves.map((l: any) => {
+                        const days = l.totalDays || calculateDays(l.startDate, l.endDate);
+                        return (
+                          <div key={l.id} className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col justify-between space-y-2 hover:border-emerald-300 transition-all">
+                            <div className="flex justify-between items-start gap-2">
+                              <div>
+                                <h5 className="font-black text-emerald-950 text-sm">{l.teacherName || l.applicantName || "শিক্ষক"}</h5>
+                                <p className="text-xs text-slate-500 font-bold">{l.designation || "সহকারী শিক্ষক"}</p>
+                              </div>
+                              <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-black px-2.5 py-1 rounded-lg">
+                                {toBengaliDigits(days)} দিন
+                              </span>
+                            </div>
+                            <div className="bg-white p-2.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 flex items-center justify-between">
+                              <span className="text-slate-400">ছুটির মেয়াদকাল:</span>
+                              <span className="text-emerald-900">{toBengaliDigits(l.startDate)} থেকে {toBengaliDigits(l.endDate)}</span>
+                            </div>
+                            {l.reason && (
+                              <p className="text-xs text-slate-600 bg-white/60 p-2 rounded-lg border border-slate-100 italic">
+                                "{l.reason}"
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }}
+            />
+          </div>
+
+          {/* SECTION 2: STUDENT LEAVE HISTORY */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+              <div className="h-9 w-9 bg-amber-50 text-amber-800 rounded-xl flex items-center justify-center border border-amber-100">
+                <Users className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-base font-black text-emerald-950 font-serif">শিক্ষার্থী ছুটি হিস্ট্রি সেকশন</h4>
+                <p className="text-xs text-slate-500">চলতি মাসের সকল অনুমোদিত শিক্ষার্থী ছুটির রেকর্ড</p>
+              </div>
+            </div>
+
+            <StreamBuilder<any>
+              stream={query(collection(db, "leaves"), orderBy("createdAt", "desc"))}
+              builder={(allStudentLeaves) => {
+                const approvedStudentLeaves = allStudentLeaves.filter((l: any) => {
+                  const isAppr = l.status === "Approved" || l.status === "approved";
+                  const isStud = l.applicantType !== "teacher";
+                  const inMonth = isCurrentMonthDate(l.startDate) || isCurrentMonthDate(l.endDate);
+                  return isAppr && isStud && inMonth;
+                });
+
+                const totalStudentDays = approvedStudentLeaves.reduce((sum: number, item: any) => {
+                  return sum + (item.totalDays || calculateDays(item.startDate, item.endDate));
+                }, 0);
+
+                if (approvedStudentLeaves.length === 0) {
+                  return (
+                    <div className="text-center py-8 opacity-60 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                      <Users className="h-10 w-10 mx-auto text-slate-400 mb-1" />
+                      <p className="text-xs font-bold text-slate-600">চলতি মাসে কোনো শিক্ষার্থী ছুটির হিস্ট্রি নেই</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center text-xs bg-amber-50/80 p-3 rounded-xl border border-amber-100 font-bold text-amber-950">
+                      <span>মোট শিক্ষার্থী ছুটি আবেদন: {toBengaliDigits(approvedStudentLeaves.length)}টি</span>
+                      <span>মোট মঞ্জুরীকৃত দিন: <span className="text-amber-900 font-black">{toBengaliDigits(totalStudentDays)} দিন</span></span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {approvedStudentLeaves.map((l: any) => {
+                        const days = l.totalDays || calculateDays(l.startDate, l.endDate);
+                        return (
+                          <div key={l.id} className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col justify-between space-y-2 hover:border-emerald-300 transition-all">
+                            <div className="flex justify-between items-start gap-2">
+                              <div>
+                                <h5 className="font-black text-emerald-950 text-sm">{l.studentName || "শিক্ষার্থী"}</h5>
+                                <p className="text-xs text-slate-500 font-bold mt-0.5">
+                                  {l.className || "শ্রেণী"} • রোল নম্বর: {toBengaliDigits(l.studentRoll || l.roll || "---")}
+                                </p>
+                              </div>
+                              <span className="bg-amber-100 text-amber-900 border border-amber-200 text-xs font-black px-2.5 py-1 rounded-lg">
+                                {toBengaliDigits(days)} দিন
+                              </span>
+                            </div>
+                            <div className="bg-white p-2.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 flex items-center justify-between">
+                              <span className="text-slate-400">ছুটির মেয়াদকাল:</span>
+                              <span className="text-emerald-900">{toBengaliDigits(l.startDate)} থেকে {toBengaliDigits(l.endDate)}</span>
+                            </div>
+                            {l.reason && (
+                              <p className="text-xs text-slate-600 bg-white/60 p-2 rounded-lg border border-slate-100 italic">
+                                "{l.reason}"
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Action Modal */}
       {selectedLeave && (
         <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 font-alinur animate-fade-in">
           <motion.div
@@ -3742,7 +4008,7 @@ const AdminLeaveManagement = ({ activeTab = "teacher", toBengaliDigits }: any) =
               </div>
               <button
                 onClick={() => setSelectedLeave(null)}
-                className="h-8 w-8 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center text-slate-500 transition-all"
+                className="h-8 w-8 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center text-slate-500 transition-all cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -3785,14 +4051,14 @@ const AdminLeaveManagement = ({ activeTab = "teacher", toBengaliDigits }: any) =
                 <button
                   type="button"
                   onClick={() => setSelectedLeave(null)}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl text-xs font-black transition-all"
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl text-xs font-black transition-all cursor-pointer"
                 >
                   বাতিল
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`flex-1 text-white py-3 rounded-xl text-xs font-black shadow-md transition-all flex items-center justify-center gap-2 ${
+                  className={`flex-1 text-white py-3 rounded-xl text-xs font-black shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer ${
                     actionType === "approve"
                       ? "bg-emerald-800 hover:bg-emerald-950 shadow-emerald-900/20"
                       : "bg-rose-600 hover:bg-rose-700 shadow-rose-900/20"
@@ -5329,11 +5595,10 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
       {/* ------------------- ADMIN DASHBOARD ------------------- */}
       {user.role === "admin" && (
         <div id="admin-dashboard" className="space-y-6">
-          {/* Admin Tabs */}
-          <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 pb-2 font-alinur">
+          {/* Premium Admin Subtabs Bar with Glassmorphism & Animations */}
+          <div className="bg-gradient-to-r from-emerald-950 via-emerald-900 to-emerald-950 p-2.5 rounded-2xl border-2 border-emerald-700/60 shadow-xl flex flex-wrap items-center gap-2 font-alinur select-none backdrop-blur-md">
             {[
               { id: "dashboard", label: "ড্যাশবোর্ড", icon: LayoutDashboard },
-              { id: "leave_mgmt", label: "ছুটির আবেদন", icon: CalendarRange },
               { id: "admissions", label: "অনলাইন আবেদন ট্র্যাকিং", icon: UserPlus },
               { id: "teachers", label: "শিক্ষক তালিকা", icon: GraduationCap },
               { id: "teacher_attendance", label: "শিক্ষক হাজিরা", icon: CalendarCheck },
@@ -5346,6 +5611,7 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
               ...(user.adminRole === "mother_admin" || user.adminRole === "super_admin" ? [{ id: "admin_control", label: "এডমিন কন্ট্রোল", icon: Lock }] : []),
             ].map((tab) => {
               const Icon = tab.icon;
+              const isActive = activeAdminSubTab === tab.id;
               return (
                 <button
                   key={tab.id}
@@ -5357,13 +5623,13 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                     setIsSettingsDropdownOpen(false);
                     setIsMenuBarDropdownOpen(false);
                   }}
-                  className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
-                    activeAdminSubTab === tab.id
-                      ? "bg-emerald-800 text-white shadow-sm"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer ${
+                    isActive
+                      ? "bg-gradient-to-r from-emerald-700 via-emerald-600 to-emerald-800 text-amber-300 shadow-lg shadow-emerald-950/50 border-b-2 border-amber-400 ring-2 ring-emerald-400/50 scale-[1.02]"
+                      : "bg-emerald-900/50 hover:bg-emerald-800/70 text-emerald-100 hover:text-white border border-emerald-700/40"
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className={`h-4 w-4 ${isActive ? "text-amber-300" : "text-emerald-300"}`} />
                   <span>{tab.label}</span>
                 </button>
               );
@@ -5379,32 +5645,32 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                   setIsSettingsDropdownOpen(false);
                   setIsMenuBarDropdownOpen(false);
                 }}
-                className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
-                  activeAdminSubTab === "running_notices"
-                    ? "bg-emerald-800 text-white shadow-sm"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer ${
+                  activeAdminSubTab === "running_notices" || activeAdminSubTab === "public_notices" || activeAdminSubTab === "teacher_notices"
+                    ? "bg-gradient-to-r from-emerald-700 via-emerald-600 to-emerald-800 text-amber-300 shadow-lg shadow-emerald-950/50 border-b-2 border-amber-400 ring-2 ring-emerald-400/50 scale-[1.02]"
+                    : "bg-emerald-900/50 hover:bg-emerald-800/70 text-emerald-100 hover:text-white border border-emerald-700/40"
                 }`}
               >
-                <Megaphone className="h-4 w-4" />
+                <Megaphone className="h-4 w-4 text-amber-400" />
                 <span>নোটিশ</span>
                 <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${isNoticeDropdownOpen ? "rotate-180" : ""}`} />
               </button>
               
               {isNoticeDropdownOpen && (
-                <div className="absolute left-0 mt-1.5 w-48 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-30">
+                <div className="absolute left-0 mt-2 w-52 bg-emerald-950/95 backdrop-blur-md border-2 border-emerald-600/60 rounded-2xl shadow-2xl py-1.5 z-40 space-y-1 font-alinur">
                   <button
                     id="admin-subtab-running-notice"
                     onClick={() => {
                       setActiveAdminSubTab("running_notices");
                       setIsNoticeDropdownOpen(false);
                     }}
-                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold ${
+                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold transition-colors ${
                       activeAdminSubTab === "running_notices"
-                        ? "bg-emerald-50 text-emerald-850"
-                        : "text-gray-600 hover:bg-gray-50"
+                        ? "bg-emerald-800/80 text-amber-300"
+                        : "text-emerald-100 hover:bg-emerald-850 hover:text-white"
                     }`}
                   >
-                    <div className="h-1.5 w-1.5 rounded-full bg-amber-500"></div>
+                    <div className="h-1.5 w-1.5 rounded-full bg-amber-400"></div>
                     <span>চলমান নোটিশ</span>
                   </button>
 
@@ -5414,13 +5680,13 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                       setActiveAdminSubTab("public_notices");
                       setIsNoticeDropdownOpen(false);
                     }}
-                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold ${
+                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold transition-colors ${
                       activeAdminSubTab === "public_notices"
-                        ? "bg-emerald-50 text-emerald-850"
-                        : "text-gray-600 hover:bg-gray-50"
+                        ? "bg-emerald-800/80 text-amber-300"
+                        : "text-emerald-100 hover:bg-emerald-850 hover:text-white"
                     }`}
                   >
-                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-800"></div>
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400"></div>
                     <span>নোটিশ পাবলিক</span>
                   </button>
 
@@ -5430,13 +5696,13 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                       setActiveAdminSubTab("teacher_notices");
                       setIsNoticeDropdownOpen(false);
                     }}
-                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold ${
+                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold transition-colors ${
                       activeAdminSubTab === "teacher_notices"
-                        ? "bg-emerald-50 text-emerald-850"
-                        : "text-gray-600 hover:bg-gray-50"
+                        ? "bg-emerald-800/80 text-amber-300"
+                        : "text-emerald-100 hover:bg-emerald-850 hover:text-white"
                     }`}
                   >
-                    <div className="h-1.5 w-1.5 rounded-full bg-rose-500"></div>
+                    <div className="h-1.5 w-1.5 rounded-full bg-rose-400"></div>
                     <span>শিক্ষক নোটিশ</span>
                   </button>
                 </div>
@@ -5453,32 +5719,32 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                   setIsSettingsDropdownOpen(false);
                   setIsMenuBarDropdownOpen(false);
                 }}
-                className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer ${
                   activeAdminSubTab === "pathdan_update"
-                    ? "bg-emerald-800 text-white shadow-sm"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    ? "bg-gradient-to-r from-emerald-700 via-emerald-600 to-emerald-800 text-amber-300 shadow-lg shadow-emerald-950/50 border-b-2 border-amber-400 ring-2 ring-emerald-400/50 scale-[1.02]"
+                    : "bg-emerald-900/50 hover:bg-emerald-800/70 text-emerald-100 hover:text-white border border-emerald-700/40"
                 }`}
               >
-                <Settings className="h-4 w-4 text-amber-500" />
+                <Settings className="h-4 w-4 text-amber-400" />
                 <span>হিরো সেকশন আপডেট</span>
                 <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${isHeroDropdownOpen ? "rotate-180" : ""}`} />
               </button>
               
               {isHeroDropdownOpen && (
-                <div className="absolute left-0 mt-1.5 w-56 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-30">
+                <div className="absolute left-0 mt-2 w-56 bg-emerald-950/95 backdrop-blur-md border-2 border-emerald-600/60 rounded-2xl shadow-2xl py-1.5 z-40 space-y-1 font-alinur">
                   <button
                     id="admin-subtab-pathdan-update"
                     onClick={() => {
                       setActiveAdminSubTab("pathdan_update");
                       setIsHeroDropdownOpen(false);
                     }}
-                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold ${
+                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold transition-colors ${
                       activeAdminSubTab === "pathdan_update"
-                        ? "bg-emerald-50 text-emerald-850"
-                        : "text-gray-600 hover:bg-gray-50"
+                        ? "bg-emerald-800/80 text-amber-300"
+                        : "text-emerald-100 hover:bg-emerald-850 hover:text-white"
                     }`}
                   >
-                    <div className="h-1.5 w-1.5 rounded-full bg-amber-500"></div>
+                    <div className="h-1.5 w-1.5 rounded-full bg-amber-400"></div>
                     <span>এক নজরে পাঠদান আপডেট</span>
                   </button>
                 </div>
@@ -5495,32 +5761,32 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                   setIsHeroDropdownOpen(false);
                   setIsMenuBarDropdownOpen(false);
                 }}
-                className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer ${
                   activeAdminSubTab === "settings" || activeAdminSubTab === "hero_background"
-                    ? "bg-emerald-800 text-white shadow-sm"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    ? "bg-gradient-to-r from-emerald-700 via-emerald-600 to-emerald-800 text-amber-300 shadow-lg shadow-emerald-950/50 border-b-2 border-amber-400 ring-2 ring-emerald-400/50 scale-[1.02]"
+                    : "bg-emerald-900/50 hover:bg-emerald-800/70 text-emerald-100 hover:text-white border border-emerald-700/40"
                 }`}
               >
-                <Settings className="h-4 w-4 text-amber-500" />
+                <Settings className="h-4 w-4 text-amber-400" />
                 <span>ওয়েবসাইট সেটিংস</span>
                 <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${isSettingsDropdownOpen ? "rotate-180" : ""}`} />
               </button>
               
               {isSettingsDropdownOpen && (
-                <div className="absolute left-0 mt-1.5 w-56 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-30">
+                <div className="absolute left-0 mt-2 w-56 bg-emerald-950/95 backdrop-blur-md border-2 border-emerald-600/60 rounded-2xl shadow-2xl py-1.5 z-40 space-y-1 font-alinur">
                   <button
                     id="admin-subtab-hero-bg-update"
                     onClick={() => {
                       setActiveAdminSubTab("hero_background");
                       setIsSettingsDropdownOpen(false);
                     }}
-                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold ${
+                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold transition-colors ${
                       activeAdminSubTab === "hero_background"
-                        ? "bg-emerald-50 text-emerald-850"
-                        : "text-gray-600 hover:bg-gray-50"
+                        ? "bg-emerald-800/80 text-amber-300"
+                        : "text-emerald-100 hover:bg-emerald-850 hover:text-white"
                     }`}
                   >
-                    <div className="h-1.5 w-1.5 rounded-full bg-amber-500"></div>
+                    <div className="h-1.5 w-1.5 rounded-full bg-amber-400"></div>
                     <span>হিরো ব্যাকগ্রাউন্ড আপডেট</span>
                   </button>
 
@@ -5530,13 +5796,13 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                       setActiveAdminSubTab("settings");
                       setIsSettingsDropdownOpen(false);
                     }}
-                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold ${
+                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold transition-colors ${
                       activeAdminSubTab === "settings"
-                        ? "bg-emerald-50 text-emerald-850"
-                        : "text-gray-600 hover:bg-gray-50"
+                        ? "bg-emerald-800/80 text-amber-300"
+                        : "text-emerald-100 hover:bg-emerald-850 hover:text-white"
                     }`}
                   >
-                    <div className="h-1.5 w-1.5 rounded-full bg-amber-500"></div>
+                    <div className="h-1.5 w-1.5 rounded-full bg-amber-400"></div>
                     <span>লগো আপডেট</span>
                   </button>
                 </div>
@@ -5554,32 +5820,32 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                   setIsSettingsDropdownOpen(false);
                   setIsMenuBarDropdownOpen(false);
                 }}
-                className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer ${
                   activeAdminSubTab === "contact_update"
-                    ? "bg-emerald-800 text-white shadow-sm"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    ? "bg-gradient-to-r from-emerald-700 via-emerald-600 to-emerald-800 text-amber-300 shadow-lg shadow-emerald-950/50 border-b-2 border-amber-400 ring-2 ring-emerald-400/50 scale-[1.02]"
+                    : "bg-emerald-900/50 hover:bg-emerald-800/70 text-emerald-100 hover:text-white border border-emerald-700/40"
                 }`}
               >
-                <Globe className="h-4 w-4 text-amber-500" />
+                <Globe className="h-4 w-4 text-amber-400" />
                 <span>হোমপেজ আপডেট</span>
                 <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${isHomepageDropdownOpen ? "rotate-180" : ""}`} />
               </button>
               
               {isHomepageDropdownOpen && (
-                <div className="absolute left-0 mt-1.5 w-56 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-30">
+                <div className="absolute left-0 mt-2 w-56 bg-emerald-950/95 backdrop-blur-md border-2 border-emerald-600/60 rounded-2xl shadow-2xl py-1.5 z-40 space-y-1 font-alinur">
                   <button
                     id="admin-subtab-contact-update"
                     onClick={() => {
                       setActiveAdminSubTab("contact_update");
                       setIsHomepageDropdownOpen(false);
                     }}
-                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold ${
+                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold transition-colors ${
                       activeAdminSubTab === "contact_update"
-                        ? "bg-emerald-50 text-emerald-850"
-                        : "text-gray-600 hover:bg-gray-50"
+                        ? "bg-emerald-800/80 text-amber-300"
+                        : "text-emerald-100 hover:bg-emerald-850 hover:text-white"
                     }`}
                   >
-                    <div className="h-1.5 w-1.5 rounded-full bg-amber-500"></div>
+                    <div className="h-1.5 w-1.5 rounded-full bg-amber-400"></div>
                     <span>কন্টাক্ট আপডেট</span>
                   </button>
                 </div>
@@ -5596,32 +5862,32 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                   setIsHeroDropdownOpen(false);
                   setIsSettingsDropdownOpen(false);
                 }}
-                className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer ${
                   activeAdminSubTab === "sodosso_form_settings" || activeAdminSubTab === "kormochari_panel"
-                    ? "bg-emerald-800 text-white shadow-sm"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    ? "bg-gradient-to-r from-emerald-700 via-emerald-600 to-emerald-800 text-amber-300 shadow-lg shadow-emerald-950/50 border-b-2 border-amber-400 ring-2 ring-emerald-400/50 scale-[1.02]"
+                    : "bg-emerald-900/50 hover:bg-emerald-800/70 text-emerald-100 hover:text-white border border-emerald-700/40"
                 }`}
               >
-                <Settings className="h-4 w-4 text-amber-500" />
+                <Settings className="h-4 w-4 text-amber-400" />
                 <span>মেনুবার আপডেট</span>
                 <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${isMenuBarDropdownOpen ? "rotate-180" : ""}`} />
               </button>
               
               {isMenuBarDropdownOpen && (
-                <div className="absolute left-0 mt-1.5 w-56 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-30">
+                <div className="absolute left-0 mt-2 w-56 bg-emerald-950/95 backdrop-blur-md border-2 border-emerald-600/60 rounded-2xl shadow-2xl py-1.5 z-40 space-y-1 font-alinur">
                   <button
                     id="admin-subtab-sodosso-form"
                     onClick={() => {
                       setActiveAdminSubTab("sodosso_form_settings");
                       setIsMenuBarDropdownOpen(false);
                     }}
-                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold ${
+                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold transition-colors ${
                       activeAdminSubTab === "sodosso_form_settings"
-                        ? "bg-emerald-50 text-emerald-850"
-                        : "text-gray-600 hover:bg-gray-50"
+                        ? "bg-emerald-800/80 text-amber-300"
+                        : "text-emerald-100 hover:bg-emerald-850 hover:text-white"
                     }`}
                   >
-                    <div className="h-1.5 w-1.5 rounded-full bg-amber-500"></div>
+                    <div className="h-1.5 w-1.5 rounded-full bg-amber-400"></div>
                     <span>সদস্য ফরম</span>
                   </button>
 
@@ -5631,13 +5897,13 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                       setActiveAdminSubTab("kormochari_panel");
                       setIsMenuBarDropdownOpen(false);
                     }}
-                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold ${
+                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold transition-colors ${
                       activeAdminSubTab === "kormochari_panel"
-                        ? "bg-emerald-50 text-emerald-850"
-                        : "text-gray-600 hover:bg-gray-50"
+                        ? "bg-emerald-800/80 text-amber-300"
+                        : "text-emerald-100 hover:bg-emerald-850 hover:text-white"
                     }`}
                   >
-                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-800"></div>
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400"></div>
                     <span>কর্মচারী প্যানেল</span>
                   </button>
                 </div>
@@ -5656,46 +5922,31 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                   setIsHomepageDropdownOpen(false);
                   setIsStudentMgmtDropdownOpen(!isStudentMgmtDropdownOpen);
                 }}
-                className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
-                  activeAdminSubTab === "student_leave" || activeAdminSubTab === "student_attendance_check"
-                    ? "bg-emerald-800 text-white shadow-sm"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer ${
+                  activeAdminSubTab === "student_attendance_check"
+                    ? "bg-gradient-to-r from-emerald-700 via-emerald-600 to-emerald-800 text-amber-300 shadow-lg shadow-emerald-950/50 border-b-2 border-amber-400 ring-2 ring-emerald-400/50 scale-[1.02]"
+                    : "bg-emerald-900/50 hover:bg-emerald-800/70 text-emerald-100 hover:text-white border border-emerald-700/40"
                 }`}
               >
-                <Users className="h-4 w-4 text-amber-500" />
+                <Users className="h-4 w-4 text-amber-400" />
                 <span>শিক্ষার্থী ব্যবস্থাপনা</span>
                 <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${isStudentMgmtDropdownOpen ? "rotate-180" : ""}`} />
               </button>
               
               {isStudentMgmtDropdownOpen && (
-                <div className="absolute left-0 mt-1.5 w-56 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-30">
-                  <button
-                    onClick={() => {
-                      setActiveAdminSubTab("student_leave");
-                      setIsStudentMgmtDropdownOpen(false);
-                    }}
-                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold ${
-                      activeAdminSubTab === "student_leave"
-                        ? "bg-emerald-50 text-emerald-850"
-                        : "text-gray-600 hover:bg-gray-50"
-                    }`}
-                  >
-                    <div className="h-1.5 w-1.5 rounded-full bg-amber-500"></div>
-                    <span>শিক্ষার্থী ছুটি আবেদন</span>
-                  </button>
-
+                <div className="absolute left-0 mt-2 w-56 bg-emerald-950/95 backdrop-blur-md border-2 border-emerald-600/60 rounded-2xl shadow-2xl py-1.5 z-40 space-y-1 font-alinur">
                   <button
                     onClick={() => {
                       setActiveAdminSubTab("student_attendance_check");
                       setIsStudentMgmtDropdownOpen(false);
                     }}
-                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold ${
+                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold transition-colors ${
                       activeAdminSubTab === "student_attendance_check"
-                        ? "bg-emerald-50 text-emerald-850"
-                        : "text-gray-600 hover:bg-gray-50"
+                        ? "bg-emerald-800/80 text-amber-300"
+                        : "text-emerald-100 hover:bg-emerald-850 hover:text-white"
                     }`}
                   >
-                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-800"></div>
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400"></div>
                     <span>শিক্ষার্থী হাজিরা চেক</span>
                   </button>
                 </div>
@@ -5715,32 +5966,32 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                   setIsStudentMgmtDropdownOpen(false);
                   setIsLeaveDropdownOpen(!isLeaveDropdownOpen);
                 }}
-                className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
-                  activeAdminSubTab === "leave_mgmt" || activeAdminSubTab === "teacher_leave" || activeAdminSubTab === "student_leave"
-                    ? "bg-emerald-800 text-white shadow-sm"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer ${
+                  activeAdminSubTab === "leave_mgmt" || activeAdminSubTab === "teacher_leave" || activeAdminSubTab === "student_leave" || activeAdminSubTab === "leave_history"
+                    ? "bg-gradient-to-r from-emerald-700 via-emerald-600 to-emerald-800 text-amber-300 shadow-lg shadow-emerald-950/50 border-b-2 border-amber-400 ring-2 ring-emerald-400/50 scale-[1.02]"
+                    : "bg-emerald-900/50 hover:bg-emerald-800/70 text-emerald-100 hover:text-white border border-emerald-700/40"
                 }`}
               >
-                <ClipboardList className="h-4 w-4 text-amber-500" />
+                <ClipboardList className="h-4 w-4 text-amber-400" />
                 <span>ছুটির আবেদন</span>
                 <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${isLeaveDropdownOpen ? "rotate-180" : ""}`} />
               </button>
               
               {isLeaveDropdownOpen && (
-                <div className="absolute left-0 mt-1.5 w-56 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-30 font-alinur">
+                <div className="absolute left-0 mt-2 w-56 bg-emerald-950/95 backdrop-blur-md border-2 border-emerald-600/60 rounded-2xl shadow-2xl py-1.5 z-40 space-y-1 font-alinur">
                   <button
                     id="admin-subtab-teacher-leave"
                     onClick={() => {
                       setActiveAdminSubTab("teacher_leave");
                       setIsLeaveDropdownOpen(false);
                     }}
-                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold ${
+                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold transition-colors ${
                       activeAdminSubTab === "teacher_leave"
-                        ? "bg-emerald-50 text-emerald-850"
-                        : "text-gray-600 hover:bg-gray-50"
+                        ? "bg-emerald-800/80 text-amber-300"
+                        : "text-emerald-100 hover:bg-emerald-850 hover:text-white"
                     }`}
                   >
-                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-800"></div>
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400"></div>
                     <span>শিক্ষক ছুটির আবেদন</span>
                   </button>
 
@@ -5750,14 +6001,30 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                       setActiveAdminSubTab("student_leave");
                       setIsLeaveDropdownOpen(false);
                     }}
-                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold ${
+                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold transition-colors ${
                       activeAdminSubTab === "student_leave"
-                        ? "bg-emerald-50 text-emerald-850"
-                        : "text-gray-600 hover:bg-gray-50"
+                        ? "bg-emerald-800/80 text-amber-300"
+                        : "text-emerald-100 hover:bg-emerald-850 hover:text-white"
                     }`}
                   >
-                    <div className="h-1.5 w-1.5 rounded-full bg-amber-500"></div>
+                    <div className="h-1.5 w-1.5 rounded-full bg-amber-400"></div>
                     <span>শিক্ষার্থী ছুটির আবেদন</span>
+                  </button>
+
+                  <button
+                    id="admin-subtab-leave-history"
+                    onClick={() => {
+                      setActiveAdminSubTab("leave_history");
+                      setIsLeaveDropdownOpen(false);
+                    }}
+                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold transition-colors ${
+                      activeAdminSubTab === "leave_history"
+                        ? "bg-emerald-800/80 text-amber-300"
+                        : "text-emerald-100 hover:bg-emerald-850 hover:text-white"
+                    }`}
+                  >
+                    <div className="h-1.5 w-1.5 rounded-full bg-cyan-400"></div>
+                    <span>ছুটি হিস্ট্রি</span>
                   </button>
                 </div>
               )}
@@ -5773,24 +6040,26 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                 setIsSettingsDropdownOpen(false);
                 setIsMenuBarDropdownOpen(false);
               }}
-              className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
+              className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer ${
                 activeAdminSubTab === "messages"
-                  ? "bg-emerald-800 text-white shadow-sm"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  ? "bg-gradient-to-r from-emerald-700 via-emerald-600 to-emerald-800 text-amber-300 shadow-lg shadow-emerald-950/50 border-b-2 border-amber-400 ring-2 ring-emerald-400/50 scale-[1.02]"
+                  : "bg-emerald-900/50 hover:bg-emerald-800/70 text-emerald-100 hover:text-white border border-emerald-700/40"
               }`}
             >
-              <Mail className="h-4 w-4" />
+              <Mail className="h-4 w-4 text-amber-400" />
               <span>কন্টাক্ট বার্তা সমূহ</span>
             </button>
           </div>
 
-          {/* Active List Headers */}
-          <div className="flex justify-between items-center font-alinur">
-            <div>
-              <h3 className="text-lg font-bold text-emerald-950 font-serif">
+          {/* Active List Headers Banner with Glowing Accent & Glassmorphism */}
+          <div className="bg-gradient-to-r from-emerald-900 via-emerald-850 to-emerald-900 p-4 rounded-2xl border border-emerald-700/60 shadow-lg flex flex-wrap justify-between items-center gap-3 font-alinur text-white">
+            <div className="flex items-center gap-2.5">
+              <div className="h-3 w-3 rounded-full bg-amber-400 animate-ping" />
+              <h3 className="text-base sm:text-lg font-bold text-amber-300 font-serif tracking-wide">
                 {activeAdminSubTab === "leave_mgmt" && "ছুটির আবেদন ব্যবস্থাপনা (শিক্ষক ও শিক্ষার্থী)"}
                 {activeAdminSubTab === "teacher_leave" && "শিক্ষক ছুটির আবেদন ও পর্যালোচনা"}
                 {activeAdminSubTab === "student_leave" && "শিক্ষার্থী ছুটির আবেদন ও পর্যালোচনা"}
+                {activeAdminSubTab === "leave_history" && "চলতি মাসের অনুমোদিত ছুটি হিস্ট্রি ও রিপোর্ট"}
                 {activeAdminSubTab === "student_attendance_check" && "শিক্ষার্থী হাজিরা ট্র্যাকিং ও ডেইলি রিপোর্ট"}
                 {activeAdminSubTab === "dashboard" && "ড্যাশবোর্ড ও সার্বিক পরিসংখ্যান"}
                 {activeAdminSubTab === "admissions" && "ভর্তি আবেদন ট্র্যাকিং ও পেমেন্ট আপডেট"}
@@ -5812,21 +6081,21 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                 {activeAdminSubTab === "homework_subjects" && "ক্লাসভিত্তিক হোমওয়ার্ক সাবজেক্ট ম্যানেজমেন্ট"}
               </h3>
             </div>
-            {activeAdminSubTab !== "dashboard" && activeAdminSubTab !== "admissions" && activeAdminSubTab !== "messages" && activeAdminSubTab !== "settings" && activeAdminSubTab !== "hero_background" && activeAdminSubTab !== "running_notices" && activeAdminSubTab !== "public_notices" && activeAdminSubTab !== "pathdan_update" && activeAdminSubTab !== "sodosso_form_settings" && activeAdminSubTab !== "contact_update" && activeAdminSubTab !== "routines" && activeAdminSubTab !== "hafizgon" && activeAdminSubTab !== "teachers" && activeAdminSubTab !== "admin_control" && activeAdminSubTab !== "leave_mgmt" && activeAdminSubTab !== "teacher_leave" && activeAdminSubTab !== "student_leave" && activeAdminSubTab !== "student_attendance_check" && activeAdminSubTab !== "homework_subjects" && (
+            {activeAdminSubTab !== "dashboard" && activeAdminSubTab !== "admissions" && activeAdminSubTab !== "messages" && activeAdminSubTab !== "settings" && activeAdminSubTab !== "hero_background" && activeAdminSubTab !== "running_notices" && activeAdminSubTab !== "public_notices" && activeAdminSubTab !== "pathdan_update" && activeAdminSubTab !== "sodosso_form_settings" && activeAdminSubTab !== "contact_update" && activeAdminSubTab !== "routines" && activeAdminSubTab !== "hafizgon" && activeAdminSubTab !== "teachers" && activeAdminSubTab !== "admin_control" && activeAdminSubTab !== "leave_mgmt" && activeAdminSubTab !== "teacher_leave" && activeAdminSubTab !== "student_leave" && activeAdminSubTab !== "leave_history" && activeAdminSubTab !== "student_attendance_check" && activeAdminSubTab !== "homework_subjects" && (
               <button
                 id="admin-add-new-btn"
                 onClick={handleOpenAddForm}
-                className="flex items-center space-x-1.5 bg-emerald-800 hover:bg-emerald-950 text-amber-400 font-bold py-2 px-3.5 rounded-lg text-xs shadow-sm transition-all"
+                className="flex items-center space-x-1.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-emerald-950 font-extrabold px-4 py-2 rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 cursor-pointer"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4 stroke-[3]" />
                 <span>নতুন যোগ করুন</span>
               </button>
             )}
           </div>
 
           {/* Leave Applications Management Content */}
-          {(activeAdminSubTab === "leave_mgmt" || activeAdminSubTab === "teacher_leave" || activeAdminSubTab === "student_leave") && (
-            <AdminLeaveManagement activeTab={activeAdminSubTab === "student_leave" ? "student" : "teacher"} toBengaliDigits={toBengaliDigits} />
+          {(activeAdminSubTab === "leave_mgmt" || activeAdminSubTab === "teacher_leave" || activeAdminSubTab === "student_leave" || activeAdminSubTab === "leave_history") && (
+            <AdminLeaveManagement activeTab={activeAdminSubTab} toBengaliDigits={toBengaliDigits} />
           )}
 
           {activeAdminSubTab === "student_attendance_check" && (

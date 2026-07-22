@@ -1,5 +1,5 @@
 import { useState, ChangeEvent, useEffect, useRef } from "react";
-import { Menu, X, BookOpen, GraduationCap, Calendar, Search, FileText, Lock, Clock, Calendar as CalendarIcon, ChevronDown, ChevronUp, Users, Info, Building, Image, MessageSquare, Phone, Globe } from "lucide-react";
+import { Menu, X, BookOpen, GraduationCap, Calendar, Search, FileText, Lock, Clock, Calendar as CalendarIcon, ChevronDown, ChevronUp, Users, Info, Building, Image, MessageSquare, Phone, Globe, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { db, StreamBuilder } from "../lib/firebase";
 import { collection, query, orderBy, limit } from "firebase/firestore";
@@ -106,6 +106,7 @@ export default function Navbar({
 }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
+  const [showHeaderLogoutConfirm, setShowHeaderLogoutConfirm] = useState(false);
 
   const toggleExpand = (menuId: string) => {
     setExpandedMenu(expandedMenu === menuId ? null : menuId);
@@ -212,29 +213,78 @@ export default function Navbar({
     return () => window.removeEventListener('toggle-sidebar', handleToggle);
   }, []);
 
+  const getRoleTitle = () => {
+    if (user?.role === "admin") {
+      if (user?.adminRole === "assistant_admin") {
+        return "(সহকারী এডমিন) এডমিন কন্ট্রোল প্যানেল";
+      }
+      return "(মাদার এডমিন) এডমিন কন্ট্রোল প্যানেল";
+    }
+    if (user?.role === "student") return "শিক্ষার্থী পোর্টাল ও ড্যাশবোর্ড";
+    if (user?.role === "teacher") return "শিক্ষক পোর্টাল ও ড্যাশবোর্ড সিস্টেম";
+    return "এডমিন ও ব্যবহারকারী পোর্টাল";
+  };
+
+  const getLastLoginFormatted = () => {
+    let lastLoginTime = null;
+    try {
+      const savedUserStr = localStorage.getItem("sndm_user");
+      if (savedUserStr) {
+        const savedUser = JSON.parse(savedUserStr);
+        if (savedUser && savedUser.lastLogin) {
+          lastLoginTime = new Date(savedUser.lastLogin);
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+    if (!lastLoginTime && user?.lastLogin) {
+      lastLoginTime = new Date(user.lastLogin);
+    }
+    if (!lastLoginTime) {
+      lastLoginTime = new Date();
+    }
+    return lastLoginTime.toLocaleString('bn-BD', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
   return (
     <>
     {activeTab !== "login" && (activeTab !== "dashboard" || (user?.role !== "teacher" && user?.role !== "student")) && (
-    <header id="main-header" className="sticky top-0 z-50 w-full bg-emerald-850 text-white shadow-md border-b-4 border-amber-500 select-none font-alinur">
-      <div className="w-full px-2 py-3 flex items-center justify-between min-h-[56px] gap-3">
+    <header id="main-header" className="sticky top-0 z-50 w-full bg-gradient-to-r from-emerald-950 via-emerald-900 to-amber-950 text-white shadow-xl border-b-4 border-amber-500 select-none font-alinur backdrop-blur-md">
+      <div className="w-full px-3 py-3 flex items-center justify-between min-h-[60px] gap-3">
         
         {/* Madrasa Logo & Title for Admin/Teacher/Student/Login, or Scrolling Ticker for Guests */}
         {user?.role === "admin" || user?.role === "teacher" || user?.role === "student" || activeTab === "login" ? (
-          <div className="flex-1 flex items-center gap-3">
+          <div className="flex-1 flex flex-wrap items-center gap-3">
             <img 
               src={logoUrl || "/photo/logo.png"} 
               alt="Logo" 
-              className="h-16 w-16 sm:h-20 sm:w-20 object-contain rounded-full bg-white p-1 border-2 border-amber-400 shadow-md transition-all duration-300 hover:scale-105"
+              className="h-14 w-14 sm:h-16 sm:w-16 object-contain rounded-full bg-white p-1 border-2 border-amber-400 shadow-md transition-all duration-300 hover:scale-105 shrink-0"
               onError={(e) => {
                 e.currentTarget.onerror = null;
                 e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2913/2913520.png";
               }}
             />
-            <div>
-              <h1 className="text-sm sm:text-base font-bold text-amber-400 font-serif leading-none">সুফিয়া নূরিয়া দাখিল মাদ্রাসা</h1>
-              <p className="text-[10px] text-emerald-100 font-sans tracking-wide mt-1">
-                {user?.role === "admin" ? "এডমিন ম্যানেজমেন্ট ড্যাশবোর্ড কন্ট্রোল প্যানেল" : user?.role === "student" ? "শিক্ষার্থী পোর্টাল ও ড্যাশবোর্ড" : "শিক্ষক পোর্টাল ও ড্যাশবোর্ড সিস্টেম"}
-              </p>
+            <div className="space-y-1">
+              <h1 className="text-base sm:text-lg md:text-xl font-extrabold text-amber-400 font-serif leading-tight tracking-wide drop-shadow-xs">
+                সুফিয়া নূরীয়া দাখিল মাদ্রাসা
+              </h1>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs sm:text-sm font-extrabold text-white bg-emerald-900/90 border border-emerald-500/60 px-2.5 py-0.5 rounded-lg shadow-sm">
+                  {getRoleTitle()}
+                </span>
+                <span className="text-[11px] sm:text-xs font-bold text-amber-300 bg-amber-950/80 border border-amber-500/60 px-2.5 py-0.5 rounded-lg shadow-sm flex items-center gap-1">
+                  <Clock className="h-3 w-3 text-amber-400 stroke-[2.5]" />
+                  <span>শেষ লগইন: {getLastLoginFormatted()}</span>
+                </span>
+              </div>
             </div>
           </div>
         ) : (
@@ -269,20 +319,78 @@ export default function Navbar({
           </div>
         )}
 
-        {/* Hamburger Menu Fixed Trigger (at the right corner) */}
+        {/* Hamburger Menu or Admin Logout Button (at the right corner) */}
         <div className="flex-shrink-0 flex items-center">
-          <button
-            id="fixed-hamburger-menu-toggle"
-            onClick={() => setIsOpen(!isOpen)}
-            className="p-2.5 rounded-lg bg-amber-500 text-emerald-950 hover:bg-amber-400 active:scale-95 transition-all duration-200 border border-amber-300 shadow-md flex items-center justify-center font-alinur"
-            title="মেনু খুলুন"
-          >
-            {isOpen ? <X className="h-5 w-5 stroke-[2.5]" /> : <Menu className="h-5 w-5 stroke-[2.5]" />}
-          </button>
+          {user?.role === "admin" ? (
+            <button
+              id="admin-header-logout-button"
+              onClick={() => setShowHeaderLogoutConfirm(true)}
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-700 hover:to-rose-800 text-white font-extrabold text-xs sm:text-sm shadow-md border border-red-300/40 flex items-center gap-1.5 transition-all duration-200 active:scale-95 cursor-pointer font-alinur"
+              title="এডমিন প্যানেল থেকে লগআউট করুন"
+            >
+              <LogOut className="h-4 w-4 stroke-[2.5]" />
+              <span>লগআউট</span>
+            </button>
+          ) : (
+            <button
+              id="fixed-hamburger-menu-toggle"
+              onClick={() => setIsOpen(!isOpen)}
+              className="p-2.5 rounded-lg bg-amber-500 text-emerald-950 hover:bg-amber-400 active:scale-95 transition-all duration-200 border border-amber-300 shadow-md flex items-center justify-center font-alinur"
+              title="মেনু খুলুন"
+            >
+              {isOpen ? <X className="h-5 w-5 stroke-[2.5]" /> : <Menu className="h-5 w-5 stroke-[2.5]" />}
+            </button>
+          )}
         </div>
       </div>
     </header>
     )}
+
+      {/* Admin Header Logout Confirmation Modal */}
+      <AnimatePresence>
+        {showHeaderLogoutConfirm && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 z-[100] font-alinur select-none">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 15 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white border-2 border-red-500 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4 text-gray-900"
+            >
+              <div className="flex justify-center">
+                <div className="h-16 w-16 bg-red-100 rounded-full flex items-center justify-center text-red-600 shadow-inner">
+                  <LogOut className="h-8 w-8 stroke-[2.5]" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-black text-gray-900 font-alinur">
+                  লগআউট নিশ্চিতকরণ
+                </h3>
+                <p className="text-xs text-gray-600 leading-relaxed font-bold">
+                  আপনি কি সুফিয়া নূরীয়া দাখিল মাদ্রাসা এডমিন প্যানেল থেকে লগআউট করতে চান?
+                </p>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowHeaderLogoutConfirm(false)}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs py-3 rounded-2xl transition-all cursor-pointer text-center"
+                >
+                  বাতিল করুন
+                </button>
+                <button
+                  onClick={() => {
+                    setShowHeaderLogoutConfirm(false);
+                    onLogout();
+                  }}
+                  className="flex-1 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 text-white font-extrabold text-xs py-3 rounded-2xl transition-all cursor-pointer text-center shadow-lg shadow-red-500/20 active:scale-95"
+                >
+                  হ্যাঁ, লগআউট করুন
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Modern Slide-over Sidebar Drawer */}
       <AnimatePresence>
