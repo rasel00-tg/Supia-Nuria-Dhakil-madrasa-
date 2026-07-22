@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "sufia-nooria-dakhil-madrasa",
+  "name": "sufia-nuria-dakhil-madrasha",
   "compatibility_date": "2026-01-01",
   "assets": {
     "directory": "./dist",
