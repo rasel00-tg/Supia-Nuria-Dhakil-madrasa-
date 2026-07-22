@@ -3,7 +3,7 @@ import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, order
 import { db, handleFirestoreError, OperationType, uploadFileToImgBB, StreamBuilder } from "../lib/firebase";
 import { checkDuplicatePhoneNumberGlobal, checkUniqueLoginIdGlobal } from "../lib/validation";
 import { Teacher, SuccessStory, CommitteeMember, HonoredPerson, AdmissionForm, Routine, ContactMessage } from "../types";
-import { Trash2, Edit3, Plus, Check, X, CreditCard, Mail, UserPlus, Users, GraduationCap, Calendar, Award, MessageSquare, Heart, CheckCircle2, XCircle, Settings, Megaphone, ChevronDown, ChevronRight, LayoutDashboard, Globe, Lock, ArrowLeft, CheckCircle, AlertCircle, AlertTriangle, CalendarCheck, CalendarRange, ClipboardList, Loader2, BookOpen, Home, Compass, HelpCircle, Send, Clock, LogOut, Activity, TrendingUp, History, Search, Menu, Phone, MapPin, User, Info } from "lucide-react";
+import { Trash2, Edit3, Plus, Check, X, CreditCard, Mail, UserPlus, Users, GraduationCap, Calendar, Award, MessageSquare, Heart, CheckCircle2, XCircle, Settings, Megaphone, ChevronDown, ChevronRight, LayoutDashboard, Globe, Lock, ArrowLeft, CheckCircle, AlertCircle, AlertTriangle, CalendarCheck, CalendarRange, ClipboardList, Loader2, BookOpen, Home, Compass, HelpCircle, Send, Clock, LogOut, Activity, TrendingUp, History, Search, Menu, Phone, MapPin, User, Info, FileText, TrendingDown, FilePlus } from "lucide-react";
 import PathdanUpdateForm from "./PathdanUpdateForm";
 import SodossoFormUpdateForm from "./SodossoFormUpdateForm";
 import KormochariUpdateForm from "./KormochariUpdateForm";
@@ -72,6 +72,65 @@ const StudentDashboardInner = ({
   const [selectedStudySubject, setSelectedStudySubject] = useState<string>("");
   const [showSubjectListDropdown, setShowSubjectListDropdown] = useState<boolean>(false);
   const [showDetailsModal, setShowDetailsModal] = useState<boolean>(false);
+
+  // Leave Application States
+  const [showLeaveModal, setShowLeaveModal] = useState<boolean>(false);
+  const [leaveStartDate, setLeaveStartDate] = useState<string>("");
+  const [leaveEndDate, setLeaveEndDate] = useState<string>("");
+  const [leaveReason, setLeaveReason] = useState<string>("");
+  const [isSubmittingLeave, setIsSubmittingLeave] = useState<boolean>(false);
+
+  const calculateLeaveDays = (startStr: string, endStr: string) => {
+    if (!startStr || !endStr) return 0;
+    const s = new Date(startStr).getTime();
+    const e = new Date(endStr).getTime();
+    if (isNaN(s) || isNaN(e) || e < s) return 0;
+    return Math.ceil((e - s) / (1000 * 60 * 60 * 24)) + 1;
+  };
+
+  const handleLeaveSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!leaveStartDate || !leaveEndDate) {
+      alert("অনুগ্রহ করে ছুটির শুরুর তারিখ এবং শেষ তারিখ নির্বাচন করুন।");
+      return;
+    }
+    
+    const daysCount = calculateLeaveDays(leaveStartDate, leaveEndDate);
+    if (daysCount <= 0) {
+      alert("শেষ তারিখ অবশ্যই শুরুর তারিখের সমান বা পরবর্তী হতে হবে।");
+      return;
+    }
+    
+    if (!leaveReason.trim()) {
+      alert("অনুগ্রহ করে ছুটির সুনির্দিষ্ট কারণ লিখুন।");
+      return;
+    }
+    
+    setIsSubmittingLeave(true);
+    try {
+      await addDoc(collection(db, "leaves"), {
+        studentName: studentName || "শিক্ষার্থী",
+        className: studentClass || "",
+        studentRoll: studentRoll || "",
+        startDate: leaveStartDate,
+        endDate: leaveEndDate,
+        totalDays: daysCount,
+        reason: leaveReason.trim(),
+        status: "Pending",
+        createdAt: serverTimestamp()
+      });
+      alert("আপনার ছুটির আবেদন জমা হয়েছে! অনুগ্রহ করে অপেক্ষা করুন।");
+      setLeaveStartDate("");
+      setLeaveEndDate("");
+      setLeaveReason("");
+      setShowLeaveModal(false);
+    } catch (err) {
+      console.error("Error submitting leave application:", err);
+      alert("আবেদন জমা দিতে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।");
+    } finally {
+      setIsSubmittingLeave(false);
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "teachers"), (snapshot) => {
@@ -162,8 +221,8 @@ const StudentDashboardInner = ({
 
   return (
     <div className="relative -mt-8 -mx-2 bg-[#f8fafc] pb-28 min-h-screen">
-      {/* সলিড গ্রীন হেডার ব্লক (Solid Green Header Block) - Hidden on "পড়া" (homework) tab */}
-      {studentActiveTab !== "homework" && (
+      {/* সলিড গ্রীন হেডার ব্লক (Solid Green Header Block) - Hidden on "পড়া" (homework) & "ফিচার" (features) tabs */}
+      {studentActiveTab !== "homework" && studentActiveTab !== "features" && (
         <div className="bg-emerald-900 pt-16 pb-28 px-6 rounded-b-[40px] shadow-lg relative z-0">
           {/* ড্রয়ার নেভিগেশন মেনু বাটন (Top Left Menu Button) */}
           <motion.button
@@ -219,7 +278,7 @@ const StudentDashboardInner = ({
       )}
 
       {/* Main Sub-view Content based on studentActiveTab */}
-      <div className={`px-6 max-w-lg mx-auto overflow-visible ${studentActiveTab === "homework" ? "pt-6" : "mt-8"}`}>
+      <div className={`px-6 max-w-lg mx-auto overflow-visible ${studentActiveTab === "homework" || studentActiveTab === "features" ? "pt-6" : "mt-8"}`}>
         <AnimatePresence mode="wait">
           {studentActiveTab === "home" && (
             <motion.div
@@ -259,6 +318,38 @@ const StudentDashboardInner = ({
                       <span>রোল নম্বর:</span>
                       <span className="text-emerald-950 text-sm font-black">{toBengaliDigits(studentRoll)}</span>
                     </div>
+
+                    {/* Active Approved Leave Badge Display */}
+                    <StreamBuilder<any>
+                      stream={query(collection(db, "leaves"))}
+                      builder={(allLeaves) => {
+                        const d = new Date();
+                        const todayFormatted = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                        const activeLeave = allLeaves.find(l => {
+                          const isApproved = l.status === "Approved" || l.status === "approved";
+                          if (!isApproved) return false;
+                          const matchesUser = compareRolls(l.studentRoll, studentRoll) || l.studentName === studentName;
+                          return matchesUser && l.endDate >= todayFormatted && l.startDate <= todayFormatted;
+                        });
+
+                        if (!activeLeave) return null;
+
+                        const nowMs = new Date(todayFormatted).getTime();
+                        const endMs = new Date(activeLeave.endDate).getTime();
+                        const remainingDays = Math.max(0, Math.ceil((endMs - nowMs) / (1000 * 60 * 60 * 24)));
+
+                        return (
+                          <motion.div 
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="mt-2.5 bg-emerald-50 border border-emerald-200 text-emerald-950 px-3.5 py-2 rounded-2xl text-xs font-black flex items-center justify-center gap-1.5 shadow-2xs"
+                          >
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                            <span>আপনার ছুটি শেষ হতে <span className="text-emerald-800 font-black text-sm">{toBengaliDigits(remainingDays)}</span> দিন বাকি।</span>
+                          </motion.div>
+                        );
+                      }}
+                    />
                   </div>
 
                   {/* আকর্ষণীয় "বিস্তারিত" (Details) বাটন */}
@@ -709,26 +800,482 @@ const StudentDashboardInner = ({
               className="space-y-6"
               style={{ fontFamily: 'Alinur Tatsama' }}
             >
-              <div className="bg-gradient-to-r from-emerald-800 to-teal-700 text-white rounded-2xl p-5 shadow-sm">
-                <h3 className="font-bold text-lg flex items-center gap-2" style={{ fontFamily: 'Alinur Tatsama' }}>
-                  <Compass className="h-5 w-5 text-amber-300" />
+              {/* Header Banner */}
+              <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-800 text-white rounded-3xl p-6 shadow-md border border-emerald-700/40 relative overflow-hidden">
+                <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 w-32 h-32 bg-amber-400/10 rounded-full blur-2xl pointer-events-none"></div>
+                <span className="text-[10px] uppercase tracking-widest text-amber-300 font-black bg-white/10 px-3 py-1 rounded-full border border-white/10 inline-block mb-2">
+                  সুফিয়া নূরীয়া দাখিল মাদ্রাসা
+                </span>
+                <h3 className="font-black text-xl flex items-center gap-2.5 text-white" style={{ fontFamily: 'Alinur Tatsama' }}>
+                  <Compass className="h-6 w-6 text-amber-400" />
                   <span>শিক্ষার্থী ফিচার ও রিসোর্স সেন্টার</span>
                 </h3>
-                <p className="text-xs text-emerald-100 mt-1" style={{ fontFamily: 'Alinur Tatsama' }}>মাদ্রাসার শিক্ষার্থীদের জন্য সকল গুরুত্বপূর্ণ টুলস ও লিংক এক জায়গায়।</p>
+                <p className="text-xs text-emerald-100/90 mt-1 font-bold leading-relaxed" style={{ fontFamily: 'Alinur Tatsama' }}>
+                  ছুটির অনলাইন আবেদন, রেজাল্ট হিস্ট্রি এবং পারফর্মেন্স গ্রোথ ট্র্যাকার এক জায়গায়।
+                </p>
               </div>
 
-              {/* Features List */}
-              <div className="grid gap-4">
-                <div className="bg-white rounded-[24px] p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_30px_rgba(0,0,0,0.06)] transition-all group flex items-center gap-4">
-                  <div className="bg-emerald-50 h-12 w-12 rounded-2xl flex items-center justify-center border border-emerald-100 flex-shrink-0 group-hover:bg-emerald-600 transition-colors group-hover:border-emerald-500">
-                    <Megaphone className="h-6 w-6 text-emerald-800 group-hover:text-white transition-colors" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-emerald-950 text-sm" style={{ fontFamily: 'Alinur Tatsama' }}>নোটিশবোর্ড</h4>
-                    <p className="text-[10px] text-slate-400 font-medium">মাদ্রাসার সকল গুরুত্বপূর্ণ নোটিশ দেখুন</p>
+              {/* Section 1: ছুটির আবেদন সিস্টেম (Leave Application System) */}
+              <div className="bg-white rounded-[32px] p-6 shadow-sm border border-slate-100 space-y-5">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-11 w-11 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center border border-amber-100">
+                      <CalendarCheck className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-lg text-emerald-950">ছুটির আবেদন সেকশন</h4>
+                      <p className="text-xs text-slate-400 font-bold">অনলাইনে ছুটির আবেদন জমা দিন ও স্ট্যাটাস ট্র্যাক করুন</p>
+                    </div>
                   </div>
                 </div>
+
+                {/* Button to open Leave Application Form */}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setShowLeaveModal(true)}
+                  className="w-full bg-gradient-to-r from-emerald-800 to-teal-800 hover:from-emerald-900 hover:to-teal-900 text-amber-400 py-4 px-6 rounded-2xl font-black text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 border border-emerald-700/50 cursor-pointer"
+                >
+                  <FilePlus className="h-5 w-5 text-amber-400" />
+                  <span>ছুটির আবেদন জমা দিন</span>
+                </motion.button>
+
+                {/* Stream of Submitted Requests */}
+                <StreamBuilder<any>
+                  stream={query(collection(db, "leaves"))}
+                  builder={(allLeaves) => {
+                    const d = new Date();
+                    const todayFormatted = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    
+                    const myLeaves = allLeaves.filter(l => 
+                      compareRolls(l.studentRoll, studentRoll) || l.studentName === studentName
+                    ).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+                    const activeApproved = myLeaves.find(l => {
+                      const isApproved = l.status === "Approved" || l.status === "approved";
+                      if (!isApproved) return false;
+                      return l.endDate >= todayFormatted && l.startDate <= todayFormatted;
+                    });
+
+                    let remainingDays = 0;
+                    if (activeApproved) {
+                      const nowMs = new Date(todayFormatted).getTime();
+                      const endMs = new Date(activeApproved.endDate).getTime();
+                      remainingDays = Math.max(0, Math.ceil((endMs - nowMs) / (1000 * 60 * 60 * 24)));
+                    }
+
+                    return (
+                      <div className="space-y-4 pt-1">
+                        {/* Active Approved Leave Banner */}
+                        {activeApproved && (
+                          <motion.div 
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="bg-emerald-800 text-white p-4.5 rounded-2xl border border-emerald-700 shadow-md space-y-1.5"
+                          >
+                            <div className="flex items-center gap-2 text-amber-300 font-black text-sm">
+                              <CheckCircle2 className="h-5 w-5 shrink-0" />
+                              <span>আপনার একটি ছুটির আবেদন মঞ্জুরকৃত আছে!</span>
+                            </div>
+                            <p className="text-xs text-emerald-100 font-bold">
+                              আপনার ছুটি শেষ হতে <span className="text-amber-300 font-black text-base">{toBengaliDigits(remainingDays)}</span> দিন বাকি।
+                            </p>
+                            <div className="text-[11px] text-emerald-200 font-bold flex justify-between border-t border-emerald-700/60 pt-2 mt-2">
+                              <span>তারিখ: {toBengaliDigits(activeApproved.startDate)} থেকে {toBengaliDigits(activeApproved.endDate)} ({toBengaliDigits(activeApproved.totalDays)} দিন)</span>
+                              <span>কারণ: {activeApproved.reason}</span>
+                            </div>
+                          </motion.div>
+                        )}
+
+                        {/* Submitted Applications History */}
+                        <div className="space-y-3">
+                          <h5 className="text-xs font-black text-slate-500 uppercase tracking-wide">আপনার আবেদন তালিকা ({toBengaliDigits(myLeaves.length)}টি)</h5>
+                          
+                          {myLeaves.length === 0 ? (
+                            <div className="bg-slate-50 rounded-2xl p-6 text-center border border-slate-100 space-y-1">
+                              <p className="text-xs font-bold text-slate-500">আপনার কোনো পূর্ববর্তী ছুটির আবেদন পাওয়া যায়নি।</p>
+                              <p className="text-[10px] text-slate-400">প্রয়োজনে ওপরের বাটন ক্লিক করে নতুন আবেদন করুন।</p>
+                            </div>
+                          ) : (
+                            myLeaves.map((l: any, idx: number) => {
+                              const isApproved = l.status === "Approved" || l.status === "approved";
+                              const isRejected = l.status === "Rejected" || l.status === "rejected";
+                              const isPending = !isApproved && !isRejected;
+
+                              return (
+                                <div key={l.id || idx} className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 space-y-2.5">
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <span className="text-xs font-black text-emerald-950 block">{toBengaliDigits(l.startDate)} থেকে {toBengaliDigits(l.endDate)}</span>
+                                      <span className="text-[11px] font-bold text-slate-500">মোট দিন: {toBengaliDigits(l.totalDays || calculateLeaveDays(l.startDate, l.endDate))} দিন</span>
+                                    </div>
+                                    <div>
+                                      {isApproved && (
+                                        <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[11px] font-black px-3 py-1 rounded-full flex items-center gap-1 shadow-2xs">
+                                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> মঞ্জুরকৃত
+                                        </span>
+                                      )}
+                                      {isRejected && (
+                                        <span className="bg-rose-100 text-rose-800 border border-rose-200 text-[11px] font-black px-3 py-1 rounded-full flex items-center gap-1 shadow-2xs">
+                                          <XCircle className="h-3.5 w-3.5 text-rose-600" /> বাতিলকৃত
+                                        </span>
+                                      )}
+                                      {isPending && (
+                                        <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[11px] font-black px-3 py-1 rounded-full flex items-center gap-1 shadow-2xs">
+                                          <Clock className="h-3.5 w-3.5 text-amber-600" /> পেন্ডিং
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <p className="text-xs text-slate-600 font-bold bg-white p-2.5 rounded-xl border border-slate-100 leading-relaxed">
+                                    <span className="text-slate-400 font-bold block text-[10px]">আবেদনের কারণ:</span>
+                                    {l.reason}
+                                  </p>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }}
+                />
               </div>
+
+              {/* Section 2: রেজাল্ট হিস্ট্রি ও % গ্রোথ ট্র্যাকার (Result History & Growth/Degrowth Tracker) */}
+              <div className="bg-white rounded-[32px] p-6 shadow-sm border border-slate-100 space-y-5">
+                <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                  <div className="h-11 w-11 bg-emerald-50 text-emerald-700 rounded-2xl flex items-center justify-center border border-emerald-100">
+                    <Award className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-lg text-emerald-950">রেজাল্ট হিস্ট্রি ও গ্রোথ ট্র্যাকার</h4>
+                    <p className="text-xs text-slate-400 font-bold">পরীক্ষার ফলাফল ও স্বয়ংক্রিয় শতাংশ অগ্রগতি পর্যবেক্ষণ</p>
+                  </div>
+                </div>
+
+                <StreamBuilder<any>
+                  stream={query(collection(db, "results"))}
+                  builder={(allResults) => {
+                    const myResults = allResults.filter(r => 
+                      compareRolls(r.roll || r.studentId, studentRoll) || r.studentName === studentName
+                    );
+
+                    // Sort descending by year / createdAt
+                    const sortedResults = [...myResults].sort((a, b) => {
+                      const yA = parseInt((a.year || "0").replace(/[^0-9]/g, '')) || 0;
+                      const yB = parseInt((b.year || "0").replace(/[^0-9]/g, '')) || 0;
+                      if (yB !== yA) return yB - yA;
+                      return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+                    });
+
+                    if (sortedResults.length === 0) {
+                      return (
+                        <div className="bg-slate-50 rounded-2xl p-8 text-center border border-slate-100 space-y-2">
+                          <Award className="h-12 w-12 text-slate-300 mx-auto" />
+                          <h5 className="font-bold text-slate-700 text-sm">কোনো প্রকাশিত রেজাল্ট পাওয়া যায়নি</h5>
+                          <p className="text-xs text-slate-400 max-w-xs mx-auto">
+                            আপনার রোল ({toBengaliDigits(studentRoll)}) এর বিপরীতে এখনো কোনো পরীক্ষার ফলাফল সিস্টেম অফিশিয়ালি প্রকাশ করেনি।
+                          </p>
+                        </div>
+                      );
+                    }
+
+                    const getScore = (res: any) => {
+                      if (res.totalMarks && Number(res.totalMarks) > 0) return Number(res.totalMarks);
+                      if (res.subjects && Array.isArray(res.subjects) && res.subjects.length > 0) {
+                        return res.subjects.reduce((sum: number, s: any) => sum + (Number(s.marks) || 0), 0);
+                      }
+                      if (res.gpa) return parseFloat(res.gpa) * 100;
+                      return 0;
+                    };
+
+                    const latestRes = sortedResults[0];
+                    const prevRes = sortedResults.length > 1 ? sortedResults[1] : null;
+
+                    const latestScore = getScore(latestRes);
+                    const prevScore = prevRes ? getScore(prevRes) : 0;
+
+                    let pctChange = 0;
+                    if (prevRes && prevScore > 0) {
+                      pctChange = ((latestScore - prevScore) / prevScore) * 100;
+                    }
+
+                    const isGrowth = pctChange >= 0;
+
+                    return (
+                      <div className="space-y-5">
+                        {/* Growth / Degrowth Summary Card */}
+                        {prevRes ? (
+                          <div className={`p-5 rounded-2xl border text-white shadow-md relative overflow-hidden ${
+                            isGrowth 
+                              ? "bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 border-emerald-600" 
+                              : "bg-gradient-to-r from-rose-800 via-rose-700 to-amber-900 border-rose-600"
+                          }`}>
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <span className="text-[10px] uppercase font-black tracking-widest text-emerald-200 block mb-0.5">
+                                  স্বয়ংক্রিয় এনালাইটিক্স
+                                </span>
+                                <h5 className="font-black text-base text-white">সর্বশেষ পারফর্মেন্স ট্র্যাকার</h5>
+                              </div>
+
+                              <div className={`px-3.5 py-1.5 rounded-full font-black text-xs border shadow-xs flex items-center gap-1.5 ${
+                                isGrowth 
+                                  ? "bg-amber-400 text-emerald-950 border-amber-300" 
+                                  : "bg-amber-400 text-rose-950 border-amber-300"
+                              }`}>
+                                {isGrowth ? (
+                                  <>
+                                    <TrendingUp className="h-4 w-4" />
+                                    <span>+{toBengaliDigits(Math.abs(pctChange).toFixed(1))}% গ্রোথ 📈</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <TrendingDown className="h-4 w-4" />
+                                    <span>-{toBengaliDigits(Math.abs(pctChange).toFixed(1))}% ডিগ্রোথ 📉</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 text-xs bg-black/20 p-3 rounded-xl border border-white/10 font-bold">
+                              <div className="border-r border-white/10 pr-2">
+                                <span className="text-[10px] text-emerald-200 block font-normal">সর্বশেষ পরীক্ষা ({latestRes.year || "২০২৬"}):</span>
+                                <span className="text-white block font-black text-sm">{latestRes.examType || latestRes.examName || "একাডেমিক পরীক্ষা"}</span>
+                                <span className="text-amber-300 text-[11px] block mt-0.5">মার্ক্স: {toBengaliDigits(latestScore)} • GPA: {toBengaliDigits(latestRes.gpa || "0.00")}</span>
+                              </div>
+                              <div className="pl-2">
+                                <span className="text-[10px] text-emerald-200 block font-normal">পূর্ববর্তী পরীক্ষা ({prevRes.year || "২০২৫"}):</span>
+                                <span className="text-white block font-black text-sm">{prevRes.examType || prevRes.examName || "একাডেমিক পরীক্ষা"}</span>
+                                <span className="text-emerald-200 text-[11px] block mt-0.5">মার্ক্স: {toBengaliDigits(prevScore)} • GPA: {toBengaliDigits(prevRes.gpa || "0.00")}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-800 to-emerald-800 text-white border border-indigo-700 shadow-xs flex items-center justify-between">
+                            <div>
+                              <h5 className="font-black text-sm">১ম পরীক্ষার রেজাল্ট ট্র্যাকার</h5>
+                              <p className="text-[11px] text-indigo-100 font-bold mt-0.5">পরবর্তী পরীক্ষা প্রকাশিত হলে স্বয়ংক্রিয় শতাংশ গ্রোথ দেখাবে।</p>
+                            </div>
+                            <span className="bg-amber-400 text-emerald-950 font-black text-xs px-3 py-1 rounded-full shadow-xs shrink-0">
+                              প্রথম প্রকাশিত 📊
+                            </span>
+                          </div>
+                        )}
+
+                        {/* List of Published Result Cards */}
+                        <div className="space-y-4">
+                          <h5 className="text-xs font-black text-slate-500 uppercase tracking-wide">সকল পরীক্ষার ফলাফল ({toBengaliDigits(sortedResults.length)}টি)</h5>
+
+                          {sortedResults.map((res: any, idx: number) => {
+                            const examTitle = res.examType || res.examName || res.exam || "একাডেমিক পরীক্ষা";
+                            const totMarks = getScore(res);
+                            const isLatest = idx === 0;
+
+                            return (
+                              <motion.div
+                                key={res.id || idx}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-3"
+                              >
+                                <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="bg-emerald-100 text-emerald-900 font-black text-[10px] px-2.5 py-0.5 rounded-full border border-emerald-200">
+                                        {toBengaliDigits(res.year || "২০২৬")}
+                                      </span>
+                                      {isLatest && (
+                                        <span className="bg-amber-100 text-amber-800 font-black text-[10px] px-2 py-0.5 rounded-full border border-amber-200">
+                                          সর্বশেষ
+                                        </span>
+                                      )}
+                                    </div>
+                                    <h5 className="font-black text-emerald-950 text-base mt-1">{examTitle}</h5>
+                                    <span className="text-xs text-slate-400 font-bold block">{res.className || studentClass}</span>
+                                  </div>
+
+                                  <div className="text-right">
+                                    <span className="bg-emerald-800 text-amber-300 font-black text-sm px-3 py-1 rounded-xl shadow-2xs block">
+                                      GPA: {toBengaliDigits(res.gpa || "০.০০")}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-slate-400 block mt-1">গ্রেড: <span className="font-black text-emerald-900">{res.grade || "A+"}</span></span>
+                                  </div>
+                                </div>
+
+                                <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs font-bold">
+                                  <span className="text-slate-500">অর্জিত মোট নম্বর:</span>
+                                  <span className="text-emerald-950 font-black text-sm">{toBengaliDigits(totMarks)}</span>
+                                </div>
+
+                                {/* Subject Marks List if present */}
+                                {res.subjects && Array.isArray(res.subjects) && res.subjects.length > 0 && (
+                                  <div className="space-y-1.5 pt-1">
+                                    <span className="text-[10px] text-slate-400 font-bold block uppercase">বিষয়ভিত্তিক মার্ক্সশিট:</span>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                      {res.subjects.map((sub: any, sIdx: number) => (
+                                        <div key={sIdx} className="bg-slate-50/80 p-2 rounded-xl border border-slate-100 text-[11px]">
+                                          <span className="font-bold text-slate-700 block truncate">{sub.name}</span>
+                                          <div className="flex justify-between items-center font-black mt-0.5">
+                                            <span className="text-emerald-900">{toBengaliDigits(sub.marks)} নম্বর</span>
+                                            <span className="text-amber-600 bg-amber-50 px-1.5 rounded text-[10px]">{sub.grade}</span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </motion.div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  }}
+                />
+              </div>
+
+              {/* Leave Application Modal (ছুটির আবেদন পপআপ ফর্ম) */}
+              <AnimatePresence>
+                {showLeaveModal && (
+                  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                      className="bg-white rounded-[32px] p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 space-y-5 max-h-[90vh] overflow-y-auto"
+                      style={{ fontFamily: 'Alinur Tatsama' }}
+                    >
+                      <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+                        <div className="flex items-center gap-2.5">
+                          <div className="h-10 w-10 bg-emerald-50 text-emerald-800 rounded-2xl flex items-center justify-center border border-emerald-100">
+                            <Calendar className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <h4 className="font-black text-lg text-emerald-950">ছুটির আবেদন জমা দিন</h4>
+                            <p className="text-xs text-slate-400 font-bold">সুফিয়া নূরীয়া দাখিল মাদ্রাসা</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => setShowLeaveModal(false)}
+                          className="p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-full transition-colors cursor-pointer"
+                        >
+                          <X className="h-5 w-5" />
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleLeaveSubmit} className="space-y-4">
+                        {/* Read-Only Locked Student Info */}
+                        <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-2 text-xs">
+                          <div className="flex items-center justify-between text-slate-500 font-bold border-b border-slate-200/60 pb-1.5">
+                            <span className="flex items-center gap-1 text-[11px]"><Lock className="h-3.5 w-3.5 text-emerald-700" /> অটোমেটিক সেশন তথ্য (Read-Only):</span>
+                            <span className="text-[10px] text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full font-black">লক করা</span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2 text-slate-800 font-black">
+                            <div>
+                              <span className="text-[9px] text-slate-400 block font-normal">নাম</span>
+                              <span className="truncate block text-[11px]">{studentName}</span>
+                            </div>
+                            <div>
+                              <span className="text-[9px] text-slate-400 block font-normal">শ্রেণী</span>
+                              <span className="truncate block text-[11px]">{studentClass}</span>
+                            </div>
+                            <div>
+                              <span className="text-[9px] text-slate-400 block font-normal">রোল</span>
+                              <span className="truncate block text-[11px]">{toBengaliDigits(studentRoll)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Date Selectors */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-xs font-bold text-slate-700 block">শুরুর তারিখ <span className="text-rose-500">*</span></label>
+                            <input
+                              type="date"
+                              required
+                              value={leaveStartDate}
+                              onChange={(e) => setLeaveStartDate(e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-bold text-slate-700 block">শেষ তারিখ <span className="text-rose-500">*</span></label>
+                            <input
+                              type="date"
+                              required
+                              value={leaveEndDate}
+                              onChange={(e) => setLeaveEndDate(e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Dynamic Live Text Notification */}
+                        {(() => {
+                          const calculatedDays = calculateLeaveDays(leaveStartDate, leaveEndDate);
+                          if (calculatedDays > 0) {
+                            return (
+                              <motion.div 
+                                initial={{ opacity: 0, y: 5 }} 
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-emerald-50 border border-emerald-200 text-emerald-950 p-3.5 rounded-2xl text-xs font-bold space-y-1 shadow-2xs"
+                              >
+                                <div className="flex items-center gap-1.5 text-emerald-800">
+                                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                                  <span>ছুটির দিন গণনা:</span>
+                                </div>
+                                <p className="leading-relaxed">
+                                  প্রিয় <span className="font-black text-emerald-900">{studentName}</span>, আপনি <span className="font-black text-emerald-900 bg-emerald-100/90 px-2 py-0.5 rounded-md border border-emerald-300">{toBengaliDigits(calculatedDays)}</span> দিন ছুটি সিলেক্ট করেছেন।
+                                </p>
+                              </motion.div>
+                            );
+                          }
+                          return null;
+                        })()}
+
+                        {/* Reason / Details Text Area */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between items-center">
+                            <label className="text-xs font-bold text-slate-700">আবেদনের কারণ <span className="text-rose-500">*</span></label>
+                            <span className="text-[10px] text-slate-400 font-bold">{toBengaliDigits(leaveReason.length)}/৩০০ অক্ষর</span>
+                          </div>
+                          <textarea
+                            rows={3}
+                            required
+                            maxLength={300}
+                            value={leaveReason}
+                            onChange={(e) => setLeaveReason(e.target.value)}
+                            placeholder="ছুটির সুনির্দিষ্ট কারণ লিখুন (সর্বোচ্চ ৩০০ অক্ষর)..."
+                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none resize-none"
+                          />
+                        </div>
+
+                        {/* Submit Button */}
+                        <button
+                          type="submit"
+                          disabled={isSubmittingLeave}
+                          className="w-full bg-gradient-to-r from-emerald-800 to-emerald-900 text-amber-400 font-black py-3.5 rounded-2xl shadow-lg shadow-emerald-900/20 hover:from-emerald-900 hover:to-emerald-950 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer text-sm border border-emerald-700/50"
+                        >
+                          {isSubmittingLeave ? (
+                            <>
+                              <Loader2 className="h-5 w-5 animate-spin text-amber-400" />
+                              <span>জমা হচ্ছে...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Send className="h-5 w-5 text-amber-400" />
+                              <span>আবেদন জমা দিন</span>
+                            </>
+                          )}
+                        </button>
+                      </form>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
 
@@ -1856,6 +2403,210 @@ const TeacherStudentManagement = ({ teacherData, toBengaliDigits }: any) => {
   return null;
 };
 
+const TeacherLeaveSection = ({ teacherData, toBengaliDigits }: any) => {
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [reason, setReason] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const calculateDays = (start: string, end: string) => {
+    if (!start || !end) return 1;
+    try {
+      const s = new Date(start);
+      const e = new Date(end);
+      const diffTime = e.getTime() - s.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      return diffDays > 0 ? diffDays : 1;
+    } catch {
+      return 1;
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!startDate || !endDate || !reason.trim()) {
+      alert("অনুগ্রহ করে সকল ঘর সঠিকভাবে পূরণ করুন।");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const totalDays = calculateDays(startDate, endDate);
+      await addDoc(collection(db, "teacher_leaves"), {
+        teacherId: teacherData?.id || "",
+        teacherName: teacherData?.name || teacherData?.teacherName || "শিক্ষক",
+        designation: teacherData?.designation || "সহকারী শিক্ষক",
+        applicantType: "teacher",
+        startDate,
+        endDate,
+        totalDays,
+        reason: reason.trim(),
+        status: "Pending",
+        createdAt: serverTimestamp()
+      });
+
+      alert("আপনার ছুটির আবেদন সফলভাবে জমা দেয়া হয়েছে। অ্যাডমিন পর্যালোচনার অপেক্ষায় থাকবে।");
+      setStartDate("");
+      setEndDate("");
+      setReason("");
+    } catch (error) {
+      console.error("Error submitting teacher leave:", error);
+      alert("আবেদন জমা দিতে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6 font-alinur animate-fade-in">
+      {/* Leave Application Form */}
+      <div className="bg-white rounded-[32px] p-6 shadow-xl border border-slate-100 space-y-5">
+        <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+          <div className="h-12 w-12 bg-emerald-50 text-emerald-800 rounded-2xl flex items-center justify-center font-black shadow-xs border border-emerald-100">
+            <CalendarRange className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="text-lg font-black text-emerald-950 font-serif">শিক্ষক ছুটির আবেদন</h3>
+            <p className="text-xs text-slate-500 font-bold">ছুটির জন্য প্রয়োজনীয় তথ্য জমা দিন</p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-black text-slate-700 block">ছুটি শুরুর তারিখ:</label>
+              <input
+                type="date"
+                required
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition-all"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-black text-slate-700 block">ছুটি শেষের তারিখ:</label>
+              <input
+                type="date"
+                required
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-black text-slate-700 block">ছুটির সুনির্দিষ্ট কারণ:</label>
+            <textarea
+              required
+              rows={3}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="জরুরী পারিবারিক কাজ / শারীরিক অসুস্থতা..."
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition-all"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full bg-emerald-800 hover:bg-emerald-950 text-amber-400 py-3.5 rounded-2xl text-xs font-black shadow-lg shadow-emerald-900/20 active:scale-98 transition-all flex items-center justify-center gap-2"
+          >
+            {isSubmitting ? (
+              <Loader2 className="h-5 w-5 animate-spin text-white" />
+            ) : (
+              <>
+                <Send className="h-4 w-4" />
+                <span>আবেদন জমা দিন</span>
+              </>
+            )}
+          </button>
+        </form>
+      </div>
+
+      {/* Submitted Leave History & Live Status */}
+      <div className="bg-white rounded-[32px] p-6 shadow-xl border border-slate-100 space-y-4">
+        <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+          <Clock className="h-5 w-5 text-amber-500" />
+          <h4 className="font-black text-sm text-emerald-950 font-serif">আপনার জমাকৃত ছুটির আবেদনের তালিকা</h4>
+        </div>
+
+        <StreamBuilder<any>
+          stream={query(collection(db, "teacher_leaves"), orderBy("createdAt", "desc"))}
+          builder={(leaves) => {
+            const myLeaves = leaves.filter(
+              (l: any) =>
+                l.teacherName === teacherData?.name ||
+                l.teacherId === teacherData?.id
+            );
+
+            if (myLeaves.length === 0) {
+              return (
+                <div className="text-center py-8 opacity-40 space-y-1">
+                  <ClipboardList className="h-10 w-10 mx-auto text-slate-400" />
+                  <p className="text-xs font-bold text-slate-600">আপনি এখনও কোনো ছুটির আবেদন করেননি</p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="space-y-3">
+                {myLeaves.map((l: any) => {
+                  const isApproved = l.status === "Approved" || l.status === "approved";
+                  const isRejected = l.status === "Rejected" || l.status === "rejected";
+                  const isPending = !isApproved && !isRejected;
+
+                  return (
+                    <div
+                      key={l.id}
+                      className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3 relative hover:border-emerald-300 transition-all"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                          <Calendar className="h-3.5 w-3.5 text-emerald-600" />
+                          {toBengaliDigits(l.startDate)} থেকে {toBengaliDigits(l.endDate)} ({toBengaliDigits(l.totalDays || 1)} দিন)
+                        </span>
+
+                        {isApproved && (
+                          <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3 text-emerald-600" /> মঞ্জুরকৃত
+                          </span>
+                        )}
+                        {isRejected && (
+                          <span className="text-[10px] font-black bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                            <XCircle className="h-3 w-3 text-rose-600" /> বাতিলকৃত
+                          </span>
+                        )}
+                        {isPending && (
+                          <span className="text-[10px] font-black bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                            <Clock className="h-3 w-3 text-amber-600" /> পেন্ডিং
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="bg-white p-2.5 rounded-xl border border-slate-100 text-xs text-slate-700">
+                        <p className="text-[10px] text-slate-400 font-black uppercase">কারণ</p>
+                        <p className="font-bold">{l.reason}</p>
+                      </div>
+
+                      {(l.admin_note || l.adminNote) && (
+                        <div className="bg-amber-50 p-2.5 rounded-xl border border-amber-200/60 text-xs">
+                          <p className="text-[10px] text-amber-800 font-black uppercase">অ্যাডমিন মন্তব্য</p>
+                          <p className="font-bold text-amber-950">{l.admin_note || l.adminNote}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          }}
+        />
+      </div>
+    </div>
+  );
+};
+
 const TeacherDashboardInner = ({ 
   user, 
   setShowLogoutConfirm,
@@ -2349,10 +3100,8 @@ const TeacherDashboardInner = ({
       )}
 
       {activeTeacherTab === "others" && (
-        <div className="px-6 py-24 text-center animate-fade-in">
-           <Compass className="h-20 w-20 mx-auto text-emerald-100 mb-6" />
-           <h3 className="text-2xl font-black text-emerald-950">অন্যান্য</h3>
-           <p className="text-slate-500 font-bold">এই বিভাগটি শীঘ্রই আপডেট করা হবে।</p>
+        <div className="px-4 -mt-24 relative z-10 max-w-lg mx-auto space-y-6 font-alinur pb-12">
+          <TeacherLeaveSection teacherData={teacherData} toBengaliDigits={toBengaliDigits} />
         </div>
       )}
 
@@ -2683,68 +3432,384 @@ const AdminStudentManagement = ({ toBengaliDigits }: any) => {
   );
 };
 
-const AdminLeaveManagement = ({ toBengaliDigits }: any) => {
+const AdminLeaveManagement = ({ activeTab = "teacher", toBengaliDigits }: any) => {
+  const [subTab, setSubTab] = useState<"teacher" | "student">(
+    activeTab === "student" ? "student" : "teacher"
+  );
+  const [statusFilter, setStatusFilter] = useState<"all" | "Pending" | "Approved" | "Rejected">("all");
+
+  // Action Modal State
+  const [selectedLeave, setSelectedLeave] = useState<any>(null);
+  const [actionType, setActionType] = useState<"approve" | "reject">("approve");
+  const [adminNoteInput, setAdminNoteInput] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Sync subTab if prop changes
+  useEffect(() => {
+    if (activeTab === "student" || activeTab === "teacher") {
+      setSubTab(activeTab);
+    }
+  }, [activeTab]);
+
+  const handleOpenActionModal = (leaveDoc: any, type: "approve" | "reject") => {
+    setSelectedLeave(leaveDoc);
+    setActionType(type);
+    setAdminNoteInput(leaveDoc.admin_note || leaveDoc.adminNote || "");
+  };
+
+  const handleConfirmAction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedLeave) return;
+
+    setIsSubmitting(true);
+    try {
+      const targetStatus = actionType === "approve" ? "Approved" : "Rejected";
+      const collectionName = selectedLeave.collectionName || (subTab === "teacher" ? "teacher_leaves" : "leaves");
+
+      await updateDoc(doc(db, collectionName, selectedLeave.id), {
+        status: targetStatus,
+        admin_note: adminNoteInput.trim(),
+        adminNote: adminNoteInput.trim(),
+        adminHandledAt: serverTimestamp()
+      });
+
+      alert(
+        actionType === "approve"
+          ? "আবেদন সফলভাবে গ্রহণ/অনুমোদন করা হয়েছে।"
+          : "আবেদন সফলভাবে বাতিল করা হয়েছে।"
+      );
+      setSelectedLeave(null);
+      setAdminNoteInput("");
+    } catch (error) {
+      console.error("Error updating leave action:", error);
+      alert("সিদ্ধান্ত আপডেট করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Helper to calculate total leave days
+  const calculateDays = (start: string, end: string) => {
+    if (!start || !end) return 1;
+    try {
+      const s = new Date(start);
+      const e = new Date(end);
+      const diffTime = e.getTime() - s.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      return diffDays > 0 ? diffDays : 1;
+    } catch {
+      return 1;
+    }
+  };
+
   return (
     <div className="space-y-6 font-alinur animate-fade-in">
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="h-10 w-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center">
+      {/* Sub-menu Toggle Tabs */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSubTab("teacher")}
+            className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
+              subTab === "teacher"
+                ? "bg-emerald-800 text-white shadow-md shadow-emerald-900/20"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            <GraduationCap className="h-4 w-4 text-amber-400" />
+            <span>শিক্ষক ছুটির আবেদন</span>
+          </button>
+
+          <button
+            onClick={() => setSubTab("student")}
+            className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
+              subTab === "student"
+                ? "bg-emerald-800 text-white shadow-md shadow-emerald-900/20"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            <Users className="h-4 w-4 text-amber-400" />
+            <span>শিক্ষার্থী ছুটির আবেদন</span>
+          </button>
+        </div>
+
+        {/* Status Filter */}
+        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl text-xs font-bold">
+          {(["all", "Pending", "Approved", "Rejected"] as const).map((st) => (
+            <button
+              key={st}
+              onClick={() => setStatusFilter(st)}
+              className={`px-3 py-1.5 rounded-lg transition-all ${
+                statusFilter === st
+                  ? "bg-white text-emerald-950 shadow-xs font-black"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              {st === "all" ? "সকল" : st === "Pending" ? "পেন্ডিং" : st === "Approved" ? "অনুমোদিত" : "বাতিলকৃত"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Leave List Section */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+          <div className="h-10 w-10 bg-emerald-50 text-emerald-700 rounded-xl flex items-center justify-center border border-emerald-100">
             <ClipboardList className="h-6 w-6" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-emerald-950 font-serif">শিক্ষার্থী ছুটি আবেদন (Pending)</h3>
-            <p className="text-xs text-gray-500">শিক্ষকদের পাঠানো ছুটির আবেদনগুলো রিভিউ করুন</p>
+            <h3 className="text-lg font-bold text-emerald-950 font-serif">
+              {subTab === "teacher" ? "শিক্ষক ছুটির আবেদনসমূহ" : "শিক্ষার্থী ছুটির আবেদনসমূহ"}
+            </h3>
+            <p className="text-xs text-slate-500">
+              {subTab === "teacher"
+                ? "শিক্ষকদের জমাকৃত সকল ছুটির আবেদন ও পর্যালোচনা"
+                : "শিক্ষার্থীদের পাঠানো সকল ছুটির আবেদন ও পর্যালোচনা"}
+            </p>
           </div>
         </div>
 
+        {/* StreamBuilder for Data */}
         <StreamBuilder<any>
-          stream={query(collection(db, "leaves"), where("status", "==", "Pending"), orderBy("createdAt", "desc"))}
-          builder={(leaves) => (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {leaves.length === 0 ? (
-                <div className="col-span-2 text-center py-10 opacity-30">
-                  <ClipboardList className="h-16 w-16 mx-auto mb-2" />
-                  <p className="font-bold">কোনো পেন্ডিং আবেদন নেই</p>
+          stream={
+            subTab === "teacher"
+              ? query(collection(db, "teacher_leaves"), orderBy("createdAt", "desc"))
+              : query(collection(db, "leaves"), orderBy("createdAt", "desc"))
+          }
+          builder={(allLeaves) => {
+            let displayLeaves = allLeaves;
+
+            // Filter for student vs teacher if in leaves collection
+            if (subTab === "teacher") {
+              displayLeaves = displayLeaves.filter((l: any) => l.applicantType === "teacher" || l.teacherName || l.designation);
+            } else {
+              displayLeaves = displayLeaves.filter((l: any) => l.applicantType !== "teacher");
+            }
+
+            // Apply status filter
+            if (statusFilter !== "all") {
+              displayLeaves = displayLeaves.filter((l: any) => {
+                const s = l.status || "Pending";
+                if (statusFilter === "Pending") return s === "Pending" || s === "pending";
+                if (statusFilter === "Approved") return s === "Approved" || s === "approved";
+                if (statusFilter === "Rejected") return s === "Rejected" || s === "rejected";
+                return true;
+              });
+            }
+
+            if (displayLeaves.length === 0) {
+              return (
+                <div className="text-center py-12 opacity-50 space-y-2">
+                  <ClipboardList className="h-16 w-16 mx-auto text-slate-400" />
+                  <p className="font-bold text-slate-600">কোনো ছুটির আবেদন পাওয়া যায়নি</p>
+                  <p className="text-xs text-slate-400">ফিল্টার পরিবর্তন করে চেক করুন</p>
                 </div>
-              ) : (
-                leaves.map((l: any) => (
-                  <div key={l.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4 hover:border-emerald-300 transition-all">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-black text-emerald-950">{l.studentName || "শিক্ষার্থী"}</h4>
-                        <p className="text-xs text-slate-500 font-bold">{l.className} • রোল: {toBengaliDigits(l.studentRoll)}</p>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {displayLeaves.map((l: any) => {
+                  const isApproved = l.status === "Approved" || l.status === "approved";
+                  const isRejected = l.status === "Rejected" || l.status === "rejected";
+                  const isPending = !isApproved && !isRejected;
+                  const daysCount = l.totalDays || calculateDays(l.startDate, l.endDate);
+
+                  return (
+                    <div
+                      key={l.id}
+                      className="bg-slate-50/90 border border-slate-200 rounded-2xl p-5 space-y-4 hover:border-emerald-300 transition-all shadow-2xs relative"
+                    >
+                      {/* Card Header */}
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 bg-emerald-100/60 rounded-xl flex items-center justify-center text-emerald-800 font-black text-sm">
+                            {subTab === "teacher" ? <GraduationCap className="h-5 w-5" /> : <User className="h-5 w-5" />}
+                          </div>
+                          <div>
+                            <h4 className="font-black text-emerald-950 text-sm">
+                              {l.teacherName || l.studentName || l.applicantName || "আবেদনকারী"}
+                            </h4>
+                            <p className="text-xs text-slate-500 font-bold mt-0.5">
+                              {subTab === "teacher" ? (
+                                <span>{l.designation || l.teacherDesignation || "শিক্ষক"}</span>
+                              ) : (
+                                <span>{l.className || "শ্রেণী"} • রোল: {toBengaliDigits(l.studentRoll || l.roll || "---")}</span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div>
+                          {isApproved && (
+                            <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
+                              <CheckCircle2 className="h-3 w-3 text-emerald-600" /> গ্রহণকৃত
+                            </span>
+                          )}
+                          {isRejected && (
+                            <span className="text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
+                              <XCircle className="h-3 w-3 text-rose-600" /> বাতিলকৃত
+                            </span>
+                          )}
+                          {isPending && (
+                            <span className="text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
+                              <Clock className="h-3 w-3 text-amber-600" /> পেন্ডিং
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <span className="text-[10px] font-black bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full uppercase">পেন্ডিং</span>
+
+                      {/* Date Range & Total Days */}
+                      <div className="bg-white p-3 rounded-xl border border-slate-200/80 flex items-center justify-between text-xs font-bold text-slate-700">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="h-4 w-4 text-emerald-600" />
+                          <span>{toBengaliDigits(l.startDate)} থেকে {toBengaliDigits(l.endDate)}</span>
+                        </div>
+                        <span className="bg-emerald-50 text-emerald-800 px-2.5 py-0.5 rounded-md text-[11px] font-black">
+                          {toBengaliDigits(daysCount)} দিন
+                        </span>
+                      </div>
+
+                      {/* Reason */}
+                      <div className="bg-white p-3 rounded-xl border border-slate-200/80 space-y-1">
+                        <p className="text-[10px] text-slate-400 uppercase font-black tracking-wide">ছুটির বিস্তারিত কারণ</p>
+                        <p className="text-xs font-bold text-slate-700 leading-relaxed">{l.reason || "কোনো বিবরণ প্রদান করা হয়নি।"}</p>
+                      </div>
+
+                      {/* Admin Note if present */}
+                      {(l.admin_note || l.adminNote) && (
+                        <div className="bg-amber-50/80 border border-amber-200/60 p-3 rounded-xl space-y-0.5 text-xs">
+                          <p className="text-[10px] text-amber-800 uppercase font-black tracking-wide">অ্যাডমিন নোট / সিদ্ধান্ত কারণ</p>
+                          <p className="font-bold text-amber-950">{l.admin_note || l.adminNote}</p>
+                        </div>
+                      )}
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2 pt-2 border-t border-slate-200/60">
+                        <button
+                          onClick={() => handleOpenActionModal({ ...l, collectionName: subTab === "teacher" ? "teacher_leaves" : "leaves" }, "approve")}
+                          className="flex-1 bg-emerald-800 hover:bg-emerald-950 text-white py-2.5 rounded-xl text-xs font-black shadow-xs active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                        >
+                          <Check className="h-4 w-4 text-amber-400" />
+                          <span>গ্রহণ করুন</span>
+                        </button>
+                        <button
+                          onClick={() => handleOpenActionModal({ ...l, collectionName: subTab === "teacher" ? "teacher_leaves" : "leaves" }, "reject")}
+                          className="flex-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 py-2.5 rounded-xl text-xs font-black shadow-xs active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                        >
+                          <X className="h-4 w-4 text-rose-600" />
+                          <span>বাতিল করুন</span>
+                        </button>
+                      </div>
                     </div>
-                    <div className="bg-white p-3 rounded-xl border border-slate-100">
-                      <p className="text-[11px] text-slate-400 uppercase font-black mb-1">ছুটির কারণ</p>
-                      <p className="text-sm font-bold text-slate-700">{l.reason}</p>
-                    </div>
-                    <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-                      <span>{toBengaliDigits(l.startDate)} থেকে {toBengaliDigits(l.endDate)}</span>
-                      <span>শিক্ষক: {l.teacherName}</span>
-                    </div>
-                    <div className="flex gap-2 pt-2">
-                      <button 
-                        onClick={() => updateDoc(doc(db, "leaves", l.id), { status: "Approved", adminHandledAt: serverTimestamp() }).then(() => alert("আবেদন অনুমোদিত হয়েছে।"))}
-                        className="flex-1 bg-emerald-800 text-white py-2.5 rounded-xl text-xs font-black shadow-sm active:scale-95 transition-all"
-                      >
-                        অনুমোদন করুন
-                      </button>
-                      <button 
-                        onClick={() => updateDoc(doc(db, "leaves", l.id), { status: "Rejected", adminHandledAt: serverTimestamp() }).then(() => alert("আবেদন বাতিল করা হয়েছে।"))}
-                        className="flex-1 bg-rose-50 text-rose-600 border border-rose-100 py-2.5 rounded-xl text-xs font-black shadow-sm active:scale-95 transition-all"
-                      >
-                        বাতিল করুন
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            );
+          }}
         />
       </div>
+
+      {/* Action Modal (কাস্টম পপআপ ডায়ালগ for Reason/Note) */}
+      {selectedLeave && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 font-alinur animate-fade-in">
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-5 relative"
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`h-11 w-11 rounded-2xl flex items-center justify-center border ${
+                    actionType === "approve"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                      : "bg-rose-50 text-rose-700 border-rose-100"
+                  }`}
+                >
+                  {actionType === "approve" ? <CheckCircle2 className="h-6 w-6" /> : <XCircle className="h-6 w-6" />}
+                </div>
+                <div>
+                  <h3 className="font-black text-base text-emerald-950">
+                    {actionType === "approve" ? "ছুটি গ্রহণ ও অনুমোদন সিদ্ধান্ত" : "ছুটির আবেদন বাতিল সিদ্ধান্ত"}
+                  </h3>
+                  <p className="text-xs text-slate-500 font-bold">
+                    {selectedLeave.teacherName || selectedLeave.studentName || selectedLeave.applicantName || "আবেদনকারী"}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedLeave(null)}
+                className="h-8 w-8 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center text-slate-500 transition-all"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Leave Details Summary Box */}
+            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-1.5 text-xs font-bold text-slate-700">
+              <div className="flex justify-between">
+                <span className="text-slate-400">আবেদনের তারিখ:</span>
+                <span>{toBengaliDigits(selectedLeave.startDate)} থেকে {toBengaliDigits(selectedLeave.endDate)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">মোট দিন:</span>
+                <span className="text-emerald-800">{toBengaliDigits(selectedLeave.totalDays || calculateDays(selectedLeave.startDate, selectedLeave.endDate))} দিন</span>
+              </div>
+              <div className="pt-1 border-t border-slate-200/60">
+                <span className="text-slate-400 block text-[10px] uppercase">আবেদনের কারণ:</span>
+                <p className="text-slate-800 text-xs font-bold mt-0.5">{selectedLeave.reason || "---"}</p>
+              </div>
+            </div>
+
+            {/* Reason/Note Input Form */}
+            <form onSubmit={handleConfirmAction} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-slate-800 block">
+                  সিদ্ধান্ত গ্রহণের নির্দিষ্ট কারণ বা অ্যাডমিন মন্তব্য (Reason/Note):
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  value={adminNoteInput}
+                  onChange={(e) => setAdminNoteInput(e.target.value)}
+                  placeholder="যেমন: আবেদন গ্রহণযোগ্য বিবেচিত হয়েছে / তথ্যের অমিলের কারণে বাতিল..."
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-bold focus:bg-white focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none transition-all"
+                />
+              </div>
+
+              {/* Modal Buttons */}
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedLeave(null)}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl text-xs font-black transition-all"
+                >
+                  বাতিল
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`flex-1 text-white py-3 rounded-xl text-xs font-black shadow-md transition-all flex items-center justify-center gap-2 ${
+                    actionType === "approve"
+                      ? "bg-emerald-800 hover:bg-emerald-950 shadow-emerald-900/20"
+                      : "bg-rose-600 hover:bg-rose-700 shadow-rose-900/20"
+                  }`}
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : actionType === "approve" ? (
+                    <span>অনুমোদন নিশ্চিত করুন</span>
+                  ) : (
+                    <span>বাতিল নিশ্চিত করুন</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
@@ -3036,6 +4101,7 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
   const [isMenuBarDropdownOpen, setIsMenuBarDropdownOpen] = useState(false);
   const [isHomepageDropdownOpen, setIsHomepageDropdownOpen] = useState(false);
   const [isStudentMgmtDropdownOpen, setIsStudentMgmtDropdownOpen] = useState(false);
+  const [isLeaveDropdownOpen, setIsLeaveDropdownOpen] = useState(false);
   const [newNoticeText, setNewNoticeText] = useState("");
   const [teacherNoticeTitle, setTeacherNoticeTitle] = useState("");
   const [teacherNoticeDescription, setTeacherNoticeDescription] = useState("");
@@ -4222,6 +5288,7 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
           <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 pb-2 font-alinur">
             {[
               { id: "dashboard", label: "ড্যাশবোর্ড", icon: LayoutDashboard },
+              { id: "leave_mgmt", label: "ছুটির আবেদন", icon: CalendarRange },
               { id: "admissions", label: "অনলাইন আবেদন ট্র্যাকিং", icon: UserPlus },
               { id: "teachers", label: "শিক্ষক তালিকা", icon: GraduationCap },
               { id: "teacher_attendance", label: "শিক্ষক হাজিরা", icon: CalendarCheck },
@@ -4590,6 +5657,67 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
               )}
             </div>
 
+            {/* Leave Requests Dropdown Tab (ছুটির আবেদন) */}
+            <div className="relative">
+              <button
+                id="admin-leave-mgmt-dropdown-trigger"
+                onClick={() => {
+                  setIsMenuBarDropdownOpen(false);
+                  setIsNoticeDropdownOpen(false);
+                  setIsHeroDropdownOpen(false);
+                  setIsSettingsDropdownOpen(false);
+                  setIsHomepageDropdownOpen(false);
+                  setIsStudentMgmtDropdownOpen(false);
+                  setIsLeaveDropdownOpen(!isLeaveDropdownOpen);
+                }}
+                className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                  activeAdminSubTab === "leave_mgmt" || activeAdminSubTab === "teacher_leave" || activeAdminSubTab === "student_leave"
+                    ? "bg-emerald-800 text-white shadow-sm"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                <ClipboardList className="h-4 w-4 text-amber-500" />
+                <span>ছুটির আবেদন</span>
+                <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${isLeaveDropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+              
+              {isLeaveDropdownOpen && (
+                <div className="absolute left-0 mt-1.5 w-56 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-30 font-alinur">
+                  <button
+                    id="admin-subtab-teacher-leave"
+                    onClick={() => {
+                      setActiveAdminSubTab("teacher_leave");
+                      setIsLeaveDropdownOpen(false);
+                    }}
+                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold ${
+                      activeAdminSubTab === "teacher_leave"
+                        ? "bg-emerald-50 text-emerald-850"
+                        : "text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-800"></div>
+                    <span>শিক্ষক ছুটির আবেদন</span>
+                  </button>
+
+                  <button
+                    id="admin-subtab-student-leave"
+                    onClick={() => {
+                      setActiveAdminSubTab("student_leave");
+                      setIsLeaveDropdownOpen(false);
+                    }}
+                    className={`flex items-center space-x-2 w-full text-left px-4 py-2 text-xs font-bold ${
+                      activeAdminSubTab === "student_leave"
+                        ? "bg-emerald-50 text-emerald-850"
+                        : "text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="h-1.5 w-1.5 rounded-full bg-amber-500"></div>
+                    <span>শিক্ষার্থী ছুটির আবেদন</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Messages tab as simple button */}
             <button
               id="admin-subtab-messages"
@@ -4615,7 +5743,9 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
           <div className="flex justify-between items-center font-alinur">
             <div>
               <h3 className="text-lg font-bold text-emerald-950 font-serif">
-                {activeAdminSubTab === "student_leave" && "শিক্ষার্থী ছুটি আবেদন ও ম্যানেজমেন্ট"}
+                {activeAdminSubTab === "leave_mgmt" && "ছুটির আবেদন ব্যবস্থাপনা (শিক্ষক ও শিক্ষার্থী)"}
+                {activeAdminSubTab === "teacher_leave" && "শিক্ষক ছুটির আবেদন ও পর্যালোচনা"}
+                {activeAdminSubTab === "student_leave" && "শিক্ষার্থী ছুটির আবেদন ও পর্যালোচনা"}
                 {activeAdminSubTab === "student_attendance_check" && "শিক্ষার্থী হাজিরা ট্র্যাকিং ও ডেইলি রিপোর্ট"}
                 {activeAdminSubTab === "dashboard" && "ড্যাশবোর্ড ও সার্বিক পরিসংখ্যান"}
                 {activeAdminSubTab === "admissions" && "ভর্তি আবেদন ট্র্যাকিং ও পেমেন্ট আপডেট"}
@@ -4637,7 +5767,7 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
                 {activeAdminSubTab === "homework_subjects" && "ক্লাসভিত্তিক হোমওয়ার্ক সাবজেক্ট ম্যানেজমেন্ট"}
               </h3>
             </div>
-            {activeAdminSubTab !== "dashboard" && activeAdminSubTab !== "admissions" && activeAdminSubTab !== "messages" && activeAdminSubTab !== "settings" && activeAdminSubTab !== "hero_background" && activeAdminSubTab !== "running_notices" && activeAdminSubTab !== "public_notices" && activeAdminSubTab !== "pathdan_update" && activeAdminSubTab !== "sodosso_form_settings" && activeAdminSubTab !== "contact_update" && activeAdminSubTab !== "routines" && activeAdminSubTab !== "hafizgon" && activeAdminSubTab !== "teachers" && activeAdminSubTab !== "admin_control" && activeAdminSubTab !== "student_leave" && activeAdminSubTab !== "student_attendance_check" && activeAdminSubTab !== "homework_subjects" && (
+            {activeAdminSubTab !== "dashboard" && activeAdminSubTab !== "admissions" && activeAdminSubTab !== "messages" && activeAdminSubTab !== "settings" && activeAdminSubTab !== "hero_background" && activeAdminSubTab !== "running_notices" && activeAdminSubTab !== "public_notices" && activeAdminSubTab !== "pathdan_update" && activeAdminSubTab !== "sodosso_form_settings" && activeAdminSubTab !== "contact_update" && activeAdminSubTab !== "routines" && activeAdminSubTab !== "hafizgon" && activeAdminSubTab !== "teachers" && activeAdminSubTab !== "admin_control" && activeAdminSubTab !== "leave_mgmt" && activeAdminSubTab !== "teacher_leave" && activeAdminSubTab !== "student_leave" && activeAdminSubTab !== "student_attendance_check" && activeAdminSubTab !== "homework_subjects" && (
               <button
                 id="admin-add-new-btn"
                 onClick={handleOpenAddForm}
@@ -4649,9 +5779,9 @@ export default function DashboardSection({ user, setUser, setActiveTab }: Dashbo
             )}
           </div>
 
-          {/* Student Management Tabs Content */}
-          {activeAdminSubTab === "student_leave" && (
-            <AdminLeaveManagement toBengaliDigits={toBengaliDigits} />
+          {/* Leave Applications Management Content */}
+          {(activeAdminSubTab === "leave_mgmt" || activeAdminSubTab === "teacher_leave" || activeAdminSubTab === "student_leave") && (
+            <AdminLeaveManagement activeTab={activeAdminSubTab === "student_leave" ? "student" : "teacher"} toBengaliDigits={toBengaliDigits} />
           )}
 
           {activeAdminSubTab === "student_attendance_check" && (
