@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { initializeFirestore, Query, onSnapshot, DocumentData, enableIndexedDbPersistence, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+import { initializeFirestore, Query, onSnapshot, DocumentData, enableIndexedDbPersistence, persistentLocalCache, persistentMultipleTabManager, memoryLocalCache } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import React, { useEffect, useState, ReactNode } from "react";
 import { loadingService } from "./loadingService";
@@ -16,13 +16,28 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with robust modern persistent offline cache & long polling to bypass websocket/proxy blockages in sandboxed iframe environment
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager(),
-  }),
-  experimentalForceLongPolling: true,
-}, "ai-studio-cd3763db-984b-4a51-9a2b-e448ca0250a9");
+// Initialize Firestore with robust modern persistent offline cache (IndexedDB) & long polling to minimize Firestore read counts
+let firestoreDb: any;
+try {
+  firestoreDb = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager(),
+    }),
+    experimentalForceLongPolling: true,
+  }, "ai-studio-cd3763db-984b-4a51-9a2b-e448ca0250a9");
+} catch (error) {
+  console.warn("Firestore persistentLocalCache warning, falling back to memoryLocalCache:", error);
+  try {
+    firestoreDb = initializeFirestore(app, {
+      localCache: memoryLocalCache(),
+      experimentalForceLongPolling: true,
+    }, "ai-studio-cd3763db-984b-4a51-9a2b-e448ca0250a9");
+  } catch (err) {
+    console.error("Firestore initialization error:", err);
+  }
+}
+
+export const db = firestoreDb;
 
 // Export Firebase Storage instance initialized with proper storage bucket config
 export const storage = getStorage(app);
